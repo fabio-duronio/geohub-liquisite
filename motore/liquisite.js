@@ -32,7 +32,7 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  const VERSIONE_MOTORE = '0.1.0';
+  const VERSIONE_MOTORE = '0.2.0';
   const GAMMA_W = 9.81; // kN/m³
 
   // ---------------------------------------------------------------------------
@@ -444,6 +444,129 @@
   }
 
   // ---------------------------------------------------------------------------
+  // ESCLUSIONE DELLA VERIFICA — NTC 2018 §7.11.3.4.2
+  // Basta un criterio soddisfatto. L'esito si esprime come «verifica omessa ai sensi del
+  // §7.11.3.4.2», mai come «terreno non liquefacibile».
+  // ---------------------------------------------------------------------------
+
+  /** Criterio 1: amax attesa al p.c. in campo libero < 0,1 g. */
+  function criterio1(amax) {
+    const soddisfatto = amax < 0.1;
+    return {
+      criterio: 1, soddisfatto, valore: amax, soglia: 0.1, margine: 0.1 - amax,
+      nota: soddisfatto ? null : 'amax ≥ 0,1 g: approfondire le indagini per verificare gli altri tre criteri (Circolare 7/2019, C7.11.3.4).'
+    };
+  }
+
+  /** Criterio 2: falda media stagionale > 15 m, p.c. sub-orizzontale e fondazioni superficiali. */
+  function criterio2(zFalda, pcSubOrizzontale, fondazioniSuperficiali) {
+    const soddisfatto = zFalda > 15 && !!pcSubOrizzontale && !!fondazioniSuperficiali;
+    return { criterio: 2, soddisfatto, valore: zFalda, soglia: 15, margine: zFalda - 15,
+      condizioni: { falda: zFalda > 15, pcSubOrizzontale: !!pcSubOrizzontale, fondazioniSuperficiali: !!fondazioniSuperficiali } };
+  }
+
+  /**
+   * Criterio 3: depositi di sabbie pulite con (N1)60 > 30 oppure qc1N > 180.
+   * valore: (N1)60 o qc1N calcolato con la normalizzazione del metodo principale
+   * (decisione del 10/11/2026); il nome del metodo va riportato in stampa.
+   * margineRelativo < 0,10 → avviso di robustezza (scelta di LiquiSite, non normativa).
+   */
+  function criterio3(tipo, valore, sabbiaPulita) {
+    const soglia = tipo === 'CPT' ? 180 : 30;
+    const soddisfatto = !!sabbiaPulita && valore > soglia;
+    const margineRelativo = (valore - soglia) / soglia;
+    const avvisi = [];
+    if (!sabbiaPulita) avvisi.push('Il criterio vale per depositi di sabbie pulite.');
+    if (soddisfatto && margineRelativo < 0.10) avvisi.push('Valore di poco superiore alla soglia (meno del 10 %): condizione debole.');
+    return { criterio: 3, tipo, soddisfatto, valore, soglia, margineRelativo, avvisi };
+  }
+
+  /** Interpolazione lineare di y su x crescente; null fuori intervallo. */
+  function interp(xs, ys, x) {
+    for (let i = 0; i < xs.length - 1; i++) {
+      if (xs[i] <= x && x <= xs[i + 1] && xs[i + 1] > xs[i]) {
+        return ys[i] + (ys[i + 1] - ys[i]) * (x - xs[i]) / (xs[i + 1] - xs[i]);
+      }
+    }
+    return null;
+  }
+
+  /** log10(d) in funzione del passante, da una curva [[d mm, p %], …]; ordina per p. */
+  function curvaLogD(curva) {
+    const pts = curva.filter(([d, p]) => d > 0).map(([d, p]) => [p, Math.log10(d)]).sort((a, b) => a[0] - b[0]);
+    return { ps: pts.map(x => x[0]), ls: pts.map(x => x[1]) };
+  }
+
+  /** Coefficiente di uniformità Uc = D60/D10 (interpolazione su log d); null se non determinabile. */
+  function coeffUniformita(curva) {
+    const c = curvaLogD(curva);
+    const l10 = interp(c.ps, c.ls, 10), l60 = interp(c.ps, c.ls, 60);
+    if (l10 == null || l60 == null) return { Uc: null, D10: l10 == null ? null : 10 ** l10, D60: l60 == null ? null : 10 ** l60 };
+    return { Uc: 10 ** (l60 - l10), D10: 10 ** l10, D60: 10 ** l60 };
+  }
+
+  const TOLLERANZA_FUSI = 0.03; // decadi di d: ≈ 3 pixel della figura ufficiale (spessore della curva)
+
+  /**
+   * Posizione di una curva granulometrica rispetto a un fuso, per passante intero dal 2 al 98 %.
+   * fuso: { sinistra: [[p, d], …], destra: [[p, d], …] } (dati/fusi-ntc2018.json).
+   * Esito: 'interna' (tutti i punti dentro il fuso oltre la tolleranza), 'esterna' (tutti fuori
+   * oltre la tolleranza), altrimenti 'tocca' (l'app non propone un esito).
+   */
+  function confrontaFuso(curva, fuso, tol = TOLLERANZA_FUSI) {
+    const c = curvaLogD(curva);
+    const sx = { ps: fuso.sinistra.map(x => x[0]), ls: fuso.sinistra.map(x => Math.log10(x[1])) };
+    const dx = { ps: fuso.destra.map(x => x[0]), ls: fuso.destra.map(x => Math.log10(x[1])) };
+    let dentro = 0, fuori = 0, bordo = 0;
+    const dettaglio = [];
+    for (let p = 2; p <= 98; p++) {
+      const l = interp(c.ps, c.ls, p), lsx = interp(sx.ps, sx.ls, p), ldx = interp(dx.ps, dx.ls, p);
+      if (l == null || lsx == null || ldx == null) continue;
+      let stato;
+      if (l > lsx + tol && l < ldx - tol) { stato = 'dentro'; dentro++; }
+      else if (l < lsx - tol || l > ldx + tol) { stato = 'fuori'; fuori++; }
+      else { stato = 'bordo'; bordo++; }
+      dettaglio.push({ p, d: 10 ** l, stato });
+    }
+    const n = dentro + fuori + bordo;
+    let esito;
+    if (n === 0) esito = 'non confrontabile';
+    else if (dentro === n) esito = 'interna';
+    else if (fuori === n) esito = 'esterna';
+    else esito = 'tocca';
+    return { esito, punti: n, dentro, fuori, bordo, tolleranzaDecadi: tol, dettaglio };
+  }
+
+  /**
+   * Criterio 4: distribuzione granulometrica esterna ai fusi della Fig. 7.11.1
+   * ((a) se Uc < 3,5; (b) se Uc > 3,5). Esito PROPOSTO dall'app: il geologo lo conferma
+   * o lo corregge con motivazione (decisione del 10/11/2026).
+   * Se Uc non è determinabile o vale 3,5: confronto con entrambi i fusi; proposta
+   * «soddisfatto» solo se la curva è esterna a entrambi.
+   */
+  function criterio4(curva, fusi, tol = TOLLERANZA_FUSI) {
+    const u = coeffUniformita(curva);
+    const avvisi = [];
+    let confronti;
+    if (u.Uc != null && u.Uc < 3.5) confronti = { a: confrontaFuso(curva, fusi.a_Uc_minore_3_5, tol) };
+    else if (u.Uc != null && u.Uc > 3.5) confronti = { b: confrontaFuso(curva, fusi.b_Uc_maggiore_3_5, tol) };
+    else {
+      avvisi.push(u.Uc == null
+        ? 'Uc non determinabile (la curva non copre il 10 % e il 60 % di passante): confronto con entrambi i fusi.'
+        : 'Uc = 3,5: confronto con entrambi i fusi.');
+      confronti = { a: confrontaFuso(curva, fusi.a_Uc_minore_3_5, tol), b: confrontaFuso(curva, fusi.b_Uc_maggiore_3_5, tol) };
+    }
+    const esiti = Object.values(confronti).map(c => c.esito);
+    let proposta;
+    if (esiti.every(e => e === 'esterna')) proposta = 'soddisfatto';
+    else if (esiti.some(e => e === 'interna')) proposta = 'non soddisfatto';
+    else proposta = 'nessuna proposta';
+    if (proposta === 'nessuna proposta') avvisi.push('La curva tocca o interseca il fuso entro la tolleranza: la valutazione spetta al geologo.');
+    return { criterio: 4, ...u, confronti, proposta, avvisi,
+      fonte: 'NTC 2018, Fig. 7.11.1 (fusi digitalizzati dall\'immagine ufficiale, tolleranza ' + tol + ' decadi di d)' };
+  }
+
+  // ---------------------------------------------------------------------------
   // Avvisi comuni di profondità
   // ---------------------------------------------------------------------------
   function avvisiProfondita(z) {
@@ -458,6 +581,7 @@
     Phi, PhiInv, tensioni,
     bi2014Spt, bi2014Cpt, cetin2018Spt, kayen2013Vs,
     rdCetin, crCetin, crIdrissBoulanger2010, icRobertsonWride, avvisiProfondita,
+    criterio1, criterio2, criterio3, criterio4, confrontaFuso, coeffUniformita, TOLLERANZA_FUSI,
     _BI: BI, _CETIN: CETIN
   };
 });

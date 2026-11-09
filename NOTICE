@@ -75,3 +75,9 @@ state lette sulle pubblicazioni originali e sono citate nel codice:
 
 Riferimenti normativi: D.M. 17/01/2018 (NTC 2018), §7.11.3.4; Circolare
 21/01/2019 n. 7 C.S.LL.PP., C7.11.3.4.
+
+dati/fusi-ntc2018.json — coordinate dei fusi granulometrici della Fig. 7.11.1
+  del D.M. 17/01/2018 (NTC 2018), S.O. n. 8 alla G.U. n. 42 del 20/02/2018,
+  pag. 280, ricavate per digitalizzazione dell'immagine ufficiale
+  (strumenti/digitalizza_fusi.py). Valori approssimati alla risoluzione
+  della figura; non sono coordinate ufficiali.
