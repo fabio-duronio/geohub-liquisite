@@ -1,0 +1,77 @@
+LiquiSite (GeoHub-LiquiSite) — Verifica a liquefazione del sito secondo NTC 2018
+Copyright (C) 2026 Fabio Duronio
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published
+by the Free Software Foundation, version 3 of the License, with the
+additional terms below (Section 7).
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+The full license text is in the LICENSE file. The additional terms below
+apply together with it and must accompany every copy of the program.
+
+Source code: https://github.com/fabio-duronio/geohub-liquisite
+
+-------------------------------------------------------------------------
+TERMINI AGGIUNTIVI ai sensi della Sezione 7 della GNU AGPL v3
+ADDITIONAL TERMS pursuant to Section 7 of the GNU AGPL v3
+-------------------------------------------------------------------------
+
+1. Attribuzione (Sez. 7(b)). Ogni copia, versione modificata o servizio
+   basato su questo programma deve conservare, nell'interfaccia utente e
+   nella documentazione, la dicitura "Basato su LiquiSite di Fabio Duronio,
+   geologo" con il collegamento al repository originale.
+   Attribution (Sec. 7(b)). Any copy, modified version or service based on
+   this program must preserve, in its user interface and documentation, the
+   notice "Based on LiquiSite by Fabio Duronio, geologist" with a link to the
+   original repository.
+
+2. Versioni modificate (Sez. 7(c)). Le versioni modificate devono essere
+   contrassegnate in modo ragionevole come diverse dall'originale.
+   Modified versions (Sec. 7(c)). Modified versions must be marked in
+   reasonable ways as different from the original version.
+
+3. Nomi (Sez. 7(e)). Questa licenza non concede alcun diritto sull'uso dei
+   nomi "LiquiSite" e "GeoHub" né di eventuali loghi associati. Le versioni
+   modificate devono usare un nome diverso.
+   Names (Sec. 7(e)). This license grants no rights to use the names
+   "LiquiSite" and "GeoHub" or any associated logos. Modified versions must
+   use a different name.
+
+Licenze commerciali diverse dalla AGPL sono disponibili su richiesta
+all'autore. / Commercial licenses other than the AGPL are available from the
+author on request.
+
+-------------------------------------------------------------------------
+METODI DI CALCOLO — fonti
+-------------------------------------------------------------------------
+Il programma implementa metodi pubblicati in letteratura; le equazioni sono
+state lette sulle pubblicazioni originali e sono citate nel codice:
+
+- Boulanger R.W., Idriss I.M. (2014). CPT and SPT based liquefaction
+  triggering procedures. Report No. UCD/CGM-14/01, Center for Geotechnical
+  Modeling, University of California, Davis.
+- Idriss I.M., Boulanger R.W. (2010). SPT-based liquefaction triggering
+  procedures. Report No. UCD/CGM-10/02, Center for Geotechnical Modeling,
+  University of California, Davis.
+- Robertson P.K., Wride C.E. (1998). Evaluating cyclic liquefaction potential
+  using the cone penetration test. Canadian Geotechnical Journal 35, 442-459.
+- Cetin K.O., Seed R.B., Kayen R.E., Moss R.E.S., Bilge H.T., Ilgac M.,
+  Chowdhury K. (2018). SPT-based probabilistic and deterministic assessment of
+  seismic soil liquefaction triggering hazard. Soil Dynamics and Earthquake
+  Engineering 115, 698-709. https://doi.org/10.1016/j.soildyn.2018.09.012
+- Cetin K.O. et al. (2018). The use of the SPT-based seismic soil liquefaction
+  triggering evaluation methodology in engineering hazard assessments.
+  MethodsX 5, 1556-1575. https://doi.org/10.1016/j.mex.2018.11.016
+- Kayen R., Moss R.E.S., Thompson E.M., Seed R.B., Cetin K.O., Der Kiureghian A.,
+  Tanaka Y., Tokimatsu K. (2013). Shear-wave velocity-based probabilistic and
+  deterministic assessment of seismic soil liquefaction potential. Journal of
+  Geotechnical and Geoenvironmental Engineering 139(3), 407-419.
+  https://doi.org/10.1061/(ASCE)GT.1943-5606.0000743
+
+Riferimenti normativi: D.M. 17/01/2018 (NTC 2018), §7.11.3.4; Circolare
+21/01/2019 n. 7 C.S.LL.PP., C7.11.3.4.
