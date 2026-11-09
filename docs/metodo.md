@@ -87,3 +87,29 @@ Profondità in m dal piano campagna; tensioni in kPa (γ_w = 9,81 kN/m³, pressi
 Vedi `verifiche/`:
 - `verifica_motore.mjs` — esempio numerico di Cetin et al. (2018, MethodsX: Tab. 3 ed Eq. 29–54), valori dichiarati nel testo di Boulanger & Idriss (2014), letture delle figure di Boulanger & Idriss e di Kayen et al.
 - `verifica_indipendente.py` — seconda implementazione dei quattro metodi in Python, confrontata con il motore su 8000 casi casuali.
+- `verifica_esclusione.mjs` — criteri 1–4; coerenza dei fusi digitalizzati (U_c dei limiti, monotonia, letture a 26 % di passante); curve costruite interne, esterne e sul limite.
+
+## Esclusione della verifica (NTC 2018 §7.11.3.4.2)
+
+Basta un criterio soddisfatto. L'app scrive «verifica omessa ai sensi del §7.11.3.4.2, criterio n», mai «terreno non liquefacibile», e mostra il margine con cui ogni criterio è soddisfatto.
+
+| # | Criterio | Calcolo |
+|---|---|---|
+| 1 | a_max in campo libero < 0,1 g | confronto diretto; se non soddisfatto, la Circolare (C7.11.3.4) chiede di approfondire le indagini per gli altri tre criteri |
+| 2 | falda media stagionale > 15 m, p.c. sub-orizzontale, fondazioni superficiali | le tre condizioni insieme |
+| 3 | sabbie pulite con (N₁)₆₀ > 30 o q_c1N > 180 | normalizzazione del **metodo principale** scelto, dichiarata in stampa (le NTC indicano solo la normalizzazione a 100 kPa); avviso se il valore supera la soglia di meno del 10 % (scelta di LiquiSite) |
+| 4 | curva granulometrica esterna ai fusi della Fig. 7.11.1 ((a) U_c < 3,5; (b) U_c > 3,5) | vedi sotto |
+
+### Fusi della Fig. 7.11.1
+
+Il testo ufficiale (D.M. 17/01/2018, S.O. n. 8 alla G.U. n. 42 del 20/02/2018, pag. 280) riporta i fusi solo come immagini (605 × 395 e 605 × 405 pixel). Le coordinate in `dati/fusi-ntc2018.json` sono ricavate con `strumenti/digitalizza_fusi.py`:
+- calibrazione sugli assi della figura (decadi del diametro ogni 95 pixel circa; passante dallo 0 al 100 %);
+- inseguimento di ciascuna curva dal basso verso l'alto e campionamento a passante intero dal 2 al 98 %;
+- risoluzione: 1 pixel ≈ 0,0105 decadi di d e ≈ 0,35 % di passante; spessore delle curve ≈ 3 pixel.
+
+Confronto: per ogni passante intero dal 2 al 98 % il punto della curva è «dentro» o «fuori» dal fuso solo se dista dal limite più della **tolleranza di 0,03 decadi** di d (circa lo spessore della curva nella figura); altrimenti è «sul bordo».
+- tutti i punti fuori → l'app propone «criterio soddisfatto»;
+- almeno un confronto interamente dentro → propone «non soddisfatto»;
+- altrimenti la curva tocca o interseca il fuso → **nessuna proposta**.
+
+In ogni caso l'app disegna la curva sui fusi e il geologo **conferma o corregge** l'esito con motivazione. U_c = D₆₀/D₁₀ è interpolato su scala logaritmica; se non è determinabile o vale esattamente 3,5 la curva si confronta con entrambi i fusi e la proposta «soddisfatto» richiede che sia esterna a tutti e due.
