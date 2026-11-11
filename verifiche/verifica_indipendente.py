@@ -90,7 +90,7 @@ def bi_cpt(p):
         i05 = ic(0.5)
         Ic = i05 if i05 <= 2.6 else ic(0.75)
     if Ic > 2.6:
-        return {'stato': 'escluso'}
+        return {'stato': 'non_applicabile'}
     FC = min(max(80 * Ic - 137, 0), 100)  # Eq. 2.30, C_FC = 0
     qcN = qt / PA_BI
     q = qcN
@@ -159,7 +159,7 @@ const out = casi.map(([m, p]) => {
   const s = { amax: p.amax, Mw: p.Mw };
   const pt = { z: p.z, N: p.N, FC: p.FC, sv: p.sv, sve: p.sve, qc: p.qc, fs: p.fs, u2: p.u2, Vs: p.Vs };
   if (m === 'bi_spt') return L.bi2014Spt(pt, s, { CE: p.CE, CB: p.CB, CS: p.CS, sporgenza: p.sporgenza });
-  if (m === 'bi_cpt') { delete pt.FC; return L.bi2014Cpt(pt, s, { ar: p.ar }); }
+  if (m === 'bi_cpt') { delete pt.FC; return L.bi2014Cpt(pt, s, { tipo: 'CPTU', ar: p.ar }); }
   if (m === 'cetin') return L.cetin2018Spt(pt, s, { CE: p.CE, CB: p.CB, sporgenza: p.sporgenza }, { Vs12: p.Vs12 });
   return L.kayen2013Vs(pt, s, { Vs12: p.Vs12 });
 });
@@ -195,7 +195,7 @@ def main():
     massimi = {m: 0.0 for m in metodi}
     for (m, p), r in zip(casi, js):
         atteso = metodi[m](p)
-        if atteso.get('stato') == 'escluso' or r.get('stato') != 'calcolato':
+        if atteso.get('stato') == 'non_applicabile' or r.get('stato') != 'calcolato':
             if atteso.get('stato', 'calcolato') != r.get('stato'):
                 errori += 1
                 print('stato diverso', m, p, r.get('stato'))

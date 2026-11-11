@@ -50,7 +50,11 @@ const tab3 = [
 ];
 for (const [z, N60, CN, CR, N160, CSR] of tab3) {
   const t = L.tensioni(stratiCetin, 3.0, z);
-  const r = L.cetin2018Spt({ z, N: N60, FC: 14, sv: t.sv, sve: t.sve }, sisCetin, vertCetin, { Vs12: 220 });
+  const e = L.cetin2018Spt({ z, N: N60, FC: 14, sv: t.sv, sve: t.sve }, sisCetin, vertCetin, { Vs12: 220 });
+  // sopra falda (z < 3 m) il motore 0.3.0 restituisce 'non_applicabile' (NON_SATURO) con le
+  // grandezze di normalizzazione in diagnostica: i valori attesi della Tab. 3 non cambiano
+  check('z ' + z + ' m: stato ' + (z < 3 ? 'non_applicabile' : 'calcolato'), e.stato === (z < 3 ? 'non_applicabile' : 'calcolato') ? 1 : 0, 1, 0);
+  const r = e.stato === 'calcolato' ? e : e.diagnostica;
   check('z ' + z + ' m: CN', r.CN, CN, 0.006);
   check('z ' + z + ' m: CR', r.CR, CR, 0.006);
   check('z ' + z + ' m: N1,60', r.N160, N160, 0.06);
@@ -104,10 +108,10 @@ check('rd(z = 10 m, M 7,5) (Fig. 2.1)', BI.rd(10, 7.5), 0.88, 0.03);
 {
   // FS = 1 nella relazione deterministica ↔ PL ≈ 16 % (pag. 78–80)
   const sv = 100, sve = 70, z = 6;
-  const r0 = L.bi2014Cpt({ z, qc: 8, fs: 40, u2: 0, sv, sve, FC: 5 }, { amax: 0.25, Mw: 7.5 }, { ar: 1 });
+  const r0 = L.bi2014Cpt({ z, qc: 8, fs: 40, sv, sve, FC: 5 }, { amax: 0.25, Mw: 7.5 }, { tipo: 'CPTE' });
   // amax che porta FS a 1: CSR ∝ amax
   const amaxCrit = 0.25 * r0.FS;
-  const r1 = L.bi2014Cpt({ z, qc: 8, fs: 40, u2: 0, sv, sve, FC: 5 }, { amax: amaxCrit, Mw: 7.5 }, { ar: 1 });
+  const r1 = L.bi2014Cpt({ z, qc: 8, fs: 40, sv, sve, FC: 5 }, { amax: amaxCrit, Mw: 7.5 }, { tipo: 'CPTE' });
   check('FS = 1 → PL (pag. 80: ≈ 16 %)', r1.PL, 0.1587, 0.001);
 }
 {
