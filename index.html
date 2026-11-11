@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LiquiSite – Verifica di liquefazione dei terreni</title>
+<meta name="description" content="GeoHub-LiquiSite: verifica a liquefazione del sito con metodi semplificati da prove CPT/CPTU, SPT e Vs (NTC 2018). Calcoli nel browser.">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%230b1521'/><path d='M10 24 C16 19 22 19 28 24 S40 29 46 24 S54 20 56 22' fill='none' stroke='%232f7dd6' stroke-width='4' stroke-linecap='round'/><circle cx='18' cy='38' r='3.2' fill='%23ffffff'/><circle cx='30' cy='42' r='3.2' fill='%23ffffff'/><circle cx='42' cy='37' r='3.2' fill='%23ffffff'/><circle cx='24' cy='50' r='3.2' fill='%23ffffff'/><circle cx='37' cy='51' r='3.2' fill='%23ffffff'/><circle cx='48' cy='47' r='3.2' fill='%23ffffff'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/liquisite.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<header class="topbar no-print">
+  <div class="topbar-inner">
+    <div class="brand">
+      <svg class="brand-logo" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#0b1521"/><path d="M10 24 C16 19 22 19 28 24 S40 29 46 24 S54 20 56 22" fill="none" stroke="#2f7dd6" stroke-width="4" stroke-linecap="round"/><circle cx="18" cy="38" r="3.2" fill="#fff"/><circle cx="30" cy="42" r="3.2" fill="#fff"/><circle cx="42" cy="37" r="3.2" fill="#fff"/><circle cx="24" cy="50" r="3.2" fill="#fff"/><circle cx="37" cy="51" r="3.2" fill="#fff"/><circle cx="48" cy="47" r="3.2" fill="#fff"/></svg>
+      <div>
+        <span class="brand-text">LiquiSite</span>
+        <span class="brand-sub">Verifica di liquefazione dei terreni</span>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <span class="ver num" id="topVersione">motore –</span>
+      <button class="btn btn-sm" id="btnNuovo" type="button">Nuovo</button>
+      <button class="btn btn-sm" id="btnEsempio" type="button">Esempio</button>
+      <button class="btn btn-sm" id="btnApri" type="button">Apri…</button>
+      <input type="file" id="fileApri" accept=".json,application/json" hidden>
+      <button class="btn btn-sm" id="btnSalva" type="button">Salva progetto</button>
+      <button class="btn btn-sm" id="btnCsv" type="button">Esporta CSV</button>
+      <button class="btn btn-sm btn-primary" id="btnStampa" type="button">Stampa / PDF</button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="layout">
+
+    <!-- ================= IMPOSTAZIONI ================= -->
+    <aside class="side no-print" aria-label="Impostazioni">
+
+      <details class="collapse" id="secProgetto">
+        <summary>Progetto <span class="sum-info" id="sumProgetto"></span></summary>
+        <div class="panel-body">
+          <div class="field"><label for="prTitolo">Titolo</label><input type="text" id="prTitolo"></div>
+          <div class="field"><label for="prSito">Sito</label><input type="text" id="prSito"></div>
+          <div class="field"><label for="prAutore">Autore (facoltativo)</label><input type="text" id="prAutore"></div>
+          <div class="field"><label for="prNote">Note (facoltative)</label><textarea id="prNote"></textarea></div>
+        </div>
+      </details>
+
+      <details class="collapse" id="secProva" open>
+        <summary>Prova <span class="sum-info" id="sumProva"></span></summary>
+        <div class="panel-body">
+          <div class="field">
+            <label for="selProva">Prova attiva</label>
+            <select id="selProva"></select>
+          </div>
+          <div class="btn-row" style="margin-bottom:12px;">
+            <button class="btn btn-sm" id="btnNuovaProva" type="button">Nuova prova…</button>
+            <button class="btn btn-sm" id="btnDatiProva" type="button">Importa / incolla dati…</button>
+            <button class="btn btn-sm" id="btnEliminaProva" type="button">Elimina</button>
+          </div>
+          <div id="provaCampi"></div>
+        </div>
+      </details>
+
+      <details class="collapse" id="secScenario" open>
+        <summary>Scenario e metodo <span class="sum-info" id="sumScenario"></span></summary>
+        <div class="panel-body">
+          <div class="field">
+            <label for="selScenario">Scenario attivo</label>
+            <select id="selScenario"></select>
+          </div>
+          <div class="btn-row" style="margin-bottom:12px;">
+            <button class="btn btn-sm" id="btnNuovoScenario" type="button">Nuovo</button>
+            <button class="btn btn-sm" id="btnDuplicaScenario" type="button">Duplica</button>
+            <button class="btn btn-sm" id="btnEliminaScenario" type="button">Elimina</button>
+          </div>
+          <div id="scenarioCampi"></div>
+        </div>
+      </details>
+
+      <details class="collapse" id="secStrati" open>
+        <summary>Falda e stratigrafia <span class="sum-info" id="sumStrati"></span></summary>
+        <div class="panel-body">
+          <div class="field">
+            <label for="scFalda">Profondità della falda di verifica [m dal p.c.]</label>
+            <input type="number" id="scFalda" step="0.1" min="0">
+            <div class="hint">Falda di calcolo scelta dal geologo (es. massima escursione attesa).</div>
+          </div>
+          <div class="group-label">Strati</div>
+          <div class="edit-scroll"><table class="edit-table" id="tabStrati">
+            <thead><tr><th>da [m]</th><th>a [m]</th><th>γ [kN/m³]</th><th>γsat</th><th>FC [%]</th></tr></thead>
+            <tbody></tbody>
+          </table></div>
+          <div class="btn-row" style="margin-top:8px;"><button class="btn btn-sm" id="btnAggiungiStrato" type="button">Aggiungi strato</button></div>
+          <div class="hint" id="hintFC"></div>
+          <div id="erroriStrati"></div>
+        </div>
+      </details>
+
+      <div class="panel">
+        <div class="panel-body">
+          <button class="btn btn-primary btn-block" id="btnCalcola" type="button">Calcola</button>
+          <div class="status-line" id="statoCalcolo" role="status" aria-live="polite"></div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ================= RISULTATI ================= -->
+    <section class="main no-print" aria-label="Risultati">
+      <div class="panel summary" id="riepilogo"></div>
+
+      <div class="panel">
+        <div class="tabs" role="tablist" aria-label="Viste dei risultati">
+          <button role="tab" id="tab-profili" aria-controls="pan-profili" aria-selected="true">Profili</button>
+          <button role="tab" id="tab-tabelle" aria-controls="pan-tabelle" aria-selected="false">Tabelle</button>
+          <button role="tab" id="tab-confronto" aria-controls="pan-confronto" aria-selected="false">Confronto</button>
+          <button role="tab" id="tab-avvisi" aria-controls="pan-avvisi" aria-selected="false">Avvisi e assunzioni</button>
+        </div>
+        <div class="tabpanel" role="tabpanel" id="pan-profili" aria-labelledby="tab-profili"></div>
+        <div class="tabpanel" role="tabpanel" id="pan-tabelle" aria-labelledby="tab-tabelle" hidden></div>
+        <div class="tabpanel" role="tabpanel" id="pan-confronto" aria-labelledby="tab-confronto" hidden></div>
+        <div class="tabpanel" role="tabpanel" id="pan-avvisi" aria-labelledby="tab-avvisi" hidden></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ================= STAMPA ================= -->
+  <div class="print-only" id="stampa"></div>
+</div>
+
+<footer class="footer-note no-print">
+  I calcoli avvengono nel browser: nessun dato viene inviato a server. Grafici (Chart.js) e caratteri sono caricati da CDN: senza rete l'app non è garantita.<br>
+  Strumento di supporto al professionista: non fissa un FS minimo (le NTC 2018 non lo prevedono) e non sostituisce la relazione geologica.<br>
+  Basato su LiquiSite di Fabio Duronio, geologo — <a href="https://github.com/fabio-duronio/geohub-liquisite">github.com/fabio-duronio/geohub-liquisite</a> · licenza AGPL-3.0 con termini aggiuntivi (NOTICE).
+</footer>
+
+<!-- ================= IMPORTAZIONE ================= -->
+<dialog class="dlg" id="dlgImporta" aria-labelledby="dlgTitolo">
+  <div class="dlg-head"><h2 id="dlgTitolo">Dati della prova</h2><button class="btn btn-sm" type="button" data-chiudi>Chiudi</button></div>
+  <div class="dlg-body">
+    <div class="field-row-3">
+      <div class="field"><label for="imTipo">Tipo di prova</label><select id="imTipo"></select></div>
+      <div class="field"><label for="imNome">Nome della prova</label><input type="text" id="imNome"></div>
+      <div class="field"><label for="imFile">File CSV o TXT (facoltativo)</label><input type="file" id="imFile" accept=".csv,.txt,text/csv,text/plain"></div>
+    </div>
+    <div class="field">
+      <label for="imTesto">Tabella (incolla da foglio elettronico o modifica il testo)</label>
+      <textarea id="imTesto" rows="8" spellcheck="false"></textarea>
+    </div>
+    <div class="field-row-3">
+      <div class="field"><label for="imSep">Separatore di colonna</label>
+        <select id="imSep"><option value="auto">riconosci</option><option value=";">punto e virgola ;</option><option value=",">virgola ,</option><option value="&#9;">tabulazione</option></select>
+        <div class="hint" id="imSepRic"></div></div>
+      <div class="field"><label for="imDec">Separatore decimale</label>
+        <select id="imDec"><option value=",">virgola (1,5)</option><option value=".">punto (1.5)</option></select></div>
+      <div class="field"><label for="imInt">Prima riga</label>
+        <select id="imInt"><option value="si">intestazione</option><option value="no">dati</option></select></div>
+    </div>
+    <div class="group-label">Associazione delle colonne e unità</div>
+    <div class="map-grid" id="imMappa"></div>
+    <div id="imErrori" style="margin-top:10px;"></div>
+    <div class="group-label" style="margin-top:12px;">Anteprima (prime righe, unità dichiarate)</div>
+    <div class="table-scroll" style="max-height:240px;"><table class="data-table" id="imAnteprima"></table></div>
+  </div>
+  <div class="dlg-foot">
+    <span class="hint" id="imRiepilogo" style="margin-right:auto;"></span>
+    <button class="btn" type="button" data-chiudi>Annulla</button>
+    <button class="btn btn-primary" type="button" id="imApplica">Applica</button>
+  </div>
+</dialog>
+
+<script src="motore/liquisite.js"></script>
+<script src="app/progetto.js"></script>
+<script src="app/profilo.js"></script>
+<script src="app/importa.js"></script>
+<script src="app/esporta.js"></script>
+<script src="app/esempio.js"></script>
+<script src="app/grafici.js"></script>
+<script src="app/ui.js"></script>
+</body>
+</html>
