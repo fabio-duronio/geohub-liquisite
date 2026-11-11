@@ -26,6 +26,7 @@ Ogni metodo usa solo le proprie funzioni; le equazioni sono state lette sulle pu
 ```bash
 node verifiche/verifica_motore.mjs              # valori pubblicati dagli autori
 node verifiche/verifica_esclusione.mjs          # criteri di esclusione e fusi della Fig. 7.11.1
+node verifiche/verifica_robustezza.mjs          # input non validi, casi limite, stati di esito
 python3 verifiche/verifica_indipendente.py      # seconda implementazione, 8000 casi
 ```
 
