@@ -2,7 +2,7 @@
 
 **Verifica a liquefazione del sito secondo le NTC 2018**, direttamente nel browser.
 
-> **Stato: in sviluppo.** Questa versione contiene il motore di calcolo, i criteri di esclusione e le verifiche; l'interfaccia e la stampa arriveranno nelle prossime versioni.
+> **Stato: prima versione web (v0.1).** Prova → scenario → calcolo → profili e tabelle → confronto tra scenari → CSV, JSON, PNG e stampa. Uso e limiti in [Applicazione web](docs/app.md).
 
 Applicazione web per geologi della famiglia GeoHub: esclusione della verifica (NTC 2018 §7.11.3.4.2) e verifica puntuale con metodi semplificati da prove SPT, CPT/CPTU e misure di V_s, secondo il **D.M. 17/01/2018 (NTC 2018)** e la **Circolare n. 7/2019**. I calcoli avvengono nel browser; nessun dato viene inviato a server.
 
@@ -27,6 +27,7 @@ Ogni metodo usa solo le proprie funzioni; le equazioni sono state lette sulle pu
 node verifiche/verifica_motore.mjs              # valori pubblicati dagli autori
 node verifiche/verifica_esclusione.mjs          # criteri di esclusione e fusi della Fig. 7.11.1
 node verifiche/verifica_robustezza.mjs          # input non validi, casi limite, stati di esito
+node verifiche/verifica_profilo.mjs             # livello applicativo: profilo, importazione, CSV, JSON
 python3 verifiche/verifica_indipendente.py      # seconda implementazione, 8000 casi
 ```
 
