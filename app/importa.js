@@ -114,6 +114,7 @@
       });
       dati.push(riga);
     }
+    if (dati.length === 0) errori.push({ riga: null, colonna: '', motivo: 'Sono presenti solo intestazioni: aggiungi almeno una riga di misure prima di confermare.' });
     // profondità: obbligatoria e crescente (non si riordina in silenzio)
     const iz = colonne.indexOf('z');
     dati.forEach((r, k) => { if (r[iz] === null) errori.push({ riga: k + 1 + inizio, colonna: 'z', motivo: 'profondità mancante' }); });

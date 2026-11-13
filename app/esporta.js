@@ -13,7 +13,6 @@
 })(typeof self !== 'undefined' ? self : this, function (P, F) {
   'use strict';
 
-  const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
 
   function testoSicuro(s) {
     s = String(s);
@@ -52,9 +51,21 @@
     riga(['# Scenario', scenario.nome]);
     riga(['# Metodo', P.NOMI_METODI[scenario.metodo]]);
     riga(['# Mw', scenario.Mw, 'amax (g)', scenario.amax, 'falda (m)', scenario.zFalda]);
+    riga(['# FS di riferimento', F.fsRiferimento(scenario)]);
+    if (opz.preliminare) riga(['# Verifica preliminare NTC 2018 par. 7.11.3.4.2', opz.preliminare]);
+    riga(['# Criterio di verifica', F.criterioFS(scenario)]);
     riga(['# Motore', risultato.versioneMotore, 'calcolato il', risultato.calcolatoIl, 'firma input', risultato.firma]);
+    const ind = risultato.indiceIL;
+    if (ind && ind.stato === 'calcolato') {
+      riga(['# IL Iwasaki 0-20 m (senza classi)', 'IL_min', ind.ILmin, 'IL_max', ind.ILmax, 'completo', ind.completo ? 'si' : 'no', 'spessore ignoto (m)', ind.spessori.ignoto]);
+    }
+    const ced = risultato.cedimenti;
+    if (ced && ced.stato === 'calcolato') {
+      riga(['# Cedimento post-sismico 0-20 m (Zhang et al. 2002)', 'S_min (cm)', ced.Smin * 100, 'S_max (cm)', ced.Smax * 100, 'completo', ced.completo ? 'si' : 'no']);
+      riga(['# LSN (senza classi)', 'LSN_min 0-20 m', ced.LSNmin, 'LSN_max 0-20 m', ced.LSNmax, 'LSN_min 0-10 m', ced.LSN10min, 'LSN_max 0-10 m', ced.LSN10max]);
+    }
     riga(['# Dati della prova convertiti nelle unità interne; celle vuote = dato mancante o non calcolato']);
-    const chiavi = ['z'].concat(colIn.map(c => 'in:' + c), ['t:sv', 't:u', 't:sve', 'FC', 'origineFC'], M.intermedie, M.finali);
+    const chiavi = ['z'].concat(colIn.map(c => 'in:' + c), ['t:sv', 't:u', 't:sve', 'FC', 'origineFC'], M.intermedie, M.finali, scenario.metodo === 'bi2014Cpt' ? ['epsV'] : []);
     const intest = chiavi.map(k => {
       if (k === 'origineFC') return 'origine FC';
       const g = k.startsWith('in:') ? k.slice(3) : k.startsWith('t:') ? k.slice(2) : k;
@@ -69,7 +80,7 @@
         if (k.startsWith('t:')) return r.tensioni ? r.tensioni[k.slice(2)] : null;
         if (k === 'FC') return r.FC;
         if (k === 'origineFC') return r.origineFC;
-        return r.stato === 'calcolato' && r.valori ? r.valori[k] : null;
+        return F.valoreRisultato(r, k);
       });
       riga(val.concat([r.stato, r.codice || '', r.motivo || '',
         (r.avvisi || []).map(a => a.codice).join(' | '), (r.assunzioni || []).map(a => a.codice).join(' | ')]));

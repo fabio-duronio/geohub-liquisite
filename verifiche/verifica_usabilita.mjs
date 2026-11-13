@@ -1,0 +1,23 @@
+// Regressioni di importazione: nessuna formula geotecnica modificata.
+import assert from 'node:assert/strict';
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
+const I = require('../app/importa.js');
+assert.equal(I.numero('18,75', ',').valore, 18.75);
+assert.equal(I.numero('18.75', '.').valore, 18.75);
+assert.equal(I.numero('', ',').valore, null);
+assert(I.numero('18,7.5', ',').errore);
+assert(I.numero('1.000,5', ',').errore);
+assert(I.numero('1,000.5', '.').errore);
+const opts = {tipo:'CPTU', mappa:{z:0,qc:1,fs:2,u2:3}, unita:{z:'m',qc:'MPa',fs:'kPa',u2:'kPa'}, decimale:',', saltaIntestazione:true};
+const vuoto=I.costruisciDati([['z','qc','fs','u2']],opts);
+assert.equal(vuoto.ok,false);
+assert(vuoto.errori.some(e=>e.motivo.includes('intestazioni')));
+const righe=I.dividi('z;qc;fs;u2\n1,0;5,0;20,0;10,0\n2,0;6,0;25,0;20,0',';').righe;
+const valido=I.costruisciDati(righe,opts);
+assert.equal(valido.ok,true);
+assert.deepEqual(valido.dati,[[1,5,20,10],[2,6,25,20]]);
+const tab=I.dividi('z\tqc\tfs\tu2\n1,0\t5,0\t20,0\t10,0');
+assert.equal(tab.separatore,'\t');
+assert.equal(I.costruisciDati(tab.righe,opts).ok,true);
+console.log('Usabilità: 12 controlli superati (decimali, intestazioni senza dati, CSV e incolla da Excel).');

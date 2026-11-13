@@ -1,4 +1,6 @@
-# Applicazione web (v0.1)
+# Applicazione web (v0.1 + revisione grafica)
+
+Per le decisioni aggiornate leggere `AGENTS.md` e [Decisioni e attività](decisioni-e-attivita.md). La stampa corrente è A4 verticale, due profili per tavola. Per la prima revisione locale dell’interfaccia e le verifiche aggiuntive vedere [Revisione grafica](revisione-grafica.md). Le sezioni sotto descrivono il flusso originale; le impostazioni sono ora raccolte in una finestra a schede.
 
 [← Torna al README](../README.md)
 
@@ -9,7 +11,7 @@ Percorso: **prova → scenario → calcolo → grafici e tabelle → confronto t
 1. Aprire `index.html` da un server web (anche locale: `python3 -m http.server`) o da GitHub Pages.
 2. **Esempio** carica un progetto di dati **sintetici** (CPTU e SPT inventati, marcati come esempio ovunque, anche in stampa e nel CSV).
 3. **Prova**: «Nuova prova…» o «Importa / incolla dati…»: incolla da foglio elettronico o carica un CSV; scegliere separatore di colonna, separatore decimale, prima riga, associazione delle colonne e unità. Le celle vuote diventano dati mancanti; le celle non numeriche, le profondità non crescenti e i numeri ambigui (punto con decimale virgola) bloccano l'importazione con l'indicazione di riga e colonna.
-4. **Scenario**: metodo compatibile con la prova, M_w, a_max in superficie [g] (forniti dal geologo con la fonte), opzioni del metodo.
+4. **Scenario**: metodo compatibile con la prova, M_w, a_max in superficie [g] (forniti dal geologo con la fonte), opzioni del metodo, FS di riferimento (predefinito 1,25: EN 1998-5, § 4.1.4; modificabile tra 1 e 3; riguarda solo la lettura dei risultati e non entra nella firma degli input).
 5. **Falda e stratigrafia**: falda di verifica, strati con γ, γ_sat e FC facoltativo.
 6. **Calcola**. Se un input cambia, i risultati diventano «non aggiornati» (badge, velo sui grafici, avviso nelle tabelle) fino al ricalcolo; esportazione CSV e stampa richiedono risultati aggiornati.
 
@@ -36,7 +38,7 @@ Percorso: **prova → scenario → calcolo → grafici e tabelle → confronto t
             unita: { z: 'm'|'cm', qc: 'MPa'|'kPa', fs: 'kPa'|'MPa', u2: 'kPa'|'MPa', … },
             colonne: ['z', …], dati: [[numero|null, …]], parametri: { CE, CB, CS, sporgenza, senzaRivestimento | ar } }],
   scenari: [{ id, nome, colore, provaId, metodo, Mw, amax, zFalda,
-              strati: [{ da, a, gamma, gammaSat, FC|null, descrizione }], opzioni: { Vs12, IcSoglia, CFC }, note }],
+              strati: [{ da, a, gamma, gammaSat, FC|null, descrizione }], opzioni: { Vs12, IcSoglia, CFC, FSrif }, note }],
   provaAttiva, scenarioAttivo,
   risultati: { [scenarioId]: { versioneMotore, firma, calcolatoIl, configurazione, righe, riepilogo } } }
 ```
@@ -63,7 +65,7 @@ Le profondità non indagate non generano righe: il riepilogo distingue profondit
 - CPT e V_s: linee interrotte su righe non calcolate, dati mancanti e vuoti maggiori di 3 volte il passo mediano. SPT: punti discreti, mai uniti.
 - CSR e CRR sono entrambe **a condizioni di sito** (CSR tratteggiata, CRR continua); le grandezze normalizzate a M 7,5 e 1 atm sono solo in tabella.
 - FS = 1 è indicato come «riferimento del modello». Asse FS 0–3: i valori oltre la scala non vengono modificati, sono contati nella nota del pannello e visibili in tabella.
-- Nessuno smoothing; nessuna fascia di colore che esprima giudizi.
+- Nessuno smoothing. Fasce FS < 1 / FS ≥ 1 come riferimento del modello, non classi normative o giudizi di sicurezza.
 - Clic su un punto: selezione della riga, linea sulla stessa profondità in tutti i pannelli, dettaglio e collegamento alla tabella.
 
 ## Confronto tra scenari
@@ -85,6 +87,7 @@ Le profondità non indagate non generano righe: il riepilogo distingue profondit
 
 - a_max e M_w sono inserite dall'utente: nessun modulo di pericolosità (la proposta di M_w dalle zone ZS9 è rinviata).
 - Una prova attiva alla volta; il confronto tra prove è solo per profondità.
-- Non calcolati: indice del potenziale di liquefazione, cedimenti, spostamenti laterali, sezioni.
+- Indice IL (Iwasaki): calcolato senza classi, con intervallo IL_min–IL_max se la copertura 0–20 m è incompleta (vedi [Indice IL](indice-il.md)).
+- Non calcolati: cedimenti, spostamenti laterali, sezioni.
 - Criteri di esclusione (motore) non ancora presenti nell'interfaccia.
 - Chart.js 4.4.4 e i caratteri sono caricati da CDN: senza rete l'app non funziona.

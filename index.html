@@ -8,7 +8,7 @@
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%230b1521'/><path d='M10 24 C16 19 22 19 28 24 S40 29 46 24 S54 20 56 22' fill='none' stroke='%232f7dd6' stroke-width='4' stroke-linecap='round'/><circle cx='18' cy='38' r='3.2' fill='%23ffffff'/><circle cx='30' cy='42' r='3.2' fill='%23ffffff'/><circle cx='42' cy='37' r='3.2' fill='%23ffffff'/><circle cx='24' cy='50' r='3.2' fill='%23ffffff'/><circle cx='37' cy='51' r='3.2' fill='%23ffffff'/><circle cx='48' cy='47' r='3.2' fill='%23ffffff'/></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/liquisite.css">
+<link rel="stylesheet" href="css/liquisite.css?v=0.2.0">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -25,7 +25,7 @@
     <div class="topbar-actions">
       <span class="ver num" id="topVersione">motore –</span>
       <button class="btn btn-sm" id="btnNuovo" type="button">Nuovo</button>
-      <button class="btn btn-sm" id="btnEsempio" type="button">Esempio</button>
+      <button class="btn btn-sm" id="btnEsempio" type="button">Demo sintetica</button>
       <button class="btn btn-sm" id="btnApri" type="button">Apri…</button>
       <input type="file" id="fileApri" accept=".json,application/json" hidden>
       <button class="btn btn-sm" id="btnSalva" type="button">Salva progetto</button>
@@ -36,10 +36,16 @@
 </header>
 
 <div class="wrap">
+  <div class="workspace-bar no-print">
+    <div><div class="eyebrow">GEOHUB / ANALISI GEOTECNICHE</div><h1>Analisi di liquefazione</h1><p>Dal profilo di prova alla lettura dei risultati.</p></div>
+    <div class="btn-row"><button class="btn" id="btnImpostazioni">Progetto</button><button class="btn" data-open-section="secProva">Prove</button><button class="btn" data-open-section="secScenario">Scenario</button><button class="btn" data-open-section="secStrati">Stratigrafia</button><button class="btn btn-primary" id="btnQuickCalcola">Calcola scenario</button></div>
+  </div>
   <div class="layout">
 
     <!-- ================= IMPOSTAZIONI ================= -->
-    <aside class="side no-print" aria-label="Impostazioni">
+    <dialog id="dlgSettings" class="settings-dlg no-print" aria-labelledby="settingsTitle">
+      <div class="settings-head"><div><span class="eyebrow">CONFIGURAZIONE</span><h2 id="settingsTitle">Dati e scenario di calcolo</h2></div><button class="btn btn-sm" id="closeSettings">Torna ai risultati</button></div>
+      <aside class="side" aria-label="Impostazioni">
 
       <details class="collapse" id="secProgetto">
         <summary>Progetto <span class="sum-info" id="sumProgetto"></span></summary>
@@ -88,11 +94,11 @@
         <div class="panel-body">
           <div class="field">
             <label for="scFalda">Profondità della falda di verifica [m dal p.c.]</label>
-            <input type="number" id="scFalda" step="0.1" min="0">
+            <input type="text" inputmode="decimal" id="scFalda" step="0.1" min="0">
             <div class="hint">Falda di calcolo scelta dal geologo (es. massima escursione attesa).</div>
           </div>
           <div class="group-label">Strati</div>
-          <div class="edit-scroll"><table class="edit-table" id="tabStrati">
+          <p class="hint">Puoi scrivere 18,5 oppure 18.5. Non usare separatori delle migliaia. Su schermi stretti scorri la tabella orizzontalmente.</p><div class="edit-scroll"><table class="edit-table" id="tabStrati">
             <thead><tr><th>da [m]</th><th>a [m]</th><th>γ [kN/m³]</th><th>γsat</th><th>FC [%]</th></tr></thead>
             <tbody></tbody>
           </table></div>
@@ -109,6 +115,7 @@
         </div>
       </div>
     </aside>
+    </dialog>
 
     <!-- ================= RISULTATI ================= -->
     <section class="main no-print" aria-label="Risultati">
@@ -116,11 +123,13 @@
 
       <div class="panel">
         <div class="tabs" role="tablist" aria-label="Viste dei risultati">
+          <button role="tab" id="tab-esclusione" aria-controls="pan-esclusione" aria-selected="false">Verifica preliminare</button>
           <button role="tab" id="tab-profili" aria-controls="pan-profili" aria-selected="true">Profili</button>
           <button role="tab" id="tab-tabelle" aria-controls="pan-tabelle" aria-selected="false">Tabelle</button>
           <button role="tab" id="tab-confronto" aria-controls="pan-confronto" aria-selected="false">Confronto</button>
           <button role="tab" id="tab-avvisi" aria-controls="pan-avvisi" aria-selected="false">Avvisi e assunzioni</button>
         </div>
+        <div class="tabpanel" role="tabpanel" id="pan-esclusione" aria-labelledby="tab-esclusione" hidden></div>
         <div class="tabpanel" role="tabpanel" id="pan-profili" aria-labelledby="tab-profili"></div>
         <div class="tabpanel" role="tabpanel" id="pan-tabelle" aria-labelledby="tab-tabelle" hidden></div>
         <div class="tabpanel" role="tabpanel" id="pan-confronto" aria-labelledby="tab-confronto" hidden></div>
@@ -135,23 +144,30 @@
 
 <footer class="footer-note no-print">
   I calcoli avvengono nel browser: nessun dato viene inviato a server. Grafici (Chart.js) e caratteri sono caricati da CDN: senza rete l'app non è garantita.<br>
-  Strumento di supporto al professionista: non fissa un FS minimo (le NTC 2018 non lo prevedono) e non sostituisce la relazione geologica.<br>
+  Strumento di supporto al professionista. Le NTC 2018 non fissano un FS minimo: il valore di riferimento (predefinito 1,25, EN 1998-5) è scelto e motivato dal progettista. Non sostituisce la relazione geologica.<br>
   Basato su LiquiSite di Fabio Duronio, geologo — <a href="https://github.com/fabio-duronio/geohub-liquisite">github.com/fabio-duronio/geohub-liquisite</a> · licenza AGPL-3.0 con termini aggiuntivi (NOTICE).
 </footer>
 
 <!-- ================= IMPORTAZIONE ================= -->
 <dialog class="dlg" id="dlgImporta" aria-labelledby="dlgTitolo">
-  <div class="dlg-head"><h2 id="dlgTitolo">Dati della prova</h2><button class="btn btn-sm" type="button" data-chiudi>Chiudi</button></div>
+  <div class="dlg-head"><h2 id="dlgTitolo">Dati della prova</h2><button class="btn btn-sm" type="button" data-chiudi>Torna ai risultati</button></div>
+  <nav class="import-steps" aria-label="Passaggi importazione"><button type="button" data-import-step="1" aria-current="step">1 · Dati della prova</button><button type="button" data-import-step="2">2 · Colonne e unità</button><button type="button" data-import-step="3">3 · Controllo e salvataggio</button></nav>
   <div class="dlg-body">
+    <section id="importStep1" aria-label="Dati della prova">
     <div class="field-row-3">
       <div class="field"><label for="imTipo">Tipo di prova</label><select id="imTipo"></select></div>
       <div class="field"><label for="imNome">Nome della prova</label><input type="text" id="imNome"></div>
       <div class="field"><label for="imFile">File CSV o TXT (facoltativo)</label><input type="file" id="imFile" accept=".csv,.txt,text/csv,text/plain"></div>
     </div>
     <div class="field">
-      <label for="imTesto">Tabella (incolla da foglio elettronico o modifica il testo)</label>
+      <div id="guidaImporta" class="import-guide" aria-live="polite"></div>
+      <div class="btn-row" style="margin:12px 0"><button type="button" class="btn btn-sm" id="imModello">Scarica modello CSV vuoto</button><button type="button" class="btn btn-sm" id="imIntestazioni">Inserisci solo le intestazioni</button></div>
+      <label for="imTesto">1. Incolla qui le misure della prova: una riga per profondità</label>
+      <p class="hint">Da Excel: seleziona intestazioni e dati, copia e incolla. Non serve scrivere i punti e virgola: le colonne copiate sono separate da tabulazioni. Puoi anche scegliere un file CSV qui sopra.</p>
       <textarea id="imTesto" rows="8" spellcheck="false"></textarea>
     </div>
+    </section>
+    <section id="importStep2" hidden aria-label="Colonne e unità">
     <div class="field-row-3">
       <div class="field"><label for="imSep">Separatore di colonna</label>
         <select id="imSep"><option value="auto">riconosci</option><option value=";">punto e virgola ;</option><option value=",">virgola ,</option><option value="&#9;">tabulazione</option></select>
@@ -161,26 +177,38 @@
       <div class="field"><label for="imInt">Prima riga</label>
         <select id="imInt"><option value="si">intestazione</option><option value="no">dati</option></select></div>
     </div>
-    <div class="group-label">Associazione delle colonne e unità</div>
+    <div class="group-label">2. Controlla a cosa corrisponde ogni colonna del tuo file</div>
+    <p class="hint">Per ogni misura, scegli la colonna che la contiene e l’unità scritta sul rapporto originale. Per esempio: se il tuo file chiama la profondità «Depth», seleziona «Depth» nel campo Profondità. L’app converte le unità, ma non può indovinarle dal valore.</p>
     <div class="map-grid" id="imMappa"></div>
+    </section>
+    <section id="importStep3" hidden aria-label="Controllo e salvataggio">
+    <p id="imSalvato" role="status" class="alert alert-info" hidden></p>
     <div id="imErrori" style="margin-top:10px;"></div>
-    <div class="group-label" style="margin-top:12px;">Anteprima (prime righe, unità dichiarate)</div>
+    <div class="group-label" style="margin-top:12px;">3. Verifica le prime righe prima di confermare</div>
     <div class="table-scroll" style="max-height:240px;"><table class="data-table" id="imAnteprima"></table></div>
+    </section>
   </div>
   <div class="dlg-foot">
     <span class="hint" id="imRiepilogo" style="margin-right:auto;"></span>
-    <button class="btn" type="button" data-chiudi>Annulla</button>
-    <button class="btn btn-primary" type="button" id="imApplica">Applica</button>
+    <button class="btn" type="button" id="imIndietro">Indietro</button><button class="btn btn-primary" type="button" id="imAvanti">Avanti</button>
+    <button class="btn btn-primary" type="button" id="imApplica" hidden>Salva la prova</button>
   </div>
 </dialog>
 
-<script src="motore/liquisite.js"></script>
-<script src="app/progetto.js"></script>
-<script src="app/profilo.js"></script>
-<script src="app/importa.js"></script>
-<script src="app/esporta.js"></script>
-<script src="app/esempio.js"></script>
-<script src="app/grafici.js"></script>
-<script src="app/ui.js"></script>
+<script src="motore/liquisite.js?v=0.2.0"></script>
+<script src="motore/indici.js?v=0.2.0"></script>
+<script src="motore/cedimenti.js?v=0.2.0"></script>
+<script src="app/progetto.js?v=0.2.0"></script>
+<script src="app/profilo.js?v=0.2.0"></script>
+<script src="dati/fusi-ntc2018.js?v=0.2.0"></script>
+<script src="app/esclusione.js?v=0.2.0"></script>
+<script src="app/importa.js?v=0.2.0"></script>
+<script src="app/esporta.js?v=0.2.0"></script>
+<script src="app/esempio.js?v=0.2.0"></script>
+<script src="app/grafici.js?v=0.2.0"></script>
+<script src="app/ui.js?v=0.2.0"></script>
+<script src="app/workspace.js?v=0.2.0"></script>
+<script src="app/guida-importa.js?v=0.2.0"></script>
+<script src="app/import-workspace.js?v=0.2.0"></script>
 </body>
 </html>
