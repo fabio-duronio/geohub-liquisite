@@ -17,7 +17,7 @@
  *          parametri: { CE, CB, CS, sporgenza, senzaRivestimento, ar } (secondo il tipo) }
  * Scenario: { id, nome, colore, provaId, metodo, Mw, amax, zFalda,
  *             strati: [{ da, a, gamma, gammaSat, FC|null, descrizione }],
- *             opzioni: { Vs12, IcSoglia, CFC }, note }
+ *             opzioni: { Vs12, IcSoglia, CFC, FSrif }, note }
  */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();
@@ -66,6 +66,9 @@
 
   const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
 
+  /** FS di riferimento predefinito: valore raccomandato da EN 1998-5, § 4.1.4 (modificabile dal progettista). */
+  const FS_RIFERIMENTO = 1.25;
+
   let contatore = 0;
   function nuovoId(prefisso) {
     contatore++;
@@ -95,12 +98,18 @@
 
   const COLORI_SCENARI = ['#1e4e8c', '#9a4410', '#1f6b45', '#6b3fa0'];
 
+  /** Dati della verifica preliminare (§7.11.3.4.2): non entrano nel calcolo né nella firma. */
+  function esclusioneVuota() {
+    return { faldaMediaStagionale: null, pcSubOrizzontale: null, fondazioniSuperficiali: null, strati: [] };
+  }
+
   function nuovoScenario(prova, nome, indice = 0) {
     return {
       id: nuovoId('scen'), nome: nome || 'Scenario ' + (indice + 1), colore: COLORI_SCENARI[indice % COLORI_SCENARI.length],
       provaId: prova ? prova.id : null, metodo: prova ? METODI_PER_TIPO[prova.tipo][0] : null,
       Mw: null, amax: null, zFalda: null,
-      strati: [], opzioni: { Vs12: null, IcSoglia: 2.6, CFC: 0 }, note: ''
+      strati: [], opzioni: { Vs12: null, IcSoglia: 2.6, CFC: 0, FSrif: FS_RIFERIMENTO }, note: '',
+      esclusione: esclusioneVuota()
     };
   }
 
@@ -140,10 +149,17 @@
     });
   }
 
-  /** Firma degli input da cui dipende un risultato: cambia se cambia qualunque input. */
+  /** Opzioni che entrano nel calcolo: FSrif riguarda solo la lettura dei risultati, non il calcolo. */
+  function opzioniCalcolo(opzioni) {
+    if (!opzioni || typeof opzioni !== 'object') return opzioni;
+    const { FSrif, ...resto } = opzioni;
+    return resto;
+  }
+
+  /** Firma degli input da cui dipende un risultato: cambia se cambia qualunque input del calcolo. */
   function firmaInput(prova, scenario, versioneMotore) {
     const s = JSON.stringify({ v: versioneMotore, p: { tipo: prova.tipo, unita: prova.unita, colonne: prova.colonne, dati: prova.dati, parametri: prova.parametri },
-      s: { metodo: scenario.metodo, Mw: scenario.Mw, amax: scenario.amax, zFalda: scenario.zFalda, strati: scenario.strati, opzioni: scenario.opzioni, provaId: scenario.provaId } });
+      s: { metodo: scenario.metodo, Mw: scenario.Mw, amax: scenario.amax, zFalda: scenario.zFalda, strati: scenario.strati, opzioni: opzioniCalcolo(scenario.opzioni), provaId: scenario.provaId } });
     // FNV-1a a 32 bit: basta per riconoscere un cambiamento, non è una firma di sicurezza
     let h = 0x811c9dc5;
     for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
@@ -203,6 +219,18 @@
         if (st && st.FC !== null && st.FC !== undefined && !isNum(st.FC)) err(c + '.strati[' + k + '].FC', 'deve essere un numero o null');
       });
       if (s.opzioni !== undefined && (s.opzioni === null || typeof s.opzioni !== 'object')) err(c + '.opzioni', 'deve essere un oggetto');
+      if (s.esclusione !== undefined) {
+        const e = s.esclusione;
+        if (e === null || typeof e !== 'object' || Array.isArray(e)) err(c + '.esclusione', 'deve essere un oggetto');
+        else {
+          if (e.faldaMediaStagionale !== null && e.faldaMediaStagionale !== undefined && !isNum(e.faldaMediaStagionale)) err(c + '.esclusione.faldaMediaStagionale', 'deve essere un numero o null');
+          if (e.strati !== undefined && !Array.isArray(e.strati)) err(c + '.esclusione.strati', 'deve essere un elenco');
+          else (e.strati || []).forEach((x, k) => {
+            if (!x || !isNum(x.da) || !isNum(x.a)) err(c + '.esclusione.strati[' + k + ']', 'servono da e a numerici');
+            else if (x.curva !== undefined && x.curva !== null && !Array.isArray(x.curva)) err(c + '.esclusione.strati[' + k + '].curva', 'deve essere un elenco [d, p]');
+          });
+        }
+      }
     });
     if (obj.risultati !== undefined && (obj.risultati === null || typeof obj.risultati !== 'object' || Array.isArray(obj.risultati))) err('risultati', 'deve essere un oggetto');
     return { ok: errori.length === 0, errori };
@@ -221,7 +249,10 @@
     for (const k of Object.keys(obj.risultati)) obj.risultati[k].origine = 'file';
     if (!obj.prove.some(p => p.id === obj.provaAttiva)) obj.provaAttiva = obj.prove[0] ? obj.prove[0].id : null;
     if (!obj.scenari.some(s => s.id === obj.scenarioAttivo)) obj.scenarioAttivo = obj.scenari[0] ? obj.scenari[0].id : null;
-    for (const s of obj.scenari) s.opzioni = Object.assign({ Vs12: null, IcSoglia: 2.6, CFC: 0 }, s.opzioni || {});
+    for (const s of obj.scenari) {
+      s.opzioni = Object.assign({ Vs12: null, IcSoglia: 2.6, CFC: 0, FSrif: FS_RIFERIMENTO }, s.opzioni || {});
+      s.esclusione = Object.assign(esclusioneVuota(), s.esclusione || {});
+    }
     for (const p of obj.prove) p.parametri = Object.assign(parametriPredefiniti(p.tipo), p.parametri || {});
     return { ok: true, errori: [], progetto: obj };
   }
@@ -231,8 +262,8 @@
   }
 
   return {
-    FORMATO, VERSIONE_FORMATO, TIPI_PROVA, METODI_PER_TIPO, NOMI_METODI, UNITA, ETICHETTE_COLONNE, COLORI_SCENARI,
-    nuovoId, nuovaProva, nuovoScenario, nuovoProgetto, duplicaScenario, copia,
+    FORMATO, VERSIONE_FORMATO, FS_RIFERIMENTO, TIPI_PROVA, METODI_PER_TIPO, NOMI_METODI, UNITA, ETICHETTE_COLONNE, COLORI_SCENARI,
+    nuovoId, nuovaProva, nuovoScenario, esclusioneVuota, nuovoProgetto, duplicaScenario, copia,
     datiInterni, firmaInput, validaProgetto, apriProgetto, salvaProgetto, parametriPredefiniti, unitaPredefinite
   };
 });

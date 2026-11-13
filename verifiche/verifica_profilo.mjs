@@ -28,6 +28,11 @@ const ADESSO = '2026-11-12T10:00:00.000Z';
 const pr = E.progettoEsempio();
 const [cptu, spt] = pr.prove;
 const [sCpt, sSpt] = pr.scenari;
+// Copia dell'esempio con un tratto non indagato (12,0–12,6 m) e una lettura fs mancante a 6,30 m
+const difettosa = P.copia(cptu);
+difettosa.dati = difettosa.dati.filter(d => !(d[0] > 12.0 && d[0] < 12.6));
+difettosa.dati.find(d => d[0] === 6.3)[2] = null;
+const rDif = F.calcolaScenario(difettosa, sCpt, L, { adesso: ADESSO });
 
 // ---------------------------------------------------------------------------
 console.log('1. Ogni riga calcolata coincide con il motore chiamato con gli stessi input');
@@ -80,22 +85,25 @@ confrontaConMotore(spt, sCetin, 'SPT esempio Cetin');
 console.log('2. Intervalli: sopra falda, dati mancanti, non applicabili, fuori stratigrafia');
 {
   const sopra = rCpt.righe.filter(x => x.z <= sCpt.zFalda);
-  check('CPTU: righe sopra falda tutte non calcolate', sopra.every(x => x.stato === 'non_applicabile' && x.codice === 'NON_SATURO'), true);
-  const manc = rCpt.righe.find(x => x.z === 6.3);
+  // sopra falda nessun FS: NON_SATURO, oppure Ic oltre soglia se il motore lo rileva prima
+  check('CPTU: righe sopra falda tutte non calcolate', sopra.every(x => x.stato === 'non_applicabile' && ['NON_SATURO', 'IC_OLTRE_SOGLIA'].includes(x.codice) && !x.valori?.FS), true);
+  check('CPTU: sabbia sopra falda → NON_SATURO', rCpt.righe.filter(x => x.z < 1.2).every(x => x.codice === 'NON_SATURO'), true);
+  const manc = rDif.righe.find(x => x.z === 6.3);
   check('CPTU: lettura mancante → dati insufficienti', [manc.stato, manc.codice], ['dati_insufficienti', 'DATO_MANCANTE']);
   check('CPTU: lettura mancante senza valori', manc.valori, undefined);
-  check('CPTU: nessuna riga tra 12,0 e 12,6 m (non indagato)', rCpt.righe.some(x => x.z > 12.0 && x.z < 12.6), false);
-  const argilla = rCpt.righe.filter(x => x.z > 8.3 && x.z < 10.7);
-  check('CPTU: argilla → Ic oltre soglia', argilla.every(x => x.codice === 'IC_OLTRE_SOGLIA'), true);
-  const s2 = P.copia(sCpt); s2.strati = s2.strati.filter(s => s.a <= 10.8);
+  check('CPTU: nessuna riga tra 12,0 e 12,6 m (non indagato)', rDif.righe.some(x => x.z > 12.0 && x.z < 12.6), false);
+  const argilla = rCpt.righe.filter(x => x.z > 12.6 && x.z < 15.6);
+  check('CPTU: argilla limosa → Ic oltre soglia', argilla.length > 100 && argilla.every(x => x.codice === 'IC_OLTRE_SOGLIA'), true);
+  const s2 = P.copia(sCpt); s2.strati = s2.strati.filter(s => s.a <= 12.4);
   const r2 = F.calcolaScenario(cptu, s2, L, { adesso: ADESSO });
-  const fuori = r2.righe.filter(x => x.z > 10.8);
-  check('stratigrafia fino a 10,8 m: righe oltre → fuori stratigrafia', fuori.length > 0 && fuori.every(x => x.stato === 'dati_insufficienti' && x.codice === 'FUORI_STRATIGRAFIA'), true);
+  const fuori = r2.righe.filter(x => x.z > 12.4);
+  check('stratigrafia fino a 12,4 m: righe oltre → fuori stratigrafia', fuori.length > 0 && fuori.every(x => x.stato === 'dati_insufficienti' && x.codice === 'FUORI_STRATIGRAFIA'), true);
   const s3 = P.copia(sSpt); s3.strati.forEach(s => { s.FC = null; });
-  const r3 = F.calcolaScenario(spt, s3, L, { adesso: ADESSO });
+  const sptSenzaFC = P.copia(spt); sptSenzaFC.colonne = ['z', 'N']; sptSenzaFC.dati = sptSenzaFC.dati.map(d => d.slice(0, 2));
+  const r3 = F.calcolaScenario(sptSenzaFC, s3, L, { adesso: ADESSO });
   check('SPT senza FC → dati insufficienti, nessun FS', r3.righe.filter(x => x.z > 2).every(x => x.stato === 'dati_insufficienti' && x.codice === 'FC_MANCANTE'), true);
   const q = rCpt.riepilogo;
-  check('riepilogo: profondità indagata', q.profonditaIndagata, { da: 0.4, a: 15 });
+  check('riepilogo: profondità indagata', q.profonditaIndagata, { da: 0.6, a: 18.4 });
   check('riepilogo: punti totali = righe', q.punti, cptu.dati.length);
   check('riepilogo: somma dei conteggi', Object.values(q.conteggi).reduce((a, b) => a + b, 0), q.punti);
   const fsCalc = rCpt.righe.filter(x => x.stato === 'calcolato').map(x => x.valori.FS);
@@ -116,6 +124,15 @@ console.log('3. Controlli dello scenario');
   check('metodo non compatibile', F.calcolaScenario(cptu, s3, L).errori.some(e => e.codice === 'NON_COMPATIBILE'), true);
   const s4 = P.copia(sSpt); s4.metodo = 'cetin2018Spt'; s4.opzioni.Vs12 = null;
   check('Cetin senza Vs12', F.calcolaScenario(spt, s4, L).errori.some(e => e.campo === 'opzioni.Vs12'), true);
+  for (const v of [0.9, 3.5, NaN]) { const s6 = P.copia(sCpt); s6.opzioni.FSrif = v; check('FS di riferimento ' + v + ' rifiutato', F.calcolaScenario(cptu, s6, L).errori.some(e => e.campo === 'opzioni.FSrif'), true); }
+  const s7 = P.copia(sCpt); s7.opzioni.FSrif = null;
+  check('FS di riferimento assente → predefinito 1,25', [F.calcolaScenario(cptu, s7, L).stato, F.fsRiferimento(s7)], ['calcolato', 1.25]);
+  check('esempio: FS di riferimento 1,25', F.fsRiferimento(sCpt), 1.25);
+  check('criterio: NTC, Circolare, EN 1998-5 e JRC citati', ['§ 7.11.3.4', 'C7.11.3.4', 'EN 1998-5, § 4.1.4', '2012, § 4.5', '1,25'].every(t => F.criterioFS(sCpt).includes(t)), true);
+  const s8 = P.copia(sCpt); s8.opzioni.FSrif = 1.5;
+  check('criterio: valore diverso dichiarato come scelta del progettista', F.criterioFS(s8).includes('ha adottato FS di riferimento = 1,5'), true);
+  const vecchio = P.copia(pr); delete vecchio.scenari[0].opzioni.FSrif;
+  check('progetto senza FSrif: riaperto con 1,25', P.apriProgetto(JSON.stringify(vecchio)).progetto.scenari[0].opzioni.FSrif, 1.25);
   const s5 = P.copia(sCpt); s5.zFalda = -1;
   check('falda sopra p.c.', F.calcolaScenario(cptu, s5, L).errori.some(e => e.codice === 'FALDA_SOPRA_PC'), true);
 }
@@ -135,6 +152,7 @@ console.log('4. Firma degli input e ricalcolo');
   const p3 = P.copia(cptu); p3.unita.qc = 'kPa';
   check('firma cambia con l\'unità', P.firmaInput(p3, sCpt, L.VERSIONE_MOTORE) !== f0, true);
   check('firma cambia con la versione del motore', P.firmaInput(cptu, sCpt, '9.9.9') !== f0, true);
+  { const s = P.copia(sCpt); s.opzioni.FSrif = 1.5; check('FS di riferimento non cambia la firma (solo lettura)', P.firmaInput(cptu, s, L.VERSIONE_MOTORE), f0); }
   check('nome e note non cambiano la firma', P.firmaInput(cptu, { ...P.copia(sCpt), nome: 'x', note: 'y' }, L.VERSIONE_MOTORE), f0);
   // falda diversa: tensioni ricalcolate e dominio diverso
   const s = P.copia(sCpt); s.zFalda = 3.0;
@@ -145,25 +163,27 @@ console.log('4. Firma degli input e ricalcolo');
   check('falda 3 m: FS a 5 m cambia', b.valori.FS !== a.valori.FS, true);
   const d = F.confrontaDominio(rCpt, r);
   check('dominio diverso segnalato', d.uguale, false);
-  check('punti solo nel primo = tra 2,5 e 3,0 m', d.soloA.every(z => z > 2 && z <= 3), true);
+  const aSopra3 = rCpt.riepilogo.zCalcolate.filter(z => z <= 3);
+  check('falda 3 m: i punti calcolati entro 3 m stanno solo nel primo', d.soloA.length > 0 && aSopra3.every(z => d.soloA.includes(Number(z.toFixed(4)))), true);
+  check('falda 3 m: nessun punto calcolato entro 3 m nel secondo', r.riepilogo.zCalcolate.some(z => z <= 3), false);
   check('dominio uguale con sé stesso', F.confrontaDominio(rCpt, rCpt).uguale, true);
 }
 
 // ---------------------------------------------------------------------------
 console.log('5. Serie per i grafici');
 {
-  const sr = F.serie(rCpt, 'FS');
-  const calc = rCpt.righe.filter(x => x.stato === 'calcolato');
+  const sr = F.serie(rDif, 'FS');
+  const calc = rDif.righe.filter(x => x.stato === 'calcolato');
   check('punti FS = righe calcolate', sr.punti.length, calc.length);
-  check('nessun punto FS su righe non calcolate', sr.punti.every(p => rCpt.righe[p.indice].stato === 'calcolato'), true);
+  check('nessun punto FS su righe non calcolate', sr.punti.every(p => rDif.righe[p.indice].stato === 'calcolato'), true);
   check('segmenti interrotti (lettura mancante, argilla, vuoto 12–12,6 m)', sr.segmenti.length >= 4, true);
-  const sv = sr.segmenti.find(sg => sg.some(p => p.y === 6.2));
-  check('il segmento che contiene 6,2 m non contiene 6,4 m (6,3 mancante)', sv.some(p => p.y === 6.4), false);
-  const q = F.serie(rCpt, 'qc', 'ingresso');
-  check('dati misurati qc: tutte le letture con qc', q.punti.length, cptu.dati.length);
+  const sv = sr.segmenti.find(sg => sg.some(p => p.y === 6.28));
+  check('il segmento che contiene 6,28 m non contiene 6,32 m (6,30 mancante)', sv.some(p => p.y === 6.32), false);
+  const q = F.serie(rDif, 'qc', 'ingresso');
+  check('dati misurati qc: tutte le letture con qc', q.punti.length, difettosa.dati.length);
   const vuoto = q.segmenti.find(sg => sg.some(p => p.y === 12.0));
   check('qc: nessuna linea attraverso il vuoto 12,0–12,6 m', vuoto.some(p => p.y >= 12.6), false);
-  check('valori invariati (FS)', sr.punti.every(p => p.x === rCpt.righe[p.indice].valori.FS), true);
+  check('valori invariati (FS)', sr.punti.every(p => p.x === rDif.righe[p.indice].valori.FS), true);
 }
 
 // ---------------------------------------------------------------------------
@@ -196,7 +216,7 @@ console.log('6. Importazione');
   const rk = F.calcolaScenario(pk, sCpt, L, { adesso: ADESSO });
   const maxDiff = Math.max(...rk.righe.filter(x => x.stato === 'calcolato').map((x, i) => Math.abs(x.valori.FS - rCpt.righe[x.indice].valori.FS) / rCpt.righe[x.indice].valori.FS));
   check('qc in kPa ≡ qc in MPa (FS, differenza relativa < 1e-12)', maxDiff < 1e-12, true);
-  const pc = P.copia(spt); pc.unita.z = 'cm'; pc.dati = pc.dati.map(r => [r[0] * 100, r[1]]);
+  const pc = P.copia(spt); pc.unita.z = 'cm'; pc.dati = pc.dati.map(r => [r[0] * 100, ...r.slice(1)]);
   const rc = F.calcolaScenario(pc, sSpt, L, { adesso: ADESSO });
   check('z in cm ≡ z in m (SPT)', rc.righe.map(x => x.stato === 'calcolato' ? Number(x.valori.FS.toFixed(10)) : x.stato), rSpt.righe.map(x => x.stato === 'calcolato' ? Number(x.valori.FS.toFixed(10)) : x.stato));
 }

@@ -832,8 +832,8 @@
   /**
    * Criterio 3: depositi di sabbie pulite con (N1)60 > 30 oppure qc1N > 180.
    * tipo: 'SPT' | 'CPTE' | 'CPTU' (altri tipi rifiutati).
-   * valore: (N1)60 o qc1N calcolato con la normalizzazione del metodo principale
-   * (decisione del 10/11/2026); il nome del metodo va riportato in stampa.
+   * valore: (N1)60 o qc1N calcolato con la normalizzazione del metodo principale;
+   * il nome del metodo va riportato in stampa.
    * sabbiaPulita: booleano.
    * L'esito riguarda il singolo dato esaminato: da solo non dimostra l'esclusione dell'intero
    * deposito, che richiede il giudizio sull'insieme dei dati.
@@ -982,7 +982,7 @@
   /**
    * Criterio 4: distribuzione granulometrica esterna ai fusi della Fig. 7.11.1
    * ((a) se Uc < 3,5; (b) se Uc > 3,5). Esito PROPOSTO dall'app: il geologo lo conferma
-   * o lo corregge con motivazione (decisione del 10/11/2026).
+   * o lo corregge con motivazione.
    * Se Uc non è determinabile o vale 3,5: confronto con entrambi i fusi.
    * Proposta «soddisfatto» solo se: curva esterna a tutti i fusi confrontati E copertura
    * della curva almeno dal 10 % al 90 % di passante (COPERTURA_MINIMA, scelta prudenziale

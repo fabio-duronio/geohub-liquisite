@@ -28,6 +28,12 @@ node verifiche/verifica_motore.mjs              # valori pubblicati dagli autori
 node verifiche/verifica_esclusione.mjs          # criteri di esclusione e fusi della Fig. 7.11.1
 node verifiche/verifica_robustezza.mjs          # input non validi, casi limite, stati di esito
 node verifiche/verifica_profilo.mjs             # livello applicativo: profilo, importazione, CSV, JSON
+node verifiche/verifica_il.mjs                  # indice IL (Iwasaki): profili analitici e seconda implementazione
+node verifiche/verifica_preliminare.mjs          # verifica preliminare §7.11.3.4.2 e carta di comportamento CPT
+node verifiche/verifica_cedimenti.mjs            # cedimento da CPT (Zhang et al. 2002) e LSN
+python3 verifiche/verifica_cedimenti.py         # seconda implementazione di εv, S e LSN
+node verifiche/verifica_riferimento.mjs          # confronto con un calcolo pubblicato (National Academies 2024, App. G): punto e profilo
+node verifiche/verifica_casuale.mjs             # prove casuali ripetibili (seme fisso) su profilo, IL, CSV, JSON e importazione
 python3 verifiche/verifica_indipendente.py      # seconda implementazione, 8000 casi
 ```
 

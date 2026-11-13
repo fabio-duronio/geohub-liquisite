@@ -14,9 +14,9 @@
  *  - SPT: punti discreti, nessun profilo continuo (assunzione dichiarata).
  */
 (function (root, factory) {
-  if (typeof module === 'object' && module.exports) module.exports = factory(require('./progetto.js'));
-  else root.LiquiProfilo = factory(root.LiquiProgetto);
-})(typeof self !== 'undefined' ? self : this, function (P) {
+  if (typeof module === 'object' && module.exports) module.exports = factory(require('./progetto.js'), require('../motore/indici.js'), require('../motore/cedimenti.js'));
+  else root.LiquiProfilo = factory(root.LiquiProgetto, root.LiquiIndici, root.LiquiCedimenti);
+})(typeof self !== 'undefined' ? self : this, function (P, IND, CED) {
   'use strict';
 
   const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
@@ -38,6 +38,7 @@
     qt: { etichetta: 'qt', unita: 'kPa', cifre: 0 },
     Q: { etichetta: 'Q', unita: '–', cifre: 1 },
     F: { etichetta: 'F', unita: '%', cifre: 2 },
+    epsV: { etichetta: 'εv post-liquefazione', unita: '%', cifre: 3 },
     n: { etichetta: 'n', unita: '–', cifre: 2 },
     Ic: { etichetta: 'Ic', unita: '–', cifre: 2 },
     CN: { etichetta: 'CN', unita: '–', cifre: 3 },
@@ -122,6 +123,24 @@
 
   // ---------------------------------------------------------------------------
   // Controlli dello scenario prima del calcolo
+  /** FS di riferimento dello scenario (predefinito: P.FS_RIFERIMENTO). */
+  function fsRiferimento(scenario) {
+    const v = scenario && scenario.opzioni && scenario.opzioni.FSrif;
+    return isNum(v) && v >= 1 && v <= 3 ? v : P.FS_RIFERIMENTO;
+  }
+
+  /** Criterio di verifica e scelta del coefficiente di sicurezza: testo riportato in app, stampa e CSV. */
+  function criterioFS(scenario) {
+    const v = fsRiferimento(scenario);
+    return 'Le NTC 2018 (§ 7.11.3.4) non stabiliscono un valore numerico minimo del coefficiente di sicurezza nei confronti della liquefazione; ' +
+      'la Circolare 21/01/2019 n. 7 (§ C7.11.3.4) demanda al progettista la valutazione e la motivazione dell\'adeguatezza del margine di sicurezza adottato. ' +
+      'Come riferimento tecnico si considera l\'Eurocodice 8, Parte 5 (EN 1998-5, § 4.1.4), che raccomanda FS = 1,25, come illustrato anche nella pubblicazione JRC ' +
+      '«Eurocode 8: Seismic Design of Buildings – Worked Examples» (2012, § 4.5). ' +
+      (v === P.FS_RIFERIMENTO ? 'Il valore 1,25, riferito al rapporto CRR/CSR, è assunto quale riferimento' : 'In questo scenario il progettista ha adottato FS di riferimento = ' + String(v).replace('.', ',') + ', riferito al rapporto CRR/CSR') +
+      ', ferma restando la responsabilità del progettista di verificarne l\'adeguatezza in relazione alle caratteristiche geotecniche del deposito e all\'azione sismica di progetto. ' +
+      'FS = 1 resta l\'uguaglianza tra domanda e resistenza del modello.';
+  }
+
   // ---------------------------------------------------------------------------
   function controllaScenario(prova, scenario, L) {
     const errori = [];
@@ -143,6 +162,8 @@
     if ((scenario.metodo === 'cetin2018Spt' || scenario.metodo === 'kayen2013Vs') && !isNum(scenario.opzioni && scenario.opzioni.Vs12)) {
       err('opzioni.Vs12', 'MANCANTE', 'V*s,12 (Vs media nei primi 12 m) richiesta dal metodo');
     }
+    const fsRif = scenario.opzioni && scenario.opzioni.FSrif;
+    if (fsRif !== undefined && fsRif !== null && !(isNum(fsRif) && fsRif >= 1 && fsRif <= 3)) err('opzioni.FSrif', 'FUORI_DOMINIO', 'FS di riferimento tra 1 e 3');
     if (prova.dati.length === 0) err('prova.dati', 'MANCANTE', 'la prova non contiene dati');
     return errori;
   }
@@ -171,7 +192,46 @@
     const par = prova.parametri || {};
     const sisma = { amax: scenario.amax, Mw: scenario.Mw };
     const righe = dati.map((d) => calcolaRiga(d, prova, scenario, L, richiesti, par, sisma));
-    return { ...base, stato: 'calcolato', righe, riepilogo: riepiloga(righe, prova, scenario) };
+    const indiceIL = IND ? IND.indiceIL(puntiPerIL(righe), scenario.zFalda) : null;
+    // cedimento post-sismico e LSN: metodo da CPT (Zhang et al. 2002), solo con il metodo CPT
+    let cedimenti = null;
+    if (CED && scenario.metodo === 'bi2014Cpt') {
+      cedimenti = CED.cedimentoLSN(puntiPerCedimenti(righe), scenario.zFalda);
+      if (cedimenti.stato === 'calcolato') {
+        const perZ = new Map();
+        for (const t of cedimenti.tratti) if (t.categoria === 'FS') perZ.set(t.zPunto, t.epsMin);
+        for (const r of righe) if (perZ.has(r.z) && r.stato === 'calcolato' && r.valori) r.valori.epsV = perZ.get(r.z);
+      }
+    }
+    return { ...base, stato: 'calcolato', righe, riepilogo: riepiloga(righe, prova, scenario), indiceIL, cedimenti };
+  }
+
+  /**
+   * Categorie dei punti per l'indice IL (motore/indici.js):
+   *  calcolato con FS → 'FS'; sopra falda (NON_SATURO) → 'sopraFalda';
+   *  Ic oltre soglia → 'argilloso'; tutto il resto (dati mancanti, non validi, fuori
+   *  stratigrafia, non convergenti, oltre il limite dell'app) → 'ignoto'.
+   * Le righe senza profondità valida non entrano.
+   */
+  function puntiPerIL(righe) {
+    return righe.filter(r => isNum(r.z) && r.z >= 0).map(r => {
+      if (r.stato === 'calcolato' && r.valori && isNum(r.valori.FS) && r.valori.FS >= 0) return { z: r.z, categoria: 'FS', FS: r.valori.FS };
+      if (r.stato === 'non_applicabile' && r.codice === 'NON_SATURO') return { z: r.z, categoria: 'sopraFalda' };
+      if (r.stato === 'non_applicabile' && r.codice === 'IC_OLTRE_SOGLIA') return { z: r.z, categoria: 'argilloso' };
+      return { z: r.z, categoria: 'ignoto' };
+    });
+  }
+
+  /** Punti per il cedimento: come per IL, con (qc1N)cs dei punti calcolati. */
+  function puntiPerCedimenti(righe) {
+    return righe.filter(r => isNum(r.z) && r.z >= 0).map(r => {
+      const p = puntiPerIL([r])[0];
+      if (p.categoria === 'FS') {
+        if (r.valori && isNum(r.valori.qc1Ncs) && r.valori.qc1Ncs > 0) p.qc1Ncs = r.valori.qc1Ncs;
+        else return { z: r.z, categoria: 'ignoto' };
+      }
+      return p;
+    });
   }
 
   function calcolaRiga(d, prova, scenario, L, richiesti, par, sisma) {
@@ -229,6 +289,11 @@
       esito = L.kayen2013Vs(punto, sisma, { Vs12: scenario.opzioni.Vs12 });
     }
 
+    if (m === 'bi2014Cpt') {
+      // grandezze per la carta di comportamento: anche sopra falda e con Ic oltre soglia
+      const src = esito.stato === L.STATI.CALCOLATO ? esito : (esito.diagnostica || esito);
+      if (isNum(src.Q) && isNum(src.F) && isNum(src.Ic) && src.Q > 0 && src.F > 0) riga.sbt = { Q: src.Q, F: src.F, Ic: src.Ic, zona: zonaSBT(src.Ic) };
+    }
     riga.stato = esito.stato;
     riga.avvisi = riga.avvisi.concat(esito.avvisi || []);
     if (esito.assunzioni) riga.assunzioni = riga.assunzioni.concat(esito.assunzioni);
@@ -252,7 +317,7 @@
   // ---------------------------------------------------------------------------
   /** Motivi brevi per tabelle e grafici (il motivo completo resta in riga.motivo). */
   const MOTIVI_BREVI = {
-    NON_SATURO: 'sopra falda (u = 0)', IC_OLTRE_SOGLIA: 'Ic oltre soglia: metodo non applicabile',
+    NON_SATURO: 'sopra falda (u = 0)', IC_OLTRE_SOGLIA: 'escluso: comportamento argilloso (Ic oltre soglia), FS N.A.',
     DATO_MANCANTE: 'dato mancante', FC_MANCANTE: 'FC mancante', FUORI_STRATIGRAFIA: 'fuori dalla stratigrafia',
     OLTRE_LIMITE_APP: 'oltre 20 m (limite di LiquiSite)', AMAX_NULLA: 'amax = 0', U2_MANCANTE: 'u2 mancante (CPTU)',
     IC_NON_CALCOLABILE: 'Ic non calcolabile', Z_NON_VALIDA: 'profondità non valida', DATO_NON_NUMERICO: 'valore non numerico'
@@ -352,11 +417,37 @@
     return { punti, segmenti };
   }
 
+  // Ic può essere valido anche quando impedisce l'applicazione del metodo di innesco.
+  // Usato da tabelle e CSV, in coerenza con il grafico Ic; non espone FS non applicabili.
+  /**
+   * Zone di comportamento da Ic: Robertson & Wride (1998), Tabella 1, pag. 450 (da Robertson
+   * 1990). Ic non si applica alle zone 1, 8 e 9, che quindi non sono rappresentate.
+   */
+  const ZONE_SBT = [
+    { zona: 7, icDa: 0, icA: 1.31, nome: 'sabbia ghiaiosa – sabbia densa' },
+    { zona: 6, icDa: 1.31, icA: 2.05, nome: 'sabbia pulita – sabbia limosa' },
+    { zona: 5, icDa: 2.05, icA: 2.60, nome: 'sabbia limosa – limo sabbioso' },
+    { zona: 4, icDa: 2.60, icA: 2.95, nome: 'limo argilloso – argilla limosa' },
+    { zona: 3, icDa: 2.95, icA: 3.60, nome: 'argilla limosa – argilla' },
+    { zona: 2, icDa: 3.60, icA: Infinity, nome: 'terreni organici – torbe' }
+  ];
+  function zonaSBT(Ic) {
+    if (!isNum(Ic)) return null;
+    const z = ZONE_SBT.find(x => Ic >= x.icDa && Ic < x.icA);
+    return z ? z.zona : null;
+  }
+
+  function valoreRisultato(r, chiave) {
+    const ammesso = r.stato === 'calcolato' || (chiave === 'Ic' && r.codice === 'IC_OLTRE_SOGLIA');
+    const v = ammesso && r.valori ? r.valori[chiave] : null;
+    return isNum(v) ? v : null;
+  }
+
   function valoreDi(r, chiave, sorgente) {
     if (sorgente === 'ingresso') return r.ingresso ? r.ingresso[chiave] : null;
     if (sorgente === 'tensioni') return r.tensioni ? r.tensioni[chiave] : null;
     return r.valori ? r.valori[chiave] : null;
   }
 
-  return { G, METODI, ETICHETTE_STATI, MOTIVI_BREVI, campiRichiesti, controllaScenario, calcolaScenario, riepiloga, confrontaDominio, serie, stratoA };
+  return { G, METODI, ETICHETTE_STATI, MOTIVI_BREVI, ZONE_SBT, zonaSBT, fsRiferimento, criterioFS, campiRichiesti, controllaScenario, calcolaScenario, riepiloga, confrontaDominio, serie, stratoA, valoreRisultato, puntiPerIL };
 });
