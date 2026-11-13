@@ -1,0 +1,77 @@
+name: Discrepanza di calcolo
+description: Segnala una differenza tra i risultati di LiquiSite e un riferimento (pubblicazione, calcolo manuale, altro strumento)
+title: "[Discrepanza] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Grazie per la segnalazione. Indica i dati di input e i valori a confronto: servono per riprodurre il calcolo.
+        Il modo più semplice è allegare il progetto salvato in JSON («Salva progetto») o il CSV dei risultati («Esporta CSV»).
+  - type: input
+    id: versione
+    attributes:
+      label: Versione di LiquiSite e del motore
+      description: Riportate in alto nell'app e nel piè di pagina della stampa
+      placeholder: "es. v0.2.0 · motore 0.3.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: metodo
+    attributes:
+      label: Metodo
+      options:
+        - CPT/CPTU — Boulanger & Idriss (2014)
+        - SPT — Boulanger & Idriss (2014)
+        - SPT — Cetin et al. (2018)
+        - Vs — Kayen et al. (2013)
+        - Verifica preliminare (§7.11.3.4.2)
+    validations:
+      required: true
+  - type: input
+    id: scenario
+    attributes:
+      label: Dati dello scenario
+      placeholder: "es. Mw = 6,1; amax = 0,26 g; falda a 1,8 m; Ic soglia 2,6"
+    validations:
+      required: true
+  - type: dropdown
+    id: grandezza
+    attributes:
+      label: Grandezze in discrepanza
+      multiple: true
+      options:
+        - Tensioni
+        - Ic / contenuto di fini
+        - Resistenza normalizzata (qc1N, qc1Ncs, N160, Vs1)
+        - rd / CSR
+        - MSF / Kσ / CRR
+        - FS
+        - PL
+        - Indice IL
+        - Cedimento / εv / LSN
+        - Criteri di esclusione / fusi granulometrici
+        - Stampa / esportazioni
+        - Altro
+    validations:
+      required: true
+  - type: textarea
+    id: valori_liquisite
+    attributes:
+      label: Valori ottenuti con LiquiSite
+      placeholder: "es. z = 7,60 m: qc1Ncs = 92,4; CRR = 0,152; CSR = 0,231; FS = 0,66"
+    validations:
+      required: true
+  - type: textarea
+    id: valori_riferimento
+    attributes:
+      label: Valori di riferimento e loro fonte
+      description: Pubblicazione (con pagina, tabella o equazione), calcolo manuale o altro strumento
+      placeholder: "es. Boulanger & Idriss (2014), Eq. 2.24: CRR = 0,150"
+    validations:
+      required: true
+  - type: textarea
+    id: note
+    attributes:
+      label: Note, screenshot, allegati
+      description: Trascina qui il progetto JSON, il CSV o eventuali immagini

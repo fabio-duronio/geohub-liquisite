@@ -1,0 +1,39 @@
+name: Richiesta di funzionalità
+description: Proponi una nuova funzione o un miglioramento di LiquiSite
+title: "[Funzionalità] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: esigenza
+    attributes:
+      label: Esigenza
+      description: Quale problema professionale vuoi risolvere?
+      placeholder: "es. Devo allegare alla relazione il profilo FS di più verticali sullo stesso grafico"
+    validations:
+      required: true
+  - type: textarea
+    id: proposta
+    attributes:
+      label: Soluzione proposta
+      placeholder: "es. Confronto tra prove diverse con quota assoluta"
+    validations:
+      required: true
+  - type: input
+    id: fonte
+    attributes:
+      label: Riferimento normativo o pubblicazione (se pertinente)
+      placeholder: "es. NTC 2018 §7.11.3.4.2; Circolare n. 7/2019 §C7.11.3.4; autore, anno, equazione"
+  - type: dropdown
+    id: priorita
+    attributes:
+      label: Rilevanza per il tuo lavoro
+      options:
+        - Indispensabile
+        - Utile
+        - Comoda
+    validations:
+      required: true
+  - type: textarea
+    id: note
+    attributes:
+      label: Note, esempi, allegati

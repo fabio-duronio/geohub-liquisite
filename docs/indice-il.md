@@ -2,7 +2,7 @@
 
 [← Torna al README](../README.md)
 
-Modulo: `motore/indici.js` (separato da `motore/liquisite.js`, che resta invariato). Verifiche: `verifiche/verifica_il.mjs`.
+Modulo: `motore/indici.js`, separato dal motore di innesco: usa i FS già calcolati. Verifiche: `verifiche/verifica_il.mjs`.
 
 ## Formula
 
@@ -22,8 +22,6 @@ Nessuna classe: classi e zone appartengono alla microzonazione; per la verifica 
 
 ## Trattamento dei tratti
 
-| Tratto | F | Note |
-|---|---|---|
 | Tratto | FS | Contributo all'indice | Note |
 |---|---|---|---|
 | Verificato | calcolato | (1 − FS)·w se FS ≤ 1, altrimenti nullo | |
@@ -40,9 +38,8 @@ L'indice è **completo** solo se in 0–20 m non ci sono tratti ignoti; altrimen
 - Seconda implementazione per campionamento fitto (200 000 campioni) su 300 profili casuali: differenza massima ~6·10⁻¹³.
 - Collegamento con il profilo dell'esempio sintetico.
 
-## Aperto
+## Sviluppi
 
-- Approfondimento da leggere in testo completo (segnalato dall'autore; testo completo non reperito, quindi non citato come fonte consultata): Iwasaki T., Arakawa T., Tokida K.-I. (1984). Simplified procedures for assessing soil liquefaction during earthquakes. International Journal of Soil Dynamics and Earthquake Engineering 3(1), 49–58. doi:10.1016/0261-7277(84)90027-5.
-- Testo accessibile per un controllo incrociato (non ancora letto integralmente, quindi non citato come fonte): Iwasaki T., Tokida K., Tatsuoka F. (1981). Soil liquefaction potential evaluation with use of the simplified procedure. 1st Int. Conf. on Recent Advances in Geotechnical Earthquake Engineering and Soil Dynamics, St. Louis (Missouri S&T Scholars' Mine, accesso aperto).
-- Almeno un caso completo di riferimento con IL pubblicato.
+- Confronto con un caso completo pubblicato con IL calcolato.
 - Rappresentatività delle SPT (intervallo fino a metà distanza dalle prove adiacenti).
+- Controllo incrociato, non ancora eseguito, con un testo degli autori in accesso aperto: Iwasaki T., Tokida K., Tatsuoka F. (1981). Soil liquefaction potential evaluation with use of the simplified procedure. 1st Int. Conf. on Recent Advances in Geotechnical Earthquake Engineering and Soil Dynamics, St. Louis.

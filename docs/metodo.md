@@ -48,7 +48,7 @@ La relazione probabilistica da SPT degli stessi autori (Boulanger & Idriss 2012a
 
 Il FS deterministico = 1 corrisponde a P_L ≈ 16 % (pag. 78–80). Con I_c oltre la soglia (2,6 di base; 2,4 o 2,8 per l'analisi di sensibilità, pag. 99) il metodo **non si applica** al punto (stato `non_applicabile`, codice `IC_OLTRE_SOGLIA`): non è un'esclusione ai sensi del §7.11.3.4.2 e non dimostra l'assenza di problemi ciclici nei terreni fini.
 
-Tipo di prova (motore 0.3.0): `CPTE` (punta elettrica senza misura di u, q_t = q_c) o `CPTU` (piezocono, u₂ obbligatoria; a_r = 0,8 se non indicato, segnalato come assunzione). La CPT a punta meccanica non è supportata (sottostima la suscettibilità: volume CNR-CentroMS 2024, pag. 27).
+Tipo di prova: `CPTE` (punta elettrica senza misura di u, q_t = q_c) o `CPTU` (piezocono, u₂ obbligatoria; a_r = 0,8 se non indicato, segnalato come assunzione). La CPT a punta meccanica non è supportata (sottostima la suscettibilità: volume CNR-CentroMS 2024, pag. 27).
 
 ## Cetin et al. (2018) — SPT
 
@@ -74,7 +74,7 @@ FS = CRR/CSR corrisponde a P_L = 50 %. Limiti dichiarati: FC 5–35 %; K_σ 0,8�
 | CRR (P_L) | exp{[(0,0073·V_s1)^2,8011 − 2,6168 ln M_w − 0,0099 ln σ'_v0 + 0,0028·FC **+** 0,4809·Φ⁻¹(P_L)]/1,946} | Eq. 14 (segno corretto, vedi refusi) |
 | FS | CRR(P_L = 15 %)/CSR | Eq. 16 |
 
-**Tensione efficace oltre 180 kPa.** Le Eq. 13–14 contengono sempre il termine −0,0099·ln σ'_v0. Gli autori presentano CSR* con K_σ fissato a 1 (Eq. 15) perché la banca dati (siti entro 22 m e 180 kPa, media 60,2 kPa) non permette di valutare K_σ oltre 200 kPa (pag. 413–414). Il motore applica le Eq. 13–14 senza modifiche e segnala σ'_v0 > 180 kPa come fuori dalla banca dati (fino alla 0.2.0 l'avviso diceva, impropriamente, «K_σ assunto pari a 1»).
+**Tensione efficace oltre 180 kPa.** Le Eq. 13–14 contengono sempre il termine −0,0099·ln σ'_v0. Gli autori presentano CSR* con K_σ fissato a 1 (Eq. 15) perché la banca dati (siti entro 22 m e 180 kPa, media 60,2 kPa) non permette di valutare K_σ oltre 200 kPa (pag. 413–414). Il motore applica le Eq. 13–14 senza modifiche e segnala σ'_v0 > 180 kPa come fuori dalla banca dati.
 
 ## Refusi delle fonti e scelte adottate
 
@@ -86,13 +86,13 @@ FS = CRR/CSR corrisponde a P_L = 50 %. Limiti dichiarati: FC 5–35 %; K_σ 0,8�
 
 Profondità in m dal piano campagna; tensioni in kPa (γ_w = 9,81 kN/m³, pressione idrostatica); q_c in MPa; f_s e u₂ in kPa; V_s in m/s; a_max in g; FC in %. P_a = 101,325 kPa per Boulanger & Idriss, 101,3 kPa per Cetin et al. (come negli autori), 100 kPa per Kayen et al.
 
-## Validazione
+## Altri moduli
 
-Vedi `verifiche/`:
-- `verifica_motore.mjs` — esempio numerico di Cetin et al. (2018, MethodsX: Tab. 3 ed Eq. 29–54), valori dichiarati nel testo di Boulanger & Idriss (2014), letture delle figure di Boulanger & Idriss e di Kayen et al.
-- `verifica_indipendente.py` — seconda implementazione dei quattro metodi in Python, confrontata con il motore su 8000 casi casuali.
-- `verifica_esclusione.mjs` — criteri 1–4; coerenza dei fusi digitalizzati (U_c dei limiti, monotonia, letture a 26 % di passante); curve costruite interne, esterne e sul limite.
-- `verifica_robustezza.mjs` — input non validi, valori sulle soglie, stati di esito, profondità, CPT/CPTU, convergenza, tensioni, campionamento casuale di input errati (motore 0.3.0).
+- [Indice IL](indice-il.md) (Iwasaki et al. 1978): `motore/indici.js`.
+- [Cedimento post-sismico e LSN](cedimenti-lsn.md) (Zhang et al. 2002): `motore/cedimenti.js`.
+- Carta di comportamento del terreno: zone 2–7 da I_c secondo Robertson & Wride (1998), Tab. 1, pag. 450; le zone 1, 8 e 9 non sono rappresentate perché I_c non vi si applica. È uno strumento di lettura e non entra nel calcolo.
+
+La validazione è descritta in [Validazione](validazione.md).
 
 ## Esclusione della verifica (NTC 2018 §7.11.3.4.2)
 
@@ -112,16 +112,16 @@ Il testo ufficiale (D.M. 17/01/2018, S.O. n. 8 alla G.U. n. 42 del 20/02/2018, p
 - inseguimento di ciascuna curva dal basso verso l'alto e campionamento a passante intero dal 2 al 98 %;
 - risoluzione: 1 pixel ≈ 0,0105 decadi di d e ≈ 0,35 % di passante; spessore delle curve ≈ 3 pixel.
 
-Curva granulometrica (motore 0.3.0): coppie [d mm, passante %] con d > 0, passante tra 0 e 100, almeno 2 punti, nessun diametro ripetuto, passante non decrescente al crescere di d. I dati errati sono rifiutati (`input_non_valido`), mai scartati in silenzio.
+Curva granulometrica: coppie [d mm, passante %] con d > 0, passante tra 0 e 100, almeno 2 punti, nessun diametro ripetuto, passante non decrescente al crescere di d. I dati errati sono rifiutati (`input_non_valido`), mai scartati in silenzio.
 
-Confronto: nel tratto comune di passante (2–98 %) curva e limiti sono spezzate nel piano (passante, log d); si valutano tutti i vertici della curva e tutti i vertici dei limiti che cadono nel tratto, quindi il confronto è esatto (prima della 0.3.0 si campionava solo a passante intero). Un punto è «dentro» o «fuori» dal fuso solo se dista dal limite più della **tolleranza di 0,03 decadi** di d (circa lo spessore della curva nella figura); altrimenti è «sul bordo». Il passaggio da «fuori lato fine» a «fuori lato grosso» è un attraversamento del fuso.
+Confronto: nel tratto comune di passante (2–98 %) curva e limiti sono spezzate nel piano (passante, log d); si valutano tutti i vertici della curva e tutti i vertici dei limiti che cadono nel tratto, quindi il confronto è esatto. Un punto è «dentro» o «fuori» dal fuso solo se dista dal limite più della **tolleranza di 0,03 decadi** di d (circa lo spessore della curva nella figura); altrimenti è «sul bordo». Il passaggio da «fuori lato fine» a «fuori lato grosso» è un attraversamento del fuso.
 - tutti i punti fuori, dallo stesso lato → l'app propone «criterio soddisfatto», ma solo se la curva copre il passante **almeno dal 10 % al 90 %** (scelta prudenziale di LiquiSite, non requisito normativo); con copertura minore lo stato è `dati_insufficienti` e non si propone l'esclusione;
 - almeno un confronto interamente dentro → propone «non soddisfatto»;
 - altrimenti la curva tocca o interseca il fuso → **nessuna proposta**.
 
 In ogni caso l'app disegna la curva sui fusi e il geologo **conferma o corregge** l'esito con motivazione. U_c = D₆₀/D₁₀ è interpolato su scala logaritmica; se non è determinabile o vale esattamente 3,5 la curva si confronta con entrambi i fusi e la proposta «soddisfatto» richiede che sia esterna a tutti e due.
 
-## Convenzione dei risultati (motore 0.3.0)
+## Convenzione dei risultati del motore
 
 Ogni funzione restituisce un oggetto con `stato`; FS, CRR, CSR e P_L sono utilizzabili solo con `calcolato`.
 
@@ -140,17 +140,6 @@ Avvisi: `{codice, tipo, messaggio}` con tipo `fuori_campo` (limite del metodo), 
 
 Profondità: il limite di 20 m è di LiquiSite. L'avviso sull'incertezza di r_d oltre circa 10 m è solo di Boulanger & Idriss (2014, pag. 9) e si applica solo ai due metodi B&I.
 
-Precondizione di saturazione: il punto deve essere sotto la falda di verifica. La posizione rispetto alla falda la stabilisce il livello del profilo (non ancora implementato); il motore controlla solo che u = σ_v − σ'_v sia positiva.
+Precondizione di saturazione: il punto deve essere sotto la falda di verifica. La posizione rispetto alla falda la stabilisce il profilo (`app/profilo.js`) con le tensioni del motore; il motore controlla inoltre che u = σ_v − σ'_v sia positiva.
 
 Iterazioni (B&I SPT e CPT, Cetin con campionatore senza rivestimento): arresto quando la variazione assoluta tra due passi è < 10⁻⁹; massimo 100, 200 e 50 passi (modificabile con `opz.maxIterazioni`). Il risultato riporta `convergenza: {convergente, numeroIterazioni, residuoFinale, tolleranza, maxIterazioni}`.
-
-### Migrazione da 0.2.0
-
-- Nessuna eccezione per dati errati: controllare `stato` invece di usare try/catch (resta solo `PhiInv` e `crCetin` fuori dominio, funzioni di servizio).
-- `bi2014Cpt`: `opz.tipo` obbligatorio (`'CPTE'` o `'CPTU'`); `u2` con CPTE è un errore; CPTU senza `u2` → `dati_insufficienti`. Gli stati `'escluso'` e `'non calcolabile'` diventano `non_applicabile` (`IC_OLTRE_SOGLIA`) e `dati_insufficienti` (`IC_NON_CALCOLABILE`).
-- `bi2014Spt` accetta un quarto argomento `opz` (`maxIterazioni`).
-- `tensioni` restituisce `{stato, sv, u, sve}` o `{stato: 'input_non_valido', errori}`; falda sopra il p.c. non supportata.
-- Punti sopra falda (u = 0): `non_applicabile`, codice `NON_SATURO`, valori in `diagnostica`.
-- `criterio1–4`: campo `stato` (`valutato`, `input_non_valido`, `dati_insufficienti`); con dati non validi `soddisfatto` è `null`. `criterio2` richiede booleani veri. `criterio3` accetta solo `'SPT'`, `'CPTE'`, `'CPTU'` (prima qualunque tipo diverso da `'CPT'` era trattato come SPT).
-- `criterio4`, `confrontaFuso`, `coeffUniformita`: la curva viene validata; nuovi campi `copertura` e `attraversamenti`; `coeffUniformita` restituisce anche `stato`.
-- Avvisi: oggetti `{codice, tipo, messaggio}` invece di stringhe.

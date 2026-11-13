@@ -122,7 +122,8 @@
   }
 
   // ---------------------------------------------------------------------------
-  // Controlli dello scenario prima del calcolo
+  // Fattore di sicurezza di riferimento e controlli dello scenario
+  // ---------------------------------------------------------------------------
   /** FS di riferimento dello scenario (predefinito: P.FS_RIFERIMENTO). */
   function fsRiferimento(scenario) {
     const v = scenario && scenario.opzioni && scenario.opzioni.FSrif;
@@ -141,7 +142,7 @@
       'FS = 1 resta l\'uguaglianza tra domanda e resistenza del modello.';
   }
 
-  // ---------------------------------------------------------------------------
+  /** Controlli dello scenario prima del calcolo: elenco degli errori (vuoto se valido). */
   function controllaScenario(prova, scenario, L) {
     const errori = [];
     const err = (campo, codice, motivo) => errori.push({ campo, codice, motivo });
@@ -417,8 +418,6 @@
     return { punti, segmenti };
   }
 
-  // Ic può essere valido anche quando impedisce l'applicazione del metodo di innesco.
-  // Usato da tabelle e CSV, in coerenza con il grafico Ic; non espone FS non applicabili.
   /**
    * Zone di comportamento da Ic: Robertson & Wride (1998), Tabella 1, pag. 450 (da Robertson
    * 1990). Ic non si applica alle zone 1, 8 e 9, che quindi non sono rappresentate.
@@ -437,6 +436,10 @@
     return z ? z.zona : null;
   }
 
+  /**
+   * Valore da mostrare in tabelle e CSV. Ic resta valido anche quando impedisce l'applicazione
+   * del metodo di innesco (coerenza con il grafico Ic); i FS non applicabili non vengono esposti.
+   */
   function valoreRisultato(r, chiave) {
     const ammesso = r.stato === 'calcolato' || (chiave === 'Ic' && r.codice === 'IC_OLTRE_SOGLIA');
     const v = ammesso && r.valori ? r.valori[chiave] : null;
