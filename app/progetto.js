@@ -69,6 +69,9 @@
   /** FS di riferimento predefinito: valore raccomandato da EN 1998-5, § 4.1.4 (modificabile dal progettista). */
   const FS_RIFERIMENTO = 1.25;
 
+  /** Versione dell'applicazione (distinta da quella del motore di calcolo). */
+  const VERSIONE_APP = '0.2.0';
+
   let contatore = 0;
   function nuovoId(prefisso) {
     contatore++;
@@ -262,7 +265,7 @@
   }
 
   return {
-    FORMATO, VERSIONE_FORMATO, FS_RIFERIMENTO, TIPI_PROVA, METODI_PER_TIPO, NOMI_METODI, UNITA, ETICHETTE_COLONNE, COLORI_SCENARI,
+    VERSIONE_APP, FORMATO, VERSIONE_FORMATO, FS_RIFERIMENTO, TIPI_PROVA, METODI_PER_TIPO, NOMI_METODI, UNITA, ETICHETTE_COLONNE, COLORI_SCENARI,
     nuovoId, nuovaProva, nuovoScenario, esclusioneVuota, nuovoProgetto, duplicaScenario, copia,
     datiInterni, firmaInput, validaProgetto, apriProgetto, salvaProgetto, parametriPredefiniti, unitaPredefinite
   };

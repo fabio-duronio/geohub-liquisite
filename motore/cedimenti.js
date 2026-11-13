@@ -13,7 +13,7 @@
  *  - Tonkin & Taylor (2015), Appendix A «Assessment of Liquefaction Vulnerability in
  *    Christchurch», §A4.3.5: LSN = 1000 · ∫ εv / z dz, εv dalle curve di Zhang et al. (2002).
  *
- * Convenzioni adottate (formulazione dell'autore del progetto), dichiarate nei risultati:
+ * Convenzioni adottate, dichiarate nei risultati:
  *  - εv tra due curve di FS: interpolazione lineare in FS; FS ≤ 0,5: curva limite; FS ≥ 2,0: 0;
  *    tra 1,3 e 2,0 interpolazione lineare verso zero;
  *  - (qc1N)cs fuori da 33–200: ricondotto al limite più vicino, con avviso; sotto 33 la scelta

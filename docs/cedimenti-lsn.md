@@ -1,8 +1,12 @@
 # Cedimento post-sismico da CPT e LSN
 
-## Fonti lette per intero
+[← Torna al README](../README.md)
+
+Modulo: `motore/cedimenti.js`. Solo con il metodo CPT (Boulanger & Idriss 2014).
+
+## Fonti
 - Zhang G., Robertson P.K., Brachman R.W.I. (2002). *Estimating liquefaction-induced ground settlements from CPT for level ground*. Can. Geotech. J. 39: 1168–1180. Cedimento S = Σ εv,i·Δz,i (Eq. 1, pag. 1171); εv [%] in funzione di FS e (qc1N)cs, Appendice A, Eq. A1–A14 (pag. 1180), curve della Fig. 3 ricavate da Ishihara e Yoshimine (1992).
-- Tonkin & Taylor (2015). Appendix A, *Assessment of Liquefaction Vulnerability in Christchurch* (documento fornito dall'utente). LSN = 1000·∫ εv/z dz, con εv da Zhang et al. (2002) (§A4.3.5); studi di Christchurch sui primi 10 m (§A4.3); calcolo con B&I 2014 secondo MBIE 2014 (§A4.3.2).
+- Tonkin & Taylor (2015). Appendix A, *Assessment of Liquefaction Vulnerability in Christchurch*. LSN = 1000·∫ εv/z dz, con εv da Zhang et al. (2002) (§A4.3.5); studi di Christchurch sui primi 10 m (§A4.3); calcolo con B&I 2014 secondo MBIE 2014 (§A4.3.2).
 
 ## Equazioni (Zhang et al. 2002, App. A)
 | FS | εv [%] | campo di (qc1N)cs |
@@ -20,7 +24,7 @@
 
 Proprietà delle equazioni pubblicate, verificate: ai raccordi tra i due tratti (FS 0,6–0,9) ci sono piccoli salti (massimo circa 6 % a FS 0,9, q = 60); oltre i raccordi le curve 0,6–0,9 superano la curva limite al massimo dell'1,7 %. LiquiSite usa le equazioni come stampate, senza correzioni.
 
-## Convenzioni (formulate dall'utente, 13/11/2026)
+## Convenzioni adottate
 - Interpolazione lineare in FS tra le curve; FS ≤ 0,5: curva limite; FS ≥ 2,0: εv = 0.
 - (qc1N)cs fuori da 33–200 ricondotto al limite più vicino, con avviso; sotto 33 la scelta può sottostimare εv rispetto all'estrapolazione della curva limite (non cautelativa).
 - Ic oltre la soglia dello scenario (2,6 predefinita) e punti sopra falda: εv = 0.
@@ -34,4 +38,5 @@ Proprietà delle equazioni pubblicate, verificate: ai raccordi tra i due tratti 
 ## Verifiche
 - `verifiche/verifica_cedimenti.mjs`: equazioni ai valori discreti, convenzioni, casi analitici (strato uniforme, prova interrotta, falda al p.c.), collegamento al profilo, CSV.
 - `verifiche/verifica_cedimenti.py`: seconda implementazione dalle equazioni e integrazione numerica di S e LSN a passo 1 mm su profili casuali.
-- Manca un confronto con un caso pubblicato completo (per esempio i profili di Zhang et al. 2002, Fig. 5, se i dati fossero disponibili).
+- `verifiche/verifica_riferimento.mjs`: confronto solo indicativo con il caso di National Academies (2024), che usa un metodo di cedimento diverso (vedi [Validazione](validazione.md)).
+- Non è ancora disponibile un confronto con un caso pubblicato completo calcolato con Zhang et al. (2002).

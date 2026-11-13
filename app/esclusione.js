@@ -4,7 +4,7 @@
  * Copyright (C) 2026 Fabio Duronio — AGPL-3.0 con i termini aggiuntivi del file NOTICE.
  *
  * Raccoglie i dati dello scenario e i risultati del calcolo e chiama i criteri del motore
- * (criterio1–criterio4). Nessuna formula nuova. Regole di LiquiSite, dichiarate all'utente:
+ * (criterio1–criterio4). Nessuna formula nuova. Regole di LiquiSite, dichiarate nei risultati:
  *  - basta un criterio soddisfatto (testo delle NTC); l'esito si scrive «verifica omessa ai
  *    sensi del §7.11.3.4.2», mai «terreno non liquefacibile»;
  *  - criteri 3 e 4 riguardano i depositi: si valutano per strato; lo strato è escluso solo se

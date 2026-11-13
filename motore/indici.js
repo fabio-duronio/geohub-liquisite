@@ -2,7 +2,7 @@
  * GeoHub-LiquiSite — indice del potenziale di liquefazione IL (Iwasaki)
  * Copyright (C) 2026 Fabio Duronio — AGPL-3.0 con i termini aggiuntivi del file NOTICE.
  *
- * Modulo separato da motore/liquisite.js, che resta invariato.
+ * Modulo separato dal motore di innesco (motore/liquisite.js): usa solo i FS già calcolati.
  *
  * FORMULA di Iwasaki et al. (1978), come riportata nelle fonti consultate integralmente:
  * Linee guida MS per le liquefazioni LQ v1.0 (2018), pag. 9, nota 3; volume CNR-CentroMS

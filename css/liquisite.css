@@ -1,7 +1,7 @@
 /*
  * GeoHub-LiquiSite — foglio di stile
- * Variabili e componenti ripresi da GeoHub-SismaSite (index.html, v1.8.0) per l'identità
- * comune della famiglia GeoHub. Nessun pacchetto condiviso: copia locale, ordinata per sezioni.
+ * Variabili e componenti comuni alla famiglia GeoHub (stessa identità di GeoHub-SismaSite).
+ * Copia locale, senza pacchetti condivisi, ordinata per sezioni.
  */
 :root{
   --navy-950:#0b1521;

@@ -729,9 +729,6 @@
   }
 
   // ---------------------------------------------------------------------------
-  // Avvisi e assunzioni
-  // ---------------------------------------------------------------------------
-  // ---------------------------------------------------------------------------
   // Verifica preliminare — esclusione della verifica (NTC 2018 §7.11.3.4.2)
   // ---------------------------------------------------------------------------
   const ICONE_ESITO = {
@@ -853,6 +850,9 @@
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Avvisi e assunzioni
+  // ---------------------------------------------------------------------------
   function renderAvvisi() {
     const box = $('pan-avvisi');
     const pv = prova(), sc = scenario(), r = sc && risultatoDi(sc);
@@ -1135,13 +1135,15 @@
       (r.indiceIL && r.indiceIL.stato === 'calcolato' ? r.indiceIL.assunzioni.map(a => '<li>IL: ' + esc(a.descrizione) + '</li>').join('') + '<li>IL: ' + esc(r.indiceIL.fonte) + '</li>' : '') +
       (r.cedimenti && r.cedimenti.stato === 'calcolato' ? r.cedimenti.assunzioni.concat(r.cedimenti.avvisi.map(a => ({ descrizione: a.messaggio }))).map(a => '<li>Cedimento e LSN: ' + esc(a.descrizione) + '</li>').join('') + '<li>Cedimento e LSN: ' + esc(r.cedimenti.fonte) + '</li>' : '<li>Cedimenti post-sismici: calcolati solo con prove CPT.</li>') +
       '<li>Spostamenti laterali: non calcolati.</li></ul>';
-    h += '<div class="st-piede"><span>GeoHub-LiquiSite · motore ' + esc(r.versioneMotore) + ' · calcolato il ' + esc(new Date(r.calcolatoIl).toLocaleString('it-IT')) + ' · firma input ' + esc(r.firma) + '</span><span>Basato su LiquiSite di Fabio Duronio, geologo</span></div>';
+    h += '<div class="st-piede"><span>GeoHub-LiquiSite ' + esc(P.VERSIONE_APP) + ' · motore ' + esc(r.versioneMotore) + ' · calcolato il ' + esc(new Date(r.calcolatoIl).toLocaleString('it-IT')) + ' · firma input ' + esc(r.firma) + '</span><span>Basato su LiquiSite di Fabio Duronio, geologo</span></div>';
     $('stampa').innerHTML = h;
   }
 
   // ---------------------------------------------------------------------------
+  // Avvio
+  // ---------------------------------------------------------------------------
   function renderTutto() {
-    $('topVersione').textContent = 'motore ' + L.VERSIONE_MOTORE;
+    $('topVersione').textContent = 'v' + P.VERSIONE_APP + ' · motore ' + L.VERSIONE_MOTORE;
     renderProgetto(); renderProva(); renderScenario(); renderStrati(); renderStato(); renderRisultati();
   }
 

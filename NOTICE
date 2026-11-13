@@ -72,6 +72,25 @@ state lette sulle pubblicazioni originali e sono citate nel codice:
   deterministic assessment of seismic soil liquefaction potential. Journal of
   Geotechnical and Geoenvironmental Engineering 139(3), 407-419.
   https://doi.org/10.1061/(ASCE)GT.1943-5606.0000743
+- Zhang G., Robertson P.K., Brachman R.W.I. (2002). Estimating liquefaction-
+  induced ground settlements from CPT for level ground. Canadian Geotechnical
+  Journal 39, 1168-1180. (cedimento post-sismico, Appendice A)
+- Tonkin & Taylor (2015). Appendix A: Assessment of Liquefaction
+  Vulnerability in Christchurch, §A4.3.5. (indice LSN)
+- MBIE, NZGS. Earthquake geotechnical engineering practice, Module 3:
+  liquefaction hazards, version 1, nota 7. (εv come decimale in LSN)
+- Iwasaki T. et al. (1978), indice del potenziale di liquefazione IL, come
+  riportato in: Linee guida per la gestione del territorio in aree interessate
+  da liquefazioni (LQ), v1.0 (2018), Commissione tecnica per la
+  microzonazione sismica, pag. 9; CNR, CentroMS (2024). Pratiche
+  correnti per le analisi di suscettibilità alla liquefazione negli studi di
+  microzonazione sismica di livello 3, Eq. 3.73-3.74.
+
+Caso di riferimento usato nelle verifiche (verifiche/dati/): National
+Academies of Sciences, Engineering, and Medicine (2024). Pile Design for
+Downdrag: Examples and Supporting Materials, Appendix G, Design Example 5.
+Washington, DC: The National Academies Press. Valori trascritti dalle
+Tabelle G3-G7 per il solo confronto numerico.
 
 Riferimenti normativi: D.M. 17/01/2018 (NTC 2018), §7.11.3.4; Circolare
 21/01/2019 n. 7 C.S.LL.PP., C7.11.3.4.
