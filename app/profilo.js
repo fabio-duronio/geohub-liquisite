@@ -124,15 +124,30 @@
   // ---------------------------------------------------------------------------
   // Fattore di sicurezza di riferimento e controlli dello scenario
   // ---------------------------------------------------------------------------
-  /** FS di riferimento dello scenario (predefinito: P.FS_RIFERIMENTO). */
+  /**
+   * FS di riferimento dello scenario: { valido, valore, predefinito, motivo }.
+   * Solo il dato assente (campo vuoto o progetto precedente senza il campo) assume il valore predefinito;
+   * un valore esplicito non valido resta un errore e non viene sostituito.
+   */
+  function statoFsRiferimento(scenario) {
+    const v = scenario && scenario.opzioni ? scenario.opzioni.FSrif : undefined;
+    if (v === undefined || v === null) return { valido: true, valore: P.FS_RIFERIMENTO, predefinito: true, motivo: '' };
+    if (isNum(v) && v >= 1 && v <= 3) return { valido: true, valore: v, predefinito: false, motivo: '' };
+    return { valido: false, valore: null, predefinito: false,
+      motivo: 'FS di riferimento non valido (' + (isNum(v) ? String(v).replace('.', ',') : 'valore non numerico') + '): inserire un valore tra 1 e 3, oppure lasciare il campo vuoto per adottare 1,25. Stampa ed esportazione sono bloccate fino alla correzione.' };
+  }
+
+  /** Valore del FS di riferimento, oppure null se il valore inserito non è valido. */
   function fsRiferimento(scenario) {
-    const v = scenario && scenario.opzioni && scenario.opzioni.FSrif;
-    return isNum(v) && v >= 1 && v <= 3 ? v : P.FS_RIFERIMENTO;
+    const s = statoFsRiferimento(scenario);
+    return s.valido ? s.valore : null;
   }
 
   /** Criterio di verifica e scelta del coefficiente di sicurezza: testo riportato in app, stampa e CSV. */
   function criterioFS(scenario) {
-    const v = fsRiferimento(scenario);
+    const st = statoFsRiferimento(scenario);
+    if (!st.valido) return st.motivo;
+    const v = st.valore;
     return 'Le NTC 2018 (§ 7.11.3.4) non stabiliscono un valore numerico minimo del coefficiente di sicurezza nei confronti della liquefazione; ' +
       'la Circolare 21/01/2019 n. 7 (§ C7.11.3.4) demanda al progettista la valutazione e la motivazione dell\'adeguatezza del margine di sicurezza adottato. ' +
       'Come riferimento tecnico si considera l\'Eurocodice 8, Parte 5 (EN 1998-5, § 4.1.4), che raccomanda FS = 1,25, come illustrato anche nella pubblicazione JRC ' +
@@ -164,7 +179,7 @@
       err('opzioni.Vs12', 'MANCANTE', 'V*s,12 (Vs media nei primi 12 m) richiesta dal metodo');
     }
     const fsRif = scenario.opzioni && scenario.opzioni.FSrif;
-    if (fsRif !== undefined && fsRif !== null && !(isNum(fsRif) && fsRif >= 1 && fsRif <= 3)) err('opzioni.FSrif', 'FUORI_DOMINIO', 'FS di riferimento tra 1 e 3');
+    if (fsRif !== undefined && fsRif !== null && !(isNum(fsRif) && fsRif >= 1 && fsRif <= 3)) err('opzioni.FSrif', 'FUORI_DOMINIO', 'FS di riferimento non valido: inserire un valore tra 1 e 3, oppure lasciare il campo vuoto per adottare 1,25');
     if (prova.dati.length === 0) err('prova.dati', 'MANCANTE', 'la prova non contiene dati');
     return errori;
   }
@@ -452,5 +467,5 @@
     return r.valori ? r.valori[chiave] : null;
   }
 
-  return { G, METODI, ETICHETTE_STATI, MOTIVI_BREVI, ZONE_SBT, zonaSBT, fsRiferimento, criterioFS, campiRichiesti, controllaScenario, calcolaScenario, riepiloga, confrontaDominio, serie, stratoA, valoreRisultato, puntiPerIL };
+  return { G, METODI, ETICHETTE_STATI, MOTIVI_BREVI, ZONE_SBT, zonaSBT, statoFsRiferimento, fsRiferimento, criterioFS, campiRichiesti, controllaScenario, calcolaScenario, riepiloga, confrontaDominio, serie, stratoA, valoreRisultato, puntiPerIL };
 });

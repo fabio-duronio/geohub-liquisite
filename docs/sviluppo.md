@@ -65,14 +65,23 @@ Apri <http://localhost:8000/>. Non servono compilazione né installazione di dip
               esclusione: { faldaMediaStagionale, pcSubOrizzontale, fondazioniSuperficiali,
                             strati: [{ da, a, sabbiaPulita, curva, campione, decisione4, motivazione4 }] },
               note }],
-  provaAttiva, scenarioAttivo,
-  risultati: { [scenarioId]: { versioneMotore, firma, calcolatoIl, configurazione, righe, riepilogo } } }
+  provaAttiva, scenarioAttivo }
 ```
 
 - **Dati della prova.** Sono conservati come inseriti, nelle unità dichiarate; la conversione nelle unità del motore avviene solo al calcolo.
-- **Controlli all'apertura.** Il file viene validato: formato, versione, tipi di prova, unità, numeri, compatibilità tra metodo e prova, riferimenti tra scenari e prove.
-- **Risultati salvati.** Sono marcati `origine: 'file'` e mostrati come non aggiornati finché non si ricalcola.
-- **Progetti precedenti.** I file senza `FSrif` o senza `esclusione` si aprono con i valori predefiniti.
+- **Il file è un dato non attendibile.** All'apertura ogni campo è controllato per tipo:
+  - numeri (o vuoto) per misure, parametri e opzioni;
+  - sì/no per le scelte;
+  - testo solo per i campi descrittivi;
+  - valori enumerati (tipo di prova, metodo, unità, decisione del criterio 4) confrontati con le sole chiavi proprie delle tabelle;
+  - identificativi limitati a lettere, cifre e `- _ . :`, senza ripetizioni;
+  - colori nel formato `#RRGGBB`.
+
+  Il progetto viene ricostruito con i soli campi noti. Se un controllo fallisce, l'app elenca gli errori con il campo e il motivo e non tocca il progetto corrente.
+- **Unità.** Sono obbligatorie per le colonne che ammettono più di un'unità (z, qc, fs, u2); per le altre (N, Vs, FC) l'unità è unica e viene assunta.
+- **Risultati.** Non sono salvati nel file. Quelli presenti in file di versioni precedenti non vengono ricaricati: si ricalcolano dagli input con «Calcola», e l'app lo segnala all'apertura.
+- **Progetti precedenti.** I file senza `FSrif` o senza `esclusione` si aprono con i valori predefiniti. Un `FSrif` presente ma fuori dall'intervallo 1–3 resta com'è ed è segnalato come errore.
+- **Rendering.** Ogni valore inserito nell'HTML passa da `esc()`, compresi gli attributi e i valori calcolati. `verifiche/verifica_sicurezza.mjs` e `verifiche/browser/verifica_browser.mjs` lo controllano con progetti alterati.
 - **Firma degli input.** È un'impronta FNV-1a di prova, scenario e versione del motore. Non la modificano nome, note, FS di riferimento e dati della verifica preliminare, perché riguardano la lettura dei risultati e non il calcolo.
 
 ## Regole per le modifiche

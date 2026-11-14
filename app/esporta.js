@@ -40,6 +40,8 @@
   function csvRisultati(progetto, prova, scenario, risultato, opz = {}) {
     opz = { separatore: ';', decimale: ',', ...opz };
     if (opz.separatore === opz.decimale) throw new Error('separatore di colonna e decimale coincidono');
+    const statoRif = F.statoFsRiferimento(scenario);
+    if (!statoRif.valido) throw new Error(statoRif.motivo);
     const M = F.METODI[scenario.metodo];
     const colIn = prova.colonne.filter(c => c !== 'z');
     const righe = [];

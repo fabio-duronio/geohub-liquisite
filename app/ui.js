@@ -22,7 +22,8 @@
     pannelli: null,  // id dei pannelli visibili (per tipo di metodo)
     confronto: [],   // id degli scenari nel confronto
     grafici: [],
-    esclSel: null    // strato selezionato nella verifica preliminare
+    esclSel: null,   // strato selezionato nella verifica preliminare
+    salvato: null    // input del progetto all'ultima apertura o salvataggio (per le modifiche non salvate)
   };
 
   // ---------------------------------------------------------------------------
@@ -38,7 +39,7 @@
     const r = s && risultatoDi(s);
     if (!r) return 'assente';
     const p = provaDi(s);
-    if (!p || r.origine === 'file' || r.versioneMotore !== L.VERSIONE_MOTORE || r.firma !== P.firmaInput(p, s, L.VERSIONE_MOTORE)) return 'non_aggiornato';
+    if (!p || r.versioneMotore !== L.VERSIONE_MOTORE || r.firma !== P.firmaInput(p, s, L.VERSIONE_MOTORE)) return 'non_aggiornato';
     return 'aggiornato';
   }
 
@@ -91,13 +92,13 @@
     const par = pv.parametri || {};
     if (pv.tipo === 'SPT') {
       h += '<div class="alert alert-warn">Inserire N della prova SPT originale, non N60 né (N1)60 già corretti. Il motore applica le correzioni indicate sotto. I colpi DPSH non sono N SPT.</div><div class="group-label">Attrezzatura SPT</div>' +
-        '<div class="field-row"><div class="field"><label for="pvCE">CE = ER / 60 (SPT grezzo)</label><input type="text" inputmode="decimal" step="0.01" id="pvCE" value="' + (par.CE ?? '') + '"><div class="hint">ERm/60 %</div></div>' +
-        '<div class="field"><label for="pvSporg">Sporgenza aste [m]</label><input type="text" inputmode="decimal" step="0.1" id="pvSporg" value="' + (par.sporgenza ?? '') + '"></div></div>' +
-        '<div class="field-row"><div class="field"><label for="pvCB">CB (diametro foro)</label><input type="text" inputmode="decimal" step="0.01" id="pvCB" value="' + (par.CB ?? '') + '"></div>' +
-        '<div class="field"><label for="pvCS">CS (campionatore)</label><input type="text" inputmode="decimal" step="0.01" id="pvCS" value="' + (par.CS ?? '') + '"' + (par.senzaRivestimento ? ' disabled' : '') + '></div></div>' +
+        '<div class="field-row"><div class="field"><label for="pvCE">CE = ER / 60 (SPT grezzo)</label><input type="text" inputmode="decimal" step="0.01" id="pvCE" value="' + esc(par.CE ?? '') + '"><div class="hint">ERm/60 %</div></div>' +
+        '<div class="field"><label for="pvSporg">Sporgenza aste [m]</label><input type="text" inputmode="decimal" step="0.1" id="pvSporg" value="' + esc(par.sporgenza ?? '') + '"></div></div>' +
+        '<div class="field-row"><div class="field"><label for="pvCB">CB (diametro foro)</label><input type="text" inputmode="decimal" step="0.01" id="pvCB" value="' + esc(par.CB ?? '') + '"></div>' +
+        '<div class="field"><label for="pvCS">CS (campionatore)</label><input type="text" inputmode="decimal" step="0.01" id="pvCS" value="' + esc(par.CS ?? '') + '"' + (par.senzaRivestimento ? ' disabled' : '') + '></div></div>' +
         '<div class="checkline"><input type="checkbox" id="pvSenzaRiv"' + (par.senzaRivestimento ? ' checked' : '') + '><label for="pvSenzaRiv">Campionatore senza rivestimento (solo Cetin 2018: CS calcolato)</label></div>';
     } else if (pv.tipo === 'CPTU') {
-      h += '<div class="field"><label for="pvAr">Rapporto d\'area a<sub>r</sub></label><input type="text" inputmode="decimal" step="0.01" id="pvAr" value="' + (par.ar ?? '') + '"><div class="hint">Vuoto: il motore usa 0,8 e lo segnala come assunzione.</div></div>';
+      h += '<div class="field"><label for="pvAr">Rapporto d\'area a<sub>r</sub></label><input type="text" inputmode="decimal" step="0.01" id="pvAr" value="' + esc(par.ar ?? '') + '"><div class="hint">Vuoto: il motore usa 0,8 e lo segnala come assunzione.</div></div>';
     } else if (pv.tipo === 'CPTE') {
       h += '<div class="hint" style="margin-bottom:10px;">CPT a punta elettrica senza misura di u: q<sub>t</sub> = q<sub>c</sub> (assunzione dichiarata nei risultati).</div>';
     }
@@ -157,17 +158,17 @@
     let h = '<div class="field"><label for="scNome">Nome dello scenario</label><input type="text" id="scNome" value="' + esc(sc.nome) + '"></div>';
     h += '<div class="field"><label for="scMetodo">Metodo</label><select id="scMetodo">' + metodi.map(m => '<option value="' + m + '"' + (sc.metodo === m ? ' selected' : '') + '>' + esc(P.NOMI_METODI[m]) + '</option>').join('') + '</select>' +
       '<div class="hint">' + esc(F.METODI[sc.metodo].notaFS) + '</div></div>';
-    h += '<div class="field-row"><div class="field"><label for="scMw">Magnitudo M<sub>w</sub></label><input type="text" inputmode="decimal" step="0.01" id="scMw" value="' + (sc.Mw ?? '') + '"></div>' +
-      '<div class="field"><label for="scAmax">a<sub>max</sub> in superficie [g]</label><input type="text" inputmode="decimal" step="0.001" min="0" id="scAmax" value="' + (sc.amax ?? '') + '"></div></div>';
+    h += '<div class="field-row"><div class="field"><label for="scMw">Magnitudo M<sub>w</sub></label><input type="text" inputmode="decimal" step="0.01" id="scMw" value="' + esc(sc.Mw ?? '') + '"></div>' +
+      '<div class="field"><label for="scAmax">a<sub>max</sub> in superficie [g]</label><input type="text" inputmode="decimal" step="0.001" min="0" id="scAmax" value="' + esc(sc.amax ?? '') + '"></div></div>';
     h += '<div class="hint" style="margin:-4px 0 10px;">Consulta <a href="https://fabio-duronio.github.io/geohub-sismasite/" target="_blank" rel="noopener noreferrer">GeoHub-SismaSite</a> o le <a href="https://esse1-gis.mi.ingv.it/" target="_blank" rel="noopener noreferrer">mappe INGV MPS04-S1 ↗</a>. Inserisci a<sub>max</sub> in superficie: il valore di pericolosità di base non coincide automaticamente con quello di sito. Documenta fonte, probabilità/tempo di ritorno e trattamento degli effetti locali nelle note. Nessuna importazione automatica.</div>';
     if (sc.metodo === 'cetin2018Spt' || sc.metodo === 'kayen2013Vs') {
-      h += '<div class="field"><label for="scVs12">V*<sub>s,12</sub> [m/s]</label><input type="text" inputmode="decimal" step="1" id="scVs12" value="' + (sc.opzioni.Vs12 ?? '') + '"><div class="hint">Vs media nei primi 12 m, usata nel coefficiente r<sub>d</sub> del metodo.</div></div>';
+      h += '<div class="field"><label for="scVs12">V*<sub>s,12</sub> [m/s]</label><input type="text" inputmode="decimal" step="1" id="scVs12" value="' + esc(sc.opzioni.Vs12 ?? '') + '"><div class="hint">Vs media nei primi 12 m, usata nel coefficiente r<sub>d</sub> del metodo.</div></div>';
     }
     if (sc.metodo === 'bi2014Cpt') {
-      h += '<div class="field-row"><div class="field"><label for="scIc">Soglia di I<sub>c</sub></label><input type="text" inputmode="decimal" step="0.05" id="scIc" value="' + (sc.opzioni.IcSoglia ?? '') + '"><div class="hint">2,6; 2,4–2,8 per sensibilità</div></div>' +
-        '<div class="field"><label for="scCfc">C<sub>FC</sub></label><input type="text" inputmode="decimal" step="0.01" id="scCfc" value="' + (sc.opzioni.CFC ?? '') + '"><div class="hint">0 senza taratura locale</div></div></div>';
+      h += '<div class="field-row"><div class="field"><label for="scIc">Soglia di I<sub>c</sub></label><input type="text" inputmode="decimal" step="0.05" id="scIc" value="' + esc(sc.opzioni.IcSoglia ?? '') + '"><div class="hint">2,6; 2,4–2,8 per sensibilità</div></div>' +
+        '<div class="field"><label for="scCfc">C<sub>FC</sub></label><input type="text" inputmode="decimal" step="0.01" id="scCfc" value="' + esc(sc.opzioni.CFC ?? '') + '"><div class="hint">0 senza taratura locale</div></div></div>';
     }
-    h += '<div class="field"><label for="scFsRif">FS di riferimento</label><input type="text" inputmode="decimal" step="0.05" id="scFsRif" value="' + (sc.opzioni.FSrif ?? '') + '"><div class="hint">1,25: valore raccomandato da EN 1998-5, § 4.1.4. Le NTC 2018 non fissano un minimo: il margine è valutato e motivato dal progettista.</div></div>';
+    h += '<div class="field"><label for="scFsRif">FS di riferimento</label><input type="text" inputmode="decimal" step="0.05" id="scFsRif" value="' + esc(sc.opzioni.FSrif ?? '') + '"' + (F.statoFsRiferimento(sc).valido ? '' : ' aria-invalid="true"') + ' aria-describedby="scFsRifErr"><div class="field-err" id="scFsRifErr" role="alert"' + (F.statoFsRiferimento(sc).valido ? ' hidden' : '') + '>' + esc(F.statoFsRiferimento(sc).motivo) + '</div><div class="hint">Vuoto: 1,25, valore raccomandato da EN 1998-5, § 4.1.4. Le NTC 2018 non fissano un minimo: il margine è valutato e motivato dal progettista.</div></div>';
     h += '<div class="field"><label for="scNote">Note e fonti dei parametri</label><textarea id="scNote">' + esc(sc.note) + '</textarea></div>';
     box.innerHTML = h;
     $('sumScenario').textContent = sc.nome;
@@ -179,10 +180,12 @@
     num('scMw', v => { sc.Mw = v; }); num('scAmax', v => { sc.amax = v; });
     num('scVs12', v => { sc.opzioni.Vs12 = v; }); num('scIc', v => { sc.opzioni.IcSoglia = v; }); num('scCfc', v => { sc.opzioni.CFC = v; }); const elRif = $('scFsRif');
     if (elRif) elRif.addEventListener('input', () => {
-      const v = leggiNumero(elRif), valido = v === null || (isNum(v) && v >= 1 && v <= 3);
-      elRif.setAttribute('aria-invalid', valido ? 'false' : 'true');
-      if (valido) { sc.opzioni.FSrif = v; renderStato(); renderRisultati(); }
-      else sc.opzioni.FSrif = v;
+      // Il valore inserito viene conservato anche se non valido: nessuna sostituzione con il predefinito.
+      sc.opzioni.FSrif = leggiNumero(elRif);
+      const st = F.statoFsRiferimento(sc), box = $('scFsRifErr');
+      if (st.valido) elRif.removeAttribute('aria-invalid'); else elRif.setAttribute('aria-invalid', 'true');
+      box.textContent = st.motivo; box.hidden = st.valido;
+      renderStato(); renderRisultati();
     });
   }
 
@@ -223,7 +226,7 @@
     $('scFalda').value = sc.zFalda ?? '';
     const etich = { da: 'da [m]', a: 'a [m]', gamma: 'γ', gammaSat: 'γsat', FC: 'FC [%]' };
     tb.innerHTML = sc.strati.map((s, i) => '<tr data-i="' + i + '" class="r1">' +
-      ['da', 'a', 'gamma', 'gammaSat', 'FC'].map(k => '<td><input type="text" inputmode="decimal" step="0.1" data-k="' + k + '" aria-label="' + etich[k] + ', strato ' + (i + 1) + '" value="' + (s[k] ?? '') + '"></td>').join('') + '</tr>' +
+      ['da', 'a', 'gamma', 'gammaSat', 'FC'].map(k => '<td><input type="text" inputmode="decimal" step="0.1" data-k="' + k + '" aria-label="' + etich[k] + ', strato ' + (i + 1) + '" value="' + esc(s[k] ?? '') + '"></td>').join('') + '</tr>' +
       '<tr data-i="' + i + '" class="r2"><td colspan="4"><input class="txt" type="text" data-k="descrizione" placeholder="descrizione" aria-label="descrizione, strato ' + (i + 1) + '" value="' + esc(s.descrizione || '') + '"></td>' +
       '<td style="text-align:right;"><button class="btn-link" type="button" data-rimuovi="' + i + '" aria-label="Rimuovi strato ' + (i + 1) + '">rimuovi</button></td></tr>').join('');
     $('sumStrati').textContent = (isNum(sc.zFalda) ? 'falda ' + fmt(sc.zFalda, 1) + ' m · ' : '') + sc.strati.length + ' strati';
@@ -279,7 +282,7 @@
     const st = statoRisultato(sc), r = risultatoDi(sc);
     let h;
     if (st === 'assente') h = '<span class="badge badge-none">non calcolato</span>';
-    else if (st === 'non_aggiornato') h = '<span class="badge badge-stale">risultati non aggiornati</span><span>' + (r.origine === 'file' ? 'letti dal file (motore ' + esc(r.versioneMotore) + '): ricalcolare' : 'input modificati: ricalcolare') + '</span>';
+    else if (st === 'non_aggiornato') h = '<span class="badge badge-stale">risultati non aggiornati</span><span>input modificati: ricalcolare</span>';
     else if (r.stato !== 'calcolato') h = '<span class="badge badge-err">input non validi</span><span>vedi «Avvisi e assunzioni»</span>';
     else h = '<span class="badge badge-ok">aggiornato</span><span class="num">motore ' + esc(r.versioneMotore) + '</span>';
     el.innerHTML = h;
@@ -358,9 +361,11 @@
         kv('FS minimo calcolato', q.fsMin ? fmt(q.fsMin.FS) : '–', '', q.fsMin ? 'a z = ' + fmt(q.fsMin.z) + ' m' : 'nessun punto calcolato') +
         kv('Profondità indagata', q.profonditaIndagata ? fmt(q.profonditaIndagata.da, 1) + '–' + fmt(q.profonditaIndagata.a, 1) : '–', 'm') +
         kv('Estensione analizzata', q.estensioneAnalizzata ? fmt(q.estensioneAnalizzata.da, 1) + '–' + fmt(q.estensioneAnalizzata.a, 1) : '–', 'm', 'tra il primo e l\'ultimo punto calcolato') +
-        kv('Punti calcolati', (q.conteggi.calcolato || 0) + ' / ' + q.punti, '', nNon ? nNon + ' non calcolati' : 'tutti calcolati') +
-        kv('Avvisi', String(q.avvisi.length), '', q.intervalliNonCalcolati.length + ' intervalli non calcolati') + '</div>' +
-        '<div class="hint">Il FS minimo non descrive da solo la risposta del sito: vedere profili, intervalli non calcolati e avvisi. FS di riferimento ' + fmt(F.fsRiferimento(sc)) + ' (EN 1998-5, § 4.1.4; le NTC 2018 non fissano un minimo e il margine è valutato e motivato dal progettista).</div>';
+        kv('Punti calcolati', esc((q.conteggi.calcolato || 0) + ' / ' + q.punti), '', nNon ? esc(nNon) + ' non calcolati' : 'tutti calcolati') +
+        kv('Avvisi', esc(q.avvisi.length), '', esc(q.intervalliNonCalcolati.length) + ' intervalli non calcolati') + '</div>' +
+        (F.statoFsRiferimento(sc).valido
+          ? '<div class="hint">Il FS minimo non descrive da solo la risposta del sito: vedere profili, intervalli non calcolati e avvisi. FS di riferimento ' + fmt(F.fsRiferimento(sc)) + ' (EN 1998-5, § 4.1.4; le NTC 2018 non fissano un minimo e il margine è valutato e motivato dal progettista).</div>'
+          : '<div class="alert alert-danger"><span class="alert-title">FS di riferimento da correggere</span>' + esc(F.statoFsRiferimento(sc).motivo) + '</div>');
     } else if (r && r.stato !== 'calcolato') {
       kpi = '<div class="alert alert-danger"><span class="alert-title">Calcolo non eseguito: input non validi</span><ul>' + r.errori.map(e => '<li>' + esc(e.motivo) + '</li>').join('') + '</ul></div>';
     } else {
@@ -369,10 +374,10 @@
     if (r && r.stato === 'calcolato') {
       const valide = r.righe.filter(x => x.stato === 'calcolato' && isNum(x.valori?.FS));
       const sotto = valide.filter(x => x.valori.FS < 1), rif = F.fsRiferimento(sc);
-      const margine = valide.filter(x => x.valori.FS >= 1 && x.valori.FS < rif);
+      const margine = rif === null ? [] : valide.filter(x => x.valori.FS >= 1 && x.valori.FS < rif);
       const aggiornato = st === 'aggiornato';
       kpi += '<div class="lettura-esito ' + (!aggiornato ? 'esito-attesa' : sotto.length ? 'esito-critico' : margine.length ? 'esito-attesa' : 'esito-neutro') + '"><b>' +
-        (!aggiornato ? 'Lettura sospesa: ricalcolare dopo la modifica degli input.' : !valide.length ? 'Nessun punto con FS valido: non è possibile leggere l’esito.' : sotto.length ? sotto.length + ' punti su ' + valide.length + ' calcolati hanno FS < 1' + (margine.length ? '; altri ' + margine.length + ' hanno FS tra 1 e ' + fmt(rif) + '.' : '.') : margine.length ? 'Nessun punto con FS < 1; ' + margine.length + ' punti su ' + valide.length + ' hanno FS tra 1 e ' + fmt(rif) + ' (margine inferiore al riferimento).' : 'Nessun punto calcolato presenta FS < ' + fmt(rif) + '.') +
+        (!aggiornato ? 'Lettura sospesa: ricalcolare dopo la modifica degli input.' : !valide.length ? 'Nessun punto con FS valido: non è possibile leggere l’esito.' : sotto.length ? sotto.length + ' punti su ' + valide.length + ' calcolati hanno FS < 1' + (margine.length ? '; altri ' + margine.length + ' hanno FS tra 1 e ' + fmt(rif) + '.' : '.') : margine.length ? 'Nessun punto con FS < 1; ' + margine.length + ' punti su ' + valide.length + ' hanno FS tra 1 e ' + fmt(rif) + ' (margine inferiore al riferimento).' : (rif === null ? 'Nessun punto calcolato presenta FS < 1 (confronto con il FS di riferimento sospeso: valore da correggere).' : 'Nessun punto calcolato presenta FS < ' + fmt(rif) + '.')) +
         '</b><span>' + (!aggiornato ? '' : sotto.length ? 'In questi punti la domanda ciclica supera la resistenza stimata dal metodo. Consulta profondità e valori nella tabella.' : 'Questo dato non esclude problemi negli intervalli non calcolati o non investigati.') +
         ' Il conteggio riguarda le misure, non lo spessore degli strati né una probabilità di liquefazione del sito.</span></div>';
       kpi += bloccoIL(r.indiceIL, aggiornato);
@@ -448,7 +453,7 @@
     }
     const crr = sc.metodo === 'kayen2013Vs' ? 'CRR15' : 'CRR';
     p.push({ id: 'csrcrr', titolo: 'Domanda e resistenza', etichettaX: 'CSR, CRR [–]', serie: [s('CSR', 'CSR (sito)', '#bd3c3c', 'valori', true), s(crr, sc.metodo === 'kayen2013Vs' ? 'CRR PL 15 % (sito)' : 'CRR (sito)', '#218273')], def: true, cifre: 3, xMin: 0 });
-    p.push({ id: 'FS', titolo: 'Fattore di sicurezza', etichettaX: 'FS [–]', serie: [s('FS', 'FS', COL.blu)], rif: [{ x: 1, etichetta: 'FS = 1' }, { x: F.fsRiferimento(sc), etichetta: 'FS rif ' + fmt(F.fsRiferimento(sc)) }], xMin: 0, xMax: 3, def: true, cifre: 2, nota: 'Rosso: FS < 1; ambra: FS tra 1 e il riferimento ' + fmt(F.fsRiferimento(sc)) + '; verde tenue: oltre. Confronto puntuale, non giudizio di sicurezza del sito.' });
+    p.push({ id: 'FS', titolo: 'Fattore di sicurezza', etichettaX: 'FS [–]', serie: [s('FS', 'FS', COL.blu)], rif: [{ x: 1, etichetta: 'FS = 1' }].concat(F.fsRiferimento(sc) === null ? [] : [{ x: F.fsRiferimento(sc), etichetta: 'FS rif ' + fmt(F.fsRiferimento(sc)) }]), xMin: 0, xMax: 3, def: true, cifre: 2, nota: 'Rosso: FS < 1; ambra: FS tra 1 e il riferimento ' + fmt(F.fsRiferimento(sc)) + '; verde tenue: oltre. Confronto puntuale, non giudizio di sicurezza del sito.' });
     if (sc.metodo !== 'bi2014Spt') p.push({ id: 'PL', titolo: 'Probabilità PL', etichettaX: 'PL [–]', serie: [s('PL', 'PL', COL.ink)], xMin: 0, xMax: 1, def: false, cifre: 3, nota: F.METODI[sc.metodo].notaPL });
     const ind = r && r.indiceIL;
     if (ind && ind.stato === 'calcolato') {
@@ -522,7 +527,7 @@
       });
       const cfg = {
         titolo: c.titolo, etichettaX: c.etichettaX, yMax: zMax, falda: sc.zFalda, strati, riferimentiX: c.rif || [],
-        xMin: c.xMin, xMax: c.xMax, cifre: c.cifre, serie, tipoPannello: c.id, sogliaIc: sc.opzioni.IcSoglia ?? 2.6, fsRif: F.fsRiferimento(sc)
+        xMin: c.xMin, xMax: c.xMax, cifre: c.cifre, serie, tipoPannello: c.id, sogliaIc: sc.opzioni.IcSoglia ?? 2.6, fsRif: F.fsRiferimento(sc) ?? undefined
       };
       const chart = Gr.profilo($('cv-' + c.id), { ...cfg,
         selezionato: S.selezione !== null ? (r.righe[S.selezione] || {}).z : undefined,
@@ -635,8 +640,8 @@
         return intest(k.startsWith('t:') ? k.slice(2) : k);
       }).join('') + '</tr></thead><tbody>' +
         r.righe.map(x => '<tr data-indice="' + x.indice + '" class="' + (S.selezione === x.indice ? 'hl ' : '') + (x.stato !== 'calcolato' ? 'muted' : '') + '"><td>' + fmt(x.z) + '</td>' + cols.map(k => {
-          if (k === 'letturaFS') { const fs = F.valoreRisultato(x, 'FS'); return '<td class="txt">' + (fs === null ? (x.codice === 'IC_OLTRE_SOGLIA' ? 'FS N.A. · escluso per comportamento argilloso' : 'Non valutabile: vedere motivo') : '<span class="esito-chip ' + (fs < 1 ? 'esito-critico' : fs < F.fsRiferimento(sc) ? 'esito-attesa' : 'esito-neutro') + '">' + (fs < 1 ? 'FS < 1 · domanda > resistenza' : fs < F.fsRiferimento(sc) ? 'FS < ' + fmt(F.fsRiferimento(sc)) + ' · margine inferiore al riferimento' : 'FS ≥ ' + fmt(F.fsRiferimento(sc)) + ' · margine ≥ riferimento') + '</span>') + '</td>'; }
-          if (k === 'stato') return '<td><span class="stato-tag ' + x.stato + '">' + esc(F.ETICHETTE_STATI[x.stato] || x.stato) + '</span></td>';
+          if (k === 'letturaFS') { const fs = F.valoreRisultato(x, 'FS'); return '<td class="txt">' + (fs === null ? (x.codice === 'IC_OLTRE_SOGLIA' ? 'FS N.A. · escluso per comportamento argilloso' : 'Non valutabile: vedere motivo') : (() => { const rf = F.fsRiferimento(sc); return '<span class="esito-chip ' + (fs < 1 ? 'esito-critico' : rf === null ? 'esito-neutro' : fs < rf ? 'esito-attesa' : 'esito-neutro') + '">' + (fs < 1 ? 'FS < 1 · domanda > resistenza' : rf === null ? 'FS ≥ 1 · riferimento da correggere' : fs < rf ? 'FS < ' + fmt(rf) + ' · margine inferiore al riferimento' : 'FS ≥ ' + fmt(rf) + ' · margine ≥ riferimento') + '</span>'; })()) + '</td>'; }
+          if (k === 'stato') return '<td><span class="stato-tag ' + esc(x.stato) + '">' + esc(F.ETICHETTE_STATI[x.stato] || x.stato) + '</span></td>';
           if (k === 'motivo') return '<td class="txt" title="' + esc(x.motivo || '') + '">' + esc([x.codice ? (F.MOTIVI_BREVI[x.codice] || x.codice) : null, ...x.avvisi.map(a => a.codice)].filter(Boolean).join(' · ')) + '</td>';
           if (k === 'origineFC') return '<td class="txt" style="min-width:120px;">' + esc(x.origineFC || '–') + '</td>';
           if (k === 'FC') return '<td>' + fmt(x.FC, 1) + '</td>';
@@ -676,7 +681,7 @@
       const rif = risultatoDi(calcolati[0]);
       for (const s of calcolati.slice(1)) {
         const d = F.confrontaDominio(rif, risultatoDi(s));
-        if (!d.uguale) avvisi.push(['warn', 'Il dominio dei punti calcolati di «' + s.nome + '» è diverso da quello di «' + calcolati[0].nome + '»: ' +
+        if (!d.uguale) avvisi.push(['warn', 'Il dominio dei punti calcolati di «' + esc(s.nome) + '» è diverso da quello di «' + esc(calcolati[0].nome) + '»: ' +
           (d.soloA.length ? d.soloA.length + ' punti calcolati solo nel primo' : '') + (d.soloA.length && d.soloB.length ? ', ' : '') + (d.soloB.length ? d.soloB.length + ' solo nel secondo' : '') + ' (es. per la falda diversa).']);
       }
     }
@@ -691,7 +696,7 @@
         if (stati[i] !== 'aggiornato' || !r || r.stato !== 'calcolato') return '<tr><td>' + esc(s.nome) + '</td><td colspan="6" class="txt">' + (r && r.stato !== 'calcolato' && stati[i] === 'aggiornato' ? 'input non validi' : 'da calcolare') + '</td></tr>';
         const q = r.riepilogo;
         return '<tr><td><span class="scen-dot" style="background:' + esc(s.colore) + '"></span> ' + esc(s.nome) + '</td><td>' + (q.fsMin ? fmt(q.fsMin.FS) : '–') + '</td><td>' + (q.fsMin ? fmt(q.fsMin.z) : '–') + '</td><td>' +
-          (q.estensioneAnalizzata ? fmt(q.estensioneAnalizzata.da, 1) + '–' + fmt(q.estensioneAnalizzata.a, 1) : '–') + '</td><td>' + (q.conteggi.calcolato || 0) + ' / ' + q.punti + '</td><td>' + q.intervalliNonCalcolati.length + '</td><td class="txt">' +
+          (q.estensioneAnalizzata ? fmt(q.estensioneAnalizzata.da, 1) + '–' + fmt(q.estensioneAnalizzata.a, 1) : '–') + '</td><td>' + esc((q.conteggi.calcolato || 0) + ' / ' + q.punti) + '</td><td>' + esc(q.intervalliNonCalcolati.length) + '</td><td class="txt">' +
           esc(q.avvisi.map(a => a.codice + ' (' + a.n + ')').join(', ') || '—') + '</td></tr>';
       }).join('') + '</tbody></table></div>';
     box.innerHTML = h;
@@ -716,7 +721,7 @@
     if (serie.length) {
       const att = scenario();
       const chart = Gr.profilo($('cvConf'), { titolo: 'FS a confronto', etichettaX: 'FS [–]', yMax: zMax, xMin: 0, xMax: 3, cifre: 2, serie,
-        falda: sel.length === 1 ? sel[0].zFalda : undefined, riferimentiX: [{ x: 1, etichetta: 'FS = 1' }].concat([...new Set(sel.map(s => F.fsRiferimento(s)))].map(v => ({ x: v, etichetta: 'FS rif ' + fmt(v) }))) });
+        falda: sel.length === 1 ? sel[0].zFalda : undefined, riferimentiX: [{ x: 1, etichetta: 'FS = 1' }].concat([...new Set(sel.map(s => F.fsRiferimento(s)).filter(v => v !== null))].map(v => ({ x: v, etichetta: 'FS rif ' + fmt(v) }))) });
       S.grafici.push({ id: 'confronto', titolo: 'FS a confronto', chart });
       const falde = [...new Set(sel.map(s => s.zFalda))];
       $('notaConf').textContent = (fuori ? fuori + ' valori FS > 3 non visibili (fuori scala). ' : '') + 'Falde: ' + sel.map(s => s.nome + ' ' + fmt(s.zFalda) + ' m').join('; ') + '.' + (att ? '' : '');
@@ -775,7 +780,7 @@
 
     h += '<div class="section-title">Dati di sito</div><div class="escl-sito">' +
       '<div class="field"><label>a<sub>max</sub> al p.c. in campo libero [g]</label><input type="text" value="' + (isNum(sc.amax) ? fmt(sc.amax, 3) : '') + '" disabled><div class="hint">dallo scenario</div></div>' +
-      '<div class="field"><label for="exFalda">Falda media stagionale [m dal p.c.]</label><input type="text" inputmode="decimal" id="exFalda" value="' + (isNum(dati.faldaMediaStagionale) ? String(dati.faldaMediaStagionale).replace('.', ',') : '') + '"><div class="hint">può differire dalla falda di verifica (' + fmt(sc.zFalda) + ' m)</div></div>' +
+      '<div class="field"><label for="exFalda">Falda media stagionale [m dal p.c.]</label><input type="text" inputmode="decimal" id="exFalda" value="' + esc(isNum(dati.faldaMediaStagionale) ? String(dati.faldaMediaStagionale).replace('.', ',') : '') + '"><div class="hint">può differire dalla falda di verifica (' + fmt(sc.zFalda) + ' m)</div></div>' +
       '<div class="field"><label for="exPc">Piano campagna sub-orizzontale</label>' + sceltaSiNo('exPc', dati.pcSubOrizzontale) + '</div>' +
       '<div class="field"><label for="exFond">Fondazioni superficiali</label>' + sceltaSiNo('exFond', dati.fondazioniSuperficiali) + '</div></div>';
 
@@ -866,14 +871,14 @@
     const q = r.riepilogo;
     h += '<div class="section-title">Intervalli non calcolati</div>';
     h += q.intervalliNonCalcolati.length ? '<div class="table-scroll"><table class="data-table"><thead><tr><th scope="col">da<span class="u">[m]</span></th><th scope="col">a<span class="u">[m]</span></th><th scope="col">punti</th><th scope="col">stato</th><th scope="col" style="text-align:left;">motivo</th></tr></thead><tbody>' +
-      q.intervalliNonCalcolati.map(i => '<tr><td>' + fmt(i.da) + '</td><td>' + fmt(i.a) + '</td><td>' + i.n + '</td><td><span class="stato-tag ' + i.stato + '">' + esc(F.ETICHETTE_STATI[i.stato]) + '</span></td><td class="txt">' + esc(i.motivo) + '</td></tr>').join('') + '</tbody></table></div>'
+      q.intervalliNonCalcolati.map(i => '<tr><td>' + fmt(i.da) + '</td><td>' + fmt(i.a) + '</td><td>' + esc(i.n) + '</td><td><span class="stato-tag ' + esc(i.stato) + '">' + esc(F.ETICHETTE_STATI[i.stato]) + '</span></td><td class="txt">' + esc(i.motivo) + '</td></tr>').join('') + '</tbody></table></div>'
       : '<div class="hint">Nessuno.</div>';
     h += '<div class="hint" style="margin-top:6px;">Un intervallo non calcolato non è un intervallo «sicuro». Le profondità oltre ' + fmt(q.profonditaIndagata ? q.profonditaIndagata.a : 0) + ' m non sono indagate.</div>';
     h += '<div class="section-title">Avvisi del metodo e dell\'app</div>';
     h += q.avvisi.length ? '<div class="table-scroll"><table class="data-table"><thead><tr><th scope="col">codice</th><th scope="col">tipo</th><th scope="col">punti</th><th scope="col">z<span class="u">[m]</span></th><th scope="col" style="text-align:left;">messaggio</th></tr></thead><tbody>' +
-      q.avvisi.map(a => '<tr><td>' + esc(a.codice) + '</td><td>' + esc(a.tipo) + '</td><td>' + a.n + '</td><td>' + fmt(a.zDa) + '–' + fmt(a.zA) + '</td><td class="txt">' + esc(a.messaggio) + '</td></tr>').join('') + '</tbody></table></div>'
+      q.avvisi.map(a => '<tr><td>' + esc(a.codice) + '</td><td>' + esc(a.tipo) + '</td><td>' + esc(a.n) + '</td><td>' + fmt(a.zDa) + '–' + fmt(a.zA) + '</td><td class="txt">' + esc(a.messaggio) + '</td></tr>').join('') + '</tbody></table></div>'
       : '<div class="hint">Nessun avviso.</div>';
-    h += '<div class="section-title">Assunzioni</div><ul>' + q.assunzioni.map(a => '<li>' + esc(a.descrizione) + (a.n ? ' <span class="hint">(' + a.n + ' punti)</span>' : '') + '</li>').join('') +
+    h += '<div class="section-title">Assunzioni</div><ul>' + q.assunzioni.map(a => '<li>' + esc(a.descrizione) + (a.n ? ' <span class="hint">(' + esc(a.n) + ' punti)</span>' : '') + '</li>').join('') +
       (pv.tipo === 'CPTE' ? '' : '') + '</ul>';
     h += '<div class="section-title">Basi del metodo</div><ul><li>' + esc(q.notaFS) + '</li><li>' + esc(q.notaPL) + '</li>' +
       '<li>Criterio di verifica: ' + esc(F.criterioFS(sc)) + '</li>' +
@@ -1004,34 +1009,52 @@
   // ---------------------------------------------------------------------------
   // Progetto: nuovo, esempio, apri, salva
   // ---------------------------------------------------------------------------
-  const vuoto = () => S.pr.prove.length === 0 && !S.pr.progetto.titolo;
-  $('btnNuovo').addEventListener('click', () => {
-    if (!vuoto() && !confirm('Iniziare un nuovo progetto? Le modifiche non salvate andranno perse.')) return;
-    S.pr = P.nuovoProgetto(); S.confronto = []; S.selezione = null; S.pannelli = null; renderTutto();
-  });
-  $('btnEsempio').addEventListener('click', () => {
-    if (!vuoto() && !confirm('Aprire l\'esempio sintetico? Le modifiche non salvate andranno perse.')) return;
-    S.pr = E.progettoEsempio(); S.confronto = []; S.selezione = null; S.pannelli = null; renderTutto();
-  });
-  $('btnApri').addEventListener('click', () => $('fileApri').click());
+  /** Modifiche non salvate: confronto degli input con l'ultima apertura o l'ultimo salvataggio. */
+  const modificato = () => P.salvaProgetto(S.pr) !== S.salvato;
+  const confermaSostituzione = (azione) => !modificato() || confirm(azione + '? Le modifiche non salvate al progetto corrente andranno perse.');
+  function sostituisciProgetto(pr) {
+    S.pr = pr; S.confronto = []; S.selezione = null; S.pannelli = null; S.esclSel = null;
+    S.salvato = P.salvaProgetto(pr);
+    renderTutto();
+  }
+  $('btnNuovo').addEventListener('click', () => { if (confermaSostituzione('Iniziare un nuovo progetto')) sostituisciProgetto(P.nuovoProgetto()); });
+  $('btnEsempio').addEventListener('click', () => { if (confermaSostituzione('Aprire l\'esempio sintetico')) sostituisciProgetto(E.progettoEsempio()); });
+  $('btnApri').addEventListener('click', () => { if (confermaSostituzione('Aprire un altro progetto')) $('fileApri').click(); });
   $('fileApri').addEventListener('change', (e) => {
     const f = e.target.files[0]; if (!f) return;
     const rd = new FileReader();
     rd.onload = () => {
-      const esito = P.apriProgetto(rd.result);
-      if (!esito.ok) { alert('File non valido:\n' + esito.errori.slice(0, 10).map(x => '• ' + x.campo + ': ' + x.motivo).join('\n')); return; }
-      S.pr = esito.progetto; S.confronto = []; S.selezione = null; S.pannelli = null; renderTutto();
+      // Il progetto corrente viene sostituito solo dopo la validazione completa del file.
+      const esito = P.apriProgetto(String(rd.result));
+      if (!esito.ok) {
+        const altri = esito.errori.length > 10 ? '\n… e altri ' + (esito.errori.length - 10) + ' errori.' : '';
+        alert('Il file non è stato aperto: contiene dati non validi. Il progetto corrente non è stato modificato.\n\n' + esito.errori.slice(0, 10).map(x => '• ' + x.campo + ': ' + x.motivo).join('\n') + altri);
+        return;
+      }
+      sostituisciProgetto(esito.progetto);
+      if (esito.avvisi.length) alert(esito.avvisi.join('\n'));
     };
+    rd.onerror = () => alert('Impossibile leggere il file. Il progetto corrente non è stato modificato.');
     rd.readAsText(f);
     e.target.value = '';
   });
   $('btnSalva').addEventListener('click', () => {
-    const blob = new Blob([P.salvaProgetto(S.pr)], { type: 'application/json' });
-    scarica(URL.createObjectURL(blob), nomeFile('progetto', 'json'));
+    const nonNumerico = S.pr.scenari.find(s => s.opzioni && s.opzioni.FSrif !== null && s.opzioni.FSrif !== undefined && !isNum(s.opzioni.FSrif));
+    if (nonNumerico) { alert('Lo scenario «' + nonNumerico.nome + '» ha un FS di riferimento non numerico: correggilo prima di salvare (altrimenti alla riapertura varrebbe 1,25).'); return; }
+    const testo = P.salvaProgetto(S.pr);
+    scarica(URL.createObjectURL(new Blob([testo], { type: 'application/json' })), nomeFile('progetto', 'json'));
+    S.salvato = testo;
   });
+  /** Motivo che impedisce stampa ed esportazione dello scenario attivo, oppure null. */
+  function bloccoUscite(sc, azione) {
+    if (!sc || statoRisultato(sc) !== 'aggiornato' || risultatoDi(sc).stato !== 'calcolato') return 'Calcola lo scenario attivo prima di ' + azione + ': i risultati devono essere aggiornati.';
+    const rif = F.statoFsRiferimento(sc);
+    if (!rif.valido) return rif.motivo;
+    return null;
+  }
   $('btnCsv').addEventListener('click', () => {
-    const sc = scenario();
-    if (!sc || statoRisultato(sc) !== 'aggiornato' || risultatoDi(sc).stato !== 'calcolato') { alert('Calcola lo scenario attivo prima di esportare: i risultati devono essere aggiornati.'); return; }
+    const sc = scenario(), blocco = bloccoUscite(sc, 'esportare');
+    if (blocco) { alert(blocco); return; }
     const pre = EX.valutaEsclusione(L, prova(), sc, risultatoDi(sc));
     const csv = X.csvRisultati(S.pr, prova(), sc, risultatoDi(sc), { preliminare: pre.esito.titolo + '. ' + pre.esito.testo });
     scarica(URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' })), nomeFile('risultati-' + sc.nome, 'csv'));
@@ -1050,8 +1073,8 @@
   // Stampa
   // ---------------------------------------------------------------------------
   $('btnStampa').addEventListener('click', () => {
-    const sc = scenario();
-    if (!sc || statoRisultato(sc) !== 'aggiornato' || risultatoDi(sc).stato !== 'calcolato') { alert('Calcola lo scenario attivo prima di stampare: i risultati devono essere aggiornati.'); return; }
+    const sc = scenario(), blocco = bloccoUscite(sc, 'stampare');
+    if (blocco) { alert(blocco); return; }
     if (S.tab !== 'profili') mostraTab('profili');
     preparaStampa();
     setTimeout(() => window.print(), 50);
@@ -1109,7 +1132,7 @@
     h += '<div class="st-h">3. Riepilogo</div><table class="st-tab"><tbody>' +
       riga('Profondità indagata', q.profonditaIndagata ? fmt(q.profonditaIndagata.da) + ' – ' + fmt(q.profonditaIndagata.a) + ' m' : '–') +
       riga('Estensione analizzata', q.estensioneAnalizzata ? fmt(q.estensioneAnalizzata.da) + ' – ' + fmt(q.estensioneAnalizzata.a) + ' m' : '–') +
-      riga('Punti calcolati', (q.conteggi.calcolato || 0) + ' su ' + q.punti) +
+      riga('Punti calcolati', esc((q.conteggi.calcolato || 0) + ' su ' + q.punti)) +
       riga('FS minimo calcolato', q.fsMin ? fmt(q.fsMin.FS) + ' a z = ' + fmt(q.fsMin.z) + ' m' : '–') +
       riga('FS di riferimento', fmt(F.fsRiferimento(sc)) + ' · punti calcolati con FS < 1: ' + nFS(r, 1) + '; con FS < ' + fmt(F.fsRiferimento(sc)) + ': ' + nFS(r, F.fsRiferimento(sc))) +
       (r.cedimenti && r.cedimenti.stato === 'calcolato' ? riga('Cedimento post-sismico da CPT (Zhang et al. 2002, 0–20 m)', esc(testoCedimento(r.cedimenti)) + (r.cedimenti.completo ? '' : ' — copertura incompleta: contributo nullo nel valore inferiore, deformazione limite ' + fmt(r.cedimenti.epsLimite, 2) + ' % nel superiore')) +
@@ -1129,8 +1152,8 @@
       Gr.immagineDa(Gr.cartaSBT, cfgSBT(r, sc), 640, 560) + '"></figure>' + tabellaZoneSBT(r) +
       '<p class="st-nota">Strumento di lettura della prova, non entra nel calcolo. Zone 2–7 delimitate da Ic (Robertson e Wride 1998, Tab. 1, da Robertson 1990); le zone 1, 8 e 9 non sono definite da Ic e non sono rappresentate.</p>';
     h += '<div class="st-h st-pagina">' + (sbt ? '6' : '5') + '. Avvisi, assunzioni e limiti</div><ul class="st-lista">' +
-      q.avvisi.map(a => '<li><b>' + esc(a.codice) + '</b> (' + a.n + ' punti, z ' + fmt(a.zDa) + '–' + fmt(a.zA) + ' m): ' + esc(a.messaggio) + '</li>').join('') +
-      q.assunzioni.map(a => '<li>Assunzione: ' + esc(a.descrizione) + (a.n ? ' (' + a.n + ' punti)' : '') + '</li>').join('') +
+      q.avvisi.map(a => '<li><b>' + esc(a.codice) + '</b> (' + esc(a.n) + ' punti, z ' + fmt(a.zDa) + '–' + fmt(a.zA) + ' m): ' + esc(a.messaggio) + '</li>').join('') +
+      q.assunzioni.map(a => '<li>Assunzione: ' + esc(a.descrizione) + (a.n ? ' (' + esc(a.n) + ' punti)' : '') + '</li>').join('') +
       '<li>Profondità oltre ' + fmt(q.profonditaIndagata ? q.profonditaIndagata.a : 0) + ' m non indagate; un intervallo non calcolato non è un intervallo sicuro.</li>' +
       (r.indiceIL && r.indiceIL.stato === 'calcolato' ? r.indiceIL.assunzioni.map(a => '<li>IL: ' + esc(a.descrizione) + '</li>').join('') + '<li>IL: ' + esc(r.indiceIL.fonte) + '</li>' : '') +
       (r.cedimenti && r.cedimenti.stato === 'calcolato' ? r.cedimenti.assunzioni.concat(r.cedimenti.avvisi.map(a => ({ descrizione: a.messaggio }))).map(a => '<li>Cedimento e LSN: ' + esc(a.descrizione) + '</li>').join('') + '<li>Cedimento e LSN: ' + esc(r.cedimenti.fonte) + '</li>' : '<li>Cedimenti post-sismici: calcolati solo con prove CPT.</li>') +
@@ -1148,5 +1171,6 @@
   }
 
   window.LiquiUI = { stato: S, renderTutto, calcola, statoRisultato };
+  S.salvato = P.salvaProgetto(S.pr);
   renderTutto();
 })();

@@ -17,7 +17,7 @@ Percorso: **prova → scenario → calcolo → verifica preliminare, profili e t
    - il metodo, compatibile con la prova;
    - M_w e a_max in superficie [g], forniti dal geologo con la loro fonte;
    - le opzioni del metodo;
-   - il FS di riferimento: predefinito 1,25 (EN 1998-5, §4.1.4), modificabile tra 1 e 3.
+   - il FS di riferimento: con il campo vuoto vale 1,25 (EN 1998-5, §4.1.4); si può scegliere un valore tra 1 e 3. Un valore fuori intervallo o non numerico non viene sostituito: resta segnalato come errore, e stampa ed esportazione sono bloccate finché non viene corretto.
 4. **Stratigrafia**: falda di verifica e strati, con γ, γ_sat, contenuto di fini FC (facoltativo) e descrizione.
 5. **Calcola scenario**. Se un input di calcolo cambia, i risultati diventano «non aggiornati» fino al ricalcolo: lo segnalano un'etichetta, un velo sui grafici e un avviso nelle tabelle. Esportazione CSV e stampa richiedono risultati aggiornati.
 
@@ -90,7 +90,11 @@ Le profondità non indagate non generano righe: il riepilogo distingue profondit
   - Righe: una per lettura, con dati convertiti, tensioni e grandezze a precisione piena.
   - Dati mancanti o non calcolati: cella vuota, mai zero. I testi che iniziano con `= + - @` sono preceduti da un apostrofo.
 - **PNG** di ogni pannello (titolo, assi, unità, legenda, sfondo bianco).
-- **JSON**: salvataggio e riapertura del progetto. Le bozze di importazione restano in memoria solo durante la sessione.
+- **JSON**: salvataggio e riapertura del progetto.
+  - Il file contiene solo gli input: dopo l'apertura i risultati si ricalcolano con «Calcola».
+  - Un file con dati non validi non viene aperto: l'app elenca gli errori e lascia invariato il progetto corrente.
+  - Prima di sostituire un progetto con modifiche non salvate (Nuovo, Demo sintetica, Apri) l'app chiede conferma.
+  - Le bozze di importazione restano in memoria solo durante la sessione.
 
 ## Limiti
 

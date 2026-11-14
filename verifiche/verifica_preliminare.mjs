@@ -121,7 +121,8 @@ console.log('6. Salvataggio, firma e dati di vecchi progetti');
 {
   const testo = P.salvaProgetto(pr);
   const r = P.apriProgetto(testo);
-  check('riapertura conserva le curve', JSON.stringify(r.progetto.scenari[0].esclusione), JSON.stringify(sCpt.esclusione));
+  const canon = (x) => JSON.stringify(x, (k, v) => v && typeof v === 'object' && !Array.isArray(v) ? Object.fromEntries(Object.keys(v).sort().map(c => [c, v[c]])) : v);
+  check('riapertura conserva le curve', canon(r.progetto.scenari[0].esclusione), canon(sCpt.esclusione));
   const s = P.copia(sCpt); s.esclusione.faldaMediaStagionale = 30;
   check('la verifica preliminare non entra nella firma', P.firmaInput(cptu, s, L.VERSIONE_MOTORE), P.firmaInput(cptu, sCpt, L.VERSIONE_MOTORE));
   const vecchio = JSON.parse(testo); delete vecchio.scenari[0].esclusione;
