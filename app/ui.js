@@ -322,7 +322,7 @@
     return '<div class="blocco-il"><div><span class="eyebrow">CEDIMENTO POST-SISMICO DA CPT · ZHANG ET AL. 2002 · 0–20 m</span>' +
       '<div class="il-valore num">' + esc(testoCedimento(c)) + '</div><div class="num">LSN ' + esc(testoLSN(c)) + ' · 0–10 m: ' + esc(testoLSN(c, true)) + '</div></div>' +
       '<span>Stima della deformazione volumetrica di riconsolidazione su piano campagna sub-orizzontale, senza spostamenti laterali; gli autori la indicano per progetti a rischio basso o medio e come stima preliminare per gli altri. ' +
-      (c.completo ? '' : 'Copertura incompleta: ' + fmt(c.spessori.ignoto, 2) + ' m senza risultato, con contributo nullo nel valore inferiore e deformazione limite (' + fmt(c.epsLimite, 2) + ' %) nel superiore. ') +
+      (c.completo ? '' : 'Copertura incompleta: ' + fmt(c.spessori.ignoto, 2) + ' m senza risultato, con contributo nullo nel valore inferiore e deformazione della curva limite (' + fmt(c.epsLimite, 2) + ' %) nel superiore: limiti convenzionali del modello, non un intervallo di confidenza né un massimo fisico garantito. ') +
       c.avvisi.map(a => esc(a.messaggio)).join(' ') + ' LSN senza classi: il giudizio resta del progettista.</span></div>';
   }
 
@@ -337,7 +337,7 @@
     const sp = ind.spessori;
     return '<div class="blocco-il"><div><span class="eyebrow">INDICE DEL POTENZIALE DI LIQUEFAZIONE · IWASAKI · 0–20 m</span>' +
       '<div class="il-valore num">IL ' + (ind.completo ? '= ' : '') + esc(testoIL(ind)) + '</div></div>' +
-      '<span>' + (ind.completo ? 'Profilo coperto in 0–20 m.' : 'Copertura incompleta in 0–20 m: ' + fmt(sp.ignoto, 2) + ' m senza risultato (dati mancanti, non calcolati o non indagati): contributo nullo nel valore inferiore, massimo possibile nel superiore. Nessun tratto ignoto è considerato sicuro.') +
+      '<span>' + (ind.completo ? 'Profilo coperto in 0–20 m.' : 'Copertura incompleta in 0–20 m: ' + fmt(sp.ignoto, 2) + ' m senza risultato (dati mancanti, non calcolati o non indagati): contributo nullo nel valore inferiore, contributo massimo del modello nel superiore: limiti convenzionali del modello, non un intervallo di confidenza né un massimo fisico garantito. Nessun tratto ignoto è considerato sicuro.') +
       ' Spessori: FS calcolato ' + fmt(sp.FS, 2) + ' m (di cui FS &lt; 1 ' + fmt(sp.liquefacibileFSmin1, 2) + ' m), sopra falda ' + fmt(sp.sopraFalda, 2) + ' m, esclusi per comportamento argilloso (Ic oltre soglia, FS N.A., nessun contributo) ' + fmt(sp.argilloso, 2) + ' m. Senza classi: il giudizio resta del progettista.</span></div>';
   }
 
@@ -459,7 +459,7 @@
     if (ind && ind.stato === 'calcolato') {
       const lo = ind.curva.map(c => ({ x: c.ILmin, y: c.z })), hi = ind.curva.map(c => ({ x: c.ILmax, y: c.z }));
       const dir = [{ nome: 'IL cumulato (tratti senza risultato: contributo nullo)', colore: COL.blu, tratteggio: false, segmenti: [lo], punti: lo }];
-      if (!ind.completo) dir.push({ nome: 'limite superiore (tratti senza risultato: contributo massimo)', colore: COL.grigio, tratteggio: true, segmenti: [hi], punti: hi });
+      if (!ind.completo) dir.push({ nome: 'limite superiore convenzionale (tratti senza risultato: contributo massimo)', colore: COL.grigio, tratteggio: true, segmenti: [hi], punti: hi });
       p.push({ id: 'IL', titolo: 'Indice IL cumulato', etichettaX: 'IL cumulato [–]', serieDirette: dir, xMin: 0, def: false, cifre: 2,
         nota: 'Iwasaki, 0–20 m, senza classi. ' + (ind.completo ? 'IL = ' + fmt(ind.IL, 1) + '.' : 'Copertura incompleta: IL tra ' + fmt(ind.ILmin, 1) + ' e ' + fmt(ind.ILmax, 1) + ' (valori a 20 m).') });
     }
@@ -476,7 +476,7 @@
         xMin: 0, def: false, cifre: 2, nota: 'Zhang et al. (2002), interpolazione lineare in FS; Ic oltre soglia e sopra falda: εv = 0.' });
       const lo = [{ x: 0, y: 0 }].concat(ced.tratti.map(t => ({ x: t.Smin * 100, y: t.a }))), hi = [{ x: 0, y: 0 }].concat(ced.tratti.map(t => ({ x: t.Smax * 100, y: t.a })));
       const dir = [{ nome: 'cedimento cumulato (tratti senza risultato: contributo nullo)', colore: COL.blu, tratteggio: false, segmenti: [lo], punti: lo }];
-      if (!ced.completo) dir.push({ nome: 'limite superiore (tratti senza risultato: deformazione limite)', colore: COL.grigio, tratteggio: true, segmenti: [hi], punti: hi });
+      if (!ced.completo) dir.push({ nome: 'limite superiore convenzionale (tratti senza risultato: curva limite)', colore: COL.grigio, tratteggio: true, segmenti: [hi], punti: hi });
       p.push({ id: 'sced', titolo: 'Cedimento cumulato', etichettaX: 'S [cm]', serieDirette: dir, xMin: 0, def: false, cifre: 1,
         nota: 'Dal piano campagna verso il basso. ' + testoCedimento(ced) + ' · LSN ' + testoLSN(ced) + '.' });
     }
@@ -1135,9 +1135,9 @@
       riga('Punti calcolati', esc((q.conteggi.calcolato || 0) + ' su ' + q.punti)) +
       riga('FS minimo calcolato', q.fsMin ? fmt(q.fsMin.FS) + ' a z = ' + fmt(q.fsMin.z) + ' m' : '–') +
       riga('FS di riferimento', fmt(F.fsRiferimento(sc)) + ' · punti calcolati con FS < 1: ' + nFS(r, 1) + '; con FS < ' + fmt(F.fsRiferimento(sc)) + ': ' + nFS(r, F.fsRiferimento(sc))) +
-      (r.cedimenti && r.cedimenti.stato === 'calcolato' ? riga('Cedimento post-sismico da CPT (Zhang et al. 2002, 0–20 m)', esc(testoCedimento(r.cedimenti)) + (r.cedimenti.completo ? '' : ' — copertura incompleta: contributo nullo nel valore inferiore, deformazione limite ' + fmt(r.cedimenti.epsLimite, 2) + ' % nel superiore')) +
+      (r.cedimenti && r.cedimenti.stato === 'calcolato' ? riga('Cedimento post-sismico da CPT (Zhang et al. 2002, 0–20 m)', esc(testoCedimento(r.cedimenti)) + (r.cedimenti.completo ? '' : ' — copertura incompleta: contributo nullo nel valore inferiore, deformazione della curva limite ' + fmt(r.cedimenti.epsLimite, 2) + ' % nel superiore (limiti convenzionali del modello, non un intervallo di confidenza)')) +
         riga('LSN (senza classi)', '0–20 m: ' + esc(testoLSN(r.cedimenti)) + ' · 0–10 m: ' + esc(testoLSN(r.cedimenti, true))) : '') +
-      riga('Indice IL (Iwasaki, 0–20 m, senza classi)', r.indiceIL ? esc(testoIL(r.indiceIL)) + (r.indiceIL.stato === 'calcolato' && !r.indiceIL.completo ? ' — copertura incompleta: ' + fmt(r.indiceIL.spessori.ignoto, 2) + ' m senza risultato, con contributo nullo nel valore inferiore e massimo possibile nel superiore' : '') : '–') +
+      riga('Indice IL (Iwasaki, 0–20 m, senza classi)', r.indiceIL ? esc(testoIL(r.indiceIL)) + (r.indiceIL.stato === 'calcolato' && !r.indiceIL.completo ? ' — copertura incompleta: ' + fmt(r.indiceIL.spessori.ignoto, 2) + ' m senza risultato, con contributo nullo nel valore inferiore e contributo massimo del modello nel superiore (limiti convenzionali del modello, non un intervallo di confidenza)' : '') : '–') +
       riga('Intervalli non calcolati', q.intervalliNonCalcolati.length ? q.intervalliNonCalcolati.map(i => fmt(i.da) + '–' + fmt(i.a) + ' m: ' + esc(F.ETICHETTE_STATI[i.stato]) + (i.codice ? ' (' + esc(i.codice) + ')' : '')).join('; ') : 'nessuno') +
       '</tbody></table><p class="st-nota"><b>Criterio di verifica e scelta del coefficiente di sicurezza.</b> ' + esc(F.criterioFS(sc)) + '</p><p class="st-nota">Il FS minimo non descrive da solo la risposta del sito. ' + esc(q.notaFS) + ' ' + esc(q.notaPL) + '</p>';
     const tavole = S.grafici.filter(g => g.cfg);
@@ -1160,6 +1160,25 @@
       '<li>Spostamenti laterali: non calcolati.</li></ul>';
     h += '<div class="st-piede"><span>GeoHub-LiquiSite ' + esc(P.VERSIONE_APP) + ' · motore ' + esc(r.versioneMotore) + ' · calcolato il ' + esc(new Date(r.calcolatoIl).toLocaleString('it-IT')) + ' · firma input ' + esc(r.firma) + '</span><span>Basato su LiquiSite di Fabio Duronio, geologo</span></div>';
     $('stampa').innerHTML = h;
+    margineDiPagina(sc, r);
+  }
+
+  /**
+   * Intestazione e piè di pagina ripetuti su ogni pagina (margini di pagina CSS, Chrome ed Edge):
+   * titolo, scenario, versioni, firma degli input e numero di pagina. Dove i margini di pagina non
+   * sono supportati restano le stesse informazioni in fondo al documento (.st-piede).
+   */
+  function margineDiPagina(sc, r) {
+    const str = (t, max) => { t = String(t ?? '').replace(/[\u0000-\u001f\u007f]/g, ' '); if (max && t.length > max) t = t.slice(0, max - 1) + '…'; return '"' + t.replace(/[\\"]/g, '\\$&') + '"'; };
+    const font = 'font-family:Arial, Helvetica, sans-serif; font-size:7pt; color:#444;';
+    const testo = '@page{' +
+      '@top-left{content:' + str('GeoHub-LiquiSite – Verifica a liquefazione') + '; ' + font + '}' +
+      '@top-right{content:' + str((S.pr.progetto.titolo ? S.pr.progetto.titolo + ' · ' : '') + sc.nome, 90) + '; ' + font + '}' +
+      '@bottom-left{content:' + str('LiquiSite ' + P.VERSIONE_APP + ' · motore ' + r.versioneMotore + ' · firma input ' + r.firma) + '; ' + font + '}' +
+      '@bottom-right{content:"pagina " counter(page) " di " counter(pages); ' + font + '}}';
+    let st = document.getElementById('stileMargini');
+    if (!st) { st = document.createElement('style'); st.id = 'stileMargini'; document.head.appendChild(st); }
+    st.textContent = testo;
   }
 
   // ---------------------------------------------------------------------------

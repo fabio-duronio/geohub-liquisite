@@ -29,7 +29,7 @@ Nessuna classe: classi e zone appartengono alla microzonazione; per la verifica 
 | Ic oltre soglia (CNR 2024, §3.2.1.2, pag. 32: Ic ≤ 2,6, soglia adattabile tra 2,4 e 2,8) | **N.A.**, non calcolato | F(z) = 0 per **convenzione operativa di calcolo**, dichiarata | escluso dal criterio di applicabilità CPT: non equivale a un FS nullo e non coincide con la condizione FS > 1 della definizione di F(z); spessore riportato a parte; l'esclusione non dimostra l'assenza di perdita di resistenza ciclica (terreni fini sensibili o di transizione: verifica specifica con granulometria, limiti di Atterberg, criteri di suscettibilità) |
 | Dato mancante, non valido, non calcolato, fuori stratigrafia, oltre 20 m, non indagato | non disponibile | ignoto | nullo in IL_min, massimo possibile (F = 1) in IL_max |
 
-L'indice è **completo** solo se in 0–20 m non ci sono tratti ignoti; altrimenti si riporta l'intervallo IL_min–IL_max e lo spessore ignoto. Nessun tratto ignoto è considerato sicuro.
+L'indice è **completo** solo se in 0–20 m non ci sono tratti ignoti; altrimenti si riporta l'intervallo IL_min–IL_max e lo spessore ignoto. IL_min e IL_max sono **limiti convenzionali del modello** (tratti ignoti con contributo nullo e con contributo massimo del modello): non sono un intervallo di confidenza né un massimo fisico garantito. Nessun tratto ignoto è considerato sicuro.
 
 ## Verifiche
 

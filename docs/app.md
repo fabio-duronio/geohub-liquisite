@@ -84,7 +84,7 @@ Le profondità non indagate non generano righe: il riepilogo distingue profondit
   5. carta di comportamento (CPT);
   6. avvisi, assunzioni e limiti.
 
-  In fondo a ogni pagina sono riportate la versione dell'app e del motore e la firma degli input. Non compaiono frasi del tipo «sito sicuro».
+  Con Chrome ed Edge ogni pagina ha un'intestazione (titolo, progetto e scenario) e un piè di pagina (versione dell'app e del motore, firma degli input, numero di pagina). Gli stessi dati, con data e ora del calcolo, chiudono il documento, anche nei browser che non supportano intestazioni e piè di pagina CSS. Non compaiono frasi del tipo «sito sicuro».
 - **CSV** (separatore `;`, decimale `,`, UTF-8 con BOM).
   - Intestazione: progetto, prova, scenario, metodo, parametri, FS di riferimento, esito della verifica preliminare, cedimento e LSN.
   - Righe: una per lettura, con dati convertiti, tensioni e grandezze a precisione piena.
@@ -107,4 +107,4 @@ Le profondità non indagate non generano righe: il riepilogo distingue profondit
   - prove DPSH: non esiste una conversione in SPT di validità generale.
 - **Cedimento e LSN.** Solo con il metodo CPT, per piano campagna sub-orizzontale; nessuno spostamento laterale.
 - **Indici.** IL e LSN sono riportati senza classi: il giudizio resta del progettista.
-- **Rete.** Chart.js e i caratteri sono caricati da CDN: senza rete l'app non funziona.
+- **Dati e rete.** I dati delle prove e i calcoli restano nel browser: nessun dato del progetto viene inviato a server. La pagina richiede però a servizi esterni la libreria dei grafici (Chart.js, da cdn.jsdelivr.net) e i caratteri (IBM Plex, da Google Fonts): il browser contatta quei servizi, che ricevono le informazioni tecniche di ogni richiesta web (indirizzo IP, browser). Senza rete l'app non funziona.

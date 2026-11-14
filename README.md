@@ -6,7 +6,7 @@
 
 ![LiquiSite](assets/og-image.png)
 
-Applicazione web per geologi e ingegneri della famiglia GeoHub. A partire dalle prove in sito (CPT/CPTU, SPT, misure di V_s) esegue la verifica preliminare di esclusione e la verifica a liquefazione con i metodi semplificati, secondo il **D.M. 17/01/2018 (NTC 2018)** e la **Circolare n. 7/2019**. Non richiede installazione né registrazione: i calcoli avvengono nel browser e nessun dato viene inviato a server.
+Applicazione web per geologi e ingegneri della famiglia GeoHub. A partire dalle prove in sito (CPT/CPTU, SPT, misure di V_s) esegue la verifica preliminare di esclusione e la verifica a liquefazione con i metodi semplificati, secondo il **D.M. 17/01/2018 (NTC 2018)** e la **Circolare n. 7/2019**. Non richiede installazione né registrazione: i calcoli avvengono nel browser e i dati delle prove non vengono inviati a server. La libreria dei grafici (Chart.js) e i caratteri sono richiesti a servizi esterni (cdn.jsdelivr.net, Google Fonts).
 
 ## Cosa fa
 
@@ -24,8 +24,8 @@ Applicazione web per geologi e ingegneri della famiglia GeoHub. A partire dalle 
 
   Sono riportate anche le grandezze intermedie (CSR, CRR, r_d, K_σ, MSF, resistenze normalizzate) e, dove il metodo la prevede, la probabilità di liquefazione P_L.
 - **FS di riferimento** scelto dal progettista: predefinito 1,25 (EN 1998-5, §4.1.4), mostrato nei grafici e nel riepilogo. Le NTC non fissano un valore minimo.
-- **Indice del potenziale di liquefazione IL** (Iwasaki et al. 1978), senza classi. Se la verticale non è indagata per intero fino a 20 m, l'indice è dato come intervallo minimo–massimo.
-- **Cedimento post-sismico e indice LSN** da CPT, con le equazioni originali di Zhang et al. (2002). Anche qui i tratti non indagati sono dati come intervalli.
+- **Indice del potenziale di liquefazione IL** (Iwasaki et al. 1978), senza classi. Se la verticale non è indagata per intero fino a 20 m, l'indice è dato come intervallo minimo–massimo: sono limiti convenzionali del modello, non un intervallo di confidenza.
+- **Cedimento post-sismico e indice LSN** da CPT, con le equazioni originali di Zhang et al. (2002). Anche qui i tratti non indagati sono dati come intervalli, cioè limiti convenzionali del modello e non massimi fisici garantiti.
 - **Carta di comportamento del terreno** (Robertson & Wride 1998) con i punti della CPT.
 - **Confronto tra scenari**: fino a 3, con falda, metodo, magnitudo o accelerazione diversi.
 - **Importazione** da foglio elettronico o CSV, con scelta esplicita di separatori, colonne e unità. Gli errori sono segnalati con riga e colonna.
