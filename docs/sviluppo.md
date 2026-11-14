@@ -9,6 +9,7 @@ Struttura del repository, avvio in locale, formato del progetto e regole per le 
 ```
 index.html          pagina dell'applicazione (nessuna compilazione)
 assets/             logo, icone e immagine di anteprima per la condivisione
+vendor/             componenti di terze parti con le licenze: Chart.js, caratteri IBM Plex
 css/liquisite.css   foglio di stile (identità comune GeoHub)
 motore/             calcoli, senza dipendenze dall'interfaccia
   liquisite.js        metodi di innesco, tensioni, criteri di esclusione 1–4
@@ -29,8 +30,11 @@ dati/
 strumenti/
   digitalizza_fusi.py ricava dati/fusi-ntc2018.json dalle immagini del testo ufficiale
 verifiche/          script di controllo (vedi validazione.md) e dati del caso di riferimento
+  esegui.mjs          esegue tutte le verifiche e riassume l'esito
+  browser/            controllo nel browser con Playwright
 docs/               metodo, indici, cedimenti, uso, validazione, sviluppo
-.github/            modelli per segnalare discrepanze di calcolo e proporre funzioni
+.github/            modelli per le segnalazioni; workflow delle verifiche automatiche
+package.json        solo per le verifiche (Playwright); l'app non ha dipendenze
 README.md · CHANGELOG.md · LICENSE · NOTICE
 ```
 
@@ -44,7 +48,25 @@ cd geohub-liquisite
 python3 -m http.server 8000
 ```
 
-Apri <http://localhost:8000/>. Non servono compilazione né installazione di dipendenze. Chart.js 4.4.4 e i caratteri IBM Plex sono caricati da CDN: senza rete l'app non funziona.
+Apri <http://localhost:8000/>. Non servono compilazione né installazione di dipendenze, e l'app funziona anche senza rete.
+
+**Componenti di terze parti** (in `vendor/`, con le licenze; vedi anche NOTICE):
+
+| Componente | Versione | Licenza | Origine |
+|---|---|---|---|
+| Chart.js (`vendor/chart.js/chart.umd.js`) | 4.4.4 | MIT | pacchetto npm `chart.js`, file `dist/chart.umd.js` |
+| IBM Plex Sans (`vendor/ibm-plex/`) | Fontsource 5.3.0 | SIL OFL 1.1 | pacchetto npm `@fontsource/ibm-plex-sans`: pesi 400–700, latino, latino esteso e greco |
+| IBM Plex Mono (`vendor/ibm-plex/`) | Fontsource 5.3.0 | SIL OFL 1.1 | pacchetto npm `@fontsource/ibm-plex-mono`: pesi 400–600, latino e latino esteso |
+
+SHA-256 di `chart.umd.js`: `fed6a739f8d0f0687174de6cd14745fc0fc7809144ab113d22908a26bf0d7fea`. Per aggiornare un componente: sostituire i file con quelli del nuovo pacchetto, aggiornare tabella, NOTICE e parametro `?v=` in `index.html`, ed eseguire tutte le verifiche.
+
+**Content Security Policy** (meta in `index.html`):
+- **Script.** Solo dalla pagina stessa: nessuno script o gestore di eventi inline.
+- **Risorse.** Caratteri e stili dalla pagina stessa; immagini anche come `data:` e `blob:` (grafici ed esportazioni).
+- **Connessioni.** Nessuna connessione di rete.
+- **Stili inline.** `style-src` ammette `'unsafe-inline'`, perché l'interfaccia e Chart.js usano attributi `style` e la stampa genera un foglio per intestazione e piè di pagina.
+
+La CSP è una difesa aggiuntiva: la protezione principale resta la validazione del file e l'escape dei valori.
 
 **Pubblicazione**: la cartella si pubblica così com'è su GitHub Pages (branch `main`, radice). Quando cambia un file statico, aggiorna il parametro `?v=` dei riferimenti in `index.html`, così i browser non usano copie vecchie in cache.
 
@@ -95,4 +117,6 @@ Apri <http://localhost:8000/>. Non servono compilazione né installazione di dip
   - Nessuna frase del tipo «sito sicuro» o «terreno non liquefacibile»: l'esclusione si scrive «verifica omessa ai sensi del §7.11.3.4.2».
   - Nessuna classe di microzonazione per IL e LSN.
 - **Stampa.** È A4 verticale, pensata come allegato alla relazione.
-- **Verifiche.** Ogni modifica al calcolo va accompagnata da verifiche in `verifiche/`. Prima di pubblicare, esegui tutti gli script (vedi [Validazione](validazione.md#eseguire-le-verifiche)) e controlla nel browser importazione, ricalcolo, stampa e vista mobile.
+- **Dati dei file.** Sono sempre non attendibili: nuovi campi del progetto vanno aggiunti a `validaProgetto` con il loro tipo, e ogni valore inserito nell'HTML passa da `esc()`.
+- **Dipendenze.** Niente risorse esterne: nuovi componenti vanno in `vendor/` con la licenza.
+- **Verifiche.** Ogni modifica al calcolo va accompagnata da verifiche in `verifiche/`. Prima di pubblicare esegui `node verifiche/esegui.mjs --browser` (vedi [Validazione](validazione.md#eseguire-le-verifiche)) e controlla a vista stampa e vista mobile.

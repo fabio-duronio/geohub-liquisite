@@ -47,20 +47,22 @@ Fonte: *Pile Design for Downdrag: Examples and Supporting Materials*, Appendice 
 
 ## Eseguire le verifiche
 
-Servono Node.js (18 o successivo) e Python 3, senza dipendenze esterne. Dalla radice del repository:
+Servono Node.js (18 o successivo) e Python 3. Dalla radice del repository:
 
 ```bash
-for f in verifiche/*.mjs; do node "$f"; done
-python3 verifiche/verifica_indipendente.py
-python3 verifiche/verifica_cedimenti.py
+node verifiche/esegui.mjs              # verifiche numeriche (Node.js e Python)
+npm install && npx playwright install chromium
+node verifiche/esegui.mjs --browser    # anche il controllo nel browser
 ```
+
+Le verifiche numeriche non hanno dipendenze; il controllo nel browser richiede Playwright con Chromium. Ogni script termina con codice di uscita diverso da zero se un controllo non è superato. Lo stesso insieme viene eseguito automaticamente a ogni push e pull request (`.github/workflows/verifiche.yml`).
 
 | Script | Contenuto | Controlli |
 |---|---|---|
 | `verifica_motore.mjs` | valori pubblicati dagli autori | 123 |
 | `verifica_robustezza.mjs` | input non validi, soglie, stati di esito, convergenza | 262 |
 | `verifica_esclusione.mjs` | criteri 1–4 e fusi digitalizzati della Fig. 7.11.1 | 33 |
-| `verifica_profilo.mjs` | profilo, importazione, unità, CSV, progetto JSON | 107 |
+| `verifica_profilo.mjs` | profilo, importazione, unità, CSV, progetto JSON | 108 |
 | `verifica_il.mjs` | indice IL: profili analitici e seconda implementazione | 51 |
 | `verifica_preliminare.mjs` | verifica preliminare per strato e per sito, carta di comportamento | 49 |
 | `verifica_cedimenti.mjs` | equazioni di Zhang et al. (2002), cedimento, LSN | 50 |
@@ -68,8 +70,10 @@ python3 verifiche/verifica_cedimenti.py
 | `verifica_casuale.mjs` | prove casuali ripetibili (opzioni `--casi`, `--seme`) | 20 |
 | `verifica_restituzione.mjs` | coerenza di Ic tra grafici, tabelle e CSV | 6 |
 | `verifica_usabilita.mjs` | decimali, intestazioni senza dati, incolla da foglio elettronico | 12 |
+| `verifica_sicurezza.mjs` | apertura di progetti alterati (tipi, valori enumerati, proprietà ereditate, ID, risultati), 1500 alterazioni casuali, FS di riferimento senza ripiego | 73 |
+| `browser/verifica_browser.mjs` | nel browser: file alterati e valori iniettati in memoria senza esecuzione di codice; testo libero in tutte le schede, nel confronto e in stampa; FS di riferimento non valido con stampa e CSV bloccati; conferma per modifiche non salvate; intestazione e piè di pagina di stampa; nessuna richiesta esterna né violazione della CSP | 28 |
 
-In totale sono 737 controlli JavaScript, più i due confronti Python. Ogni script termina con codice di uscita diverso da zero se un controllo non è superato.
+In totale sono 811 controlli JavaScript, i due confronti Python e 28 controlli nel browser. I payload dei test di sicurezza sono innocui: al massimo impostano una variabile di prova.
 
 ## Limiti della validazione
 

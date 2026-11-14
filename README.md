@@ -6,7 +6,7 @@
 
 ![LiquiSite](assets/og-image.png)
 
-Applicazione web per geologi e ingegneri della famiglia GeoHub. A partire dalle prove in sito (CPT/CPTU, SPT, misure di V_s) esegue la verifica preliminare di esclusione e la verifica a liquefazione con i metodi semplificati, secondo il **D.M. 17/01/2018 (NTC 2018)** e la **Circolare n. 7/2019**. Non richiede installazione né registrazione: i calcoli avvengono nel browser e i dati delle prove non vengono inviati a server. La libreria dei grafici (Chart.js) e i caratteri sono richiesti a servizi esterni (cdn.jsdelivr.net, Google Fonts).
+Applicazione web per geologi e ingegneri della famiglia GeoHub. A partire dalle prove in sito (CPT/CPTU, SPT, misure di V_s) esegue la verifica preliminare di esclusione e la verifica a liquefazione con i metodi semplificati, secondo il **D.M. 17/01/2018 (NTC 2018)** e la **Circolare n. 7/2019**. Non richiede installazione né registrazione: i calcoli avvengono nel browser, i dati delle prove non vengono inviati a server e l'app non contatta servizi esterni: la libreria dei grafici (Chart.js) e i caratteri sono inclusi.
 
 ## Cosa fa
 

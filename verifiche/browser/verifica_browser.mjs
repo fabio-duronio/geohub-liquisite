@@ -5,8 +5,7 @@
 // Richiede Playwright con Chromium:  npm install --no-save playwright && npx playwright install chromium
 // Uso:  node verifiche/browser/verifica_browser.mjs
 // I file dell'app sono serviti da disco tramite intercettazione delle richieste: niente server.
-// Le richieste verso l'esterno sono bloccate; Chart.js è servito dalla copia locale se presente
-// (variabile CHARTJS con il percorso di chart.umd.min.js), altrimenti dalla cartella vendor/.
+// Le richieste verso l'esterno sono bloccate e contate: l'app deve funzionare senza.
 import { createRequire } from 'module';
 import { fileURLToPath } from 'url';
 import path from 'path';
@@ -19,7 +18,6 @@ const E = require('../../app/esempio.js');
 const RADICE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const BASE = 'http://liquisite.test/';
 const TIPI = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml', '.woff2': 'font/woff2' };
-const CHARTJS = process.env.CHARTJS || path.join(RADICE, 'vendor', 'chart.umd.min.js');
 const PAYLOAD = '"><img src=x onerror="globalThis.__liquiXSS=1">';
 
 let ok = 0, ko = 0;
@@ -30,13 +28,13 @@ const check = (nome, ottenuto, atteso) => {
 
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1366, height: 900 }, acceptDownloads: true });
-const erroriJS = [], dialoghi = [];
+const erroriJS = [], dialoghi = [], esterne = [], csp = [];
 page.on('pageerror', e => erroriJS.push(e.message));
+page.on('console', m => { if (/Content Security Policy/i.test(m.text())) csp.push(m.text()); });
 page.on('dialog', d => { dialoghi.push(d.message()); d.accept(); });
 await page.route('**/*', async (route) => {
   const url = new URL(route.request().url());
-  if (/chart(\.umd)?(\.min)?\.js$/.test(url.pathname) && fs.existsSync(CHARTJS)) return route.fulfill({ path: CHARTJS, contentType: TIPI['.js'] });
-  if (url.origin + '/' !== BASE) return route.abort();
+  if (url.origin + '/' !== BASE) { if (!/^(data|blob):/.test(url.protocol)) esterne.push(url.href); return route.abort(); }
   const file = path.join(RADICE, decodeURIComponent(url.pathname === '/' ? '/index.html' : url.pathname));
   if (!file.startsWith(RADICE) || !fs.existsSync(file)) return route.fulfill({ status: 404, body: '' });
   return route.fulfill({ path: file, contentType: TIPI[path.extname(file)] || 'application/octet-stream' });
@@ -193,6 +191,9 @@ console.log('5. Modifiche non salvate');
 }
 
 check('nessun errore JavaScript', erroriJS, []);
+check('nessuna richiesta a servizi esterni', esterne, []);
+check('nessuna violazione della Content Security Policy', csp, []);
+check('caratteri locali caricati', await page.evaluate(async () => { await document.fonts.ready; return ['400 14px "IBM Plex Sans"', '600 14px "IBM Plex Sans"', '400 14px "IBM Plex Mono"'].every(f => document.fonts.check(f)); }), true);
 await browser.close();
 console.log('\nRisultato: ' + ok + ' controlli superati, ' + ko + ' non superati.');
 if (ko) process.exit(1);

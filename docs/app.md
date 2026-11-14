@@ -107,4 +107,4 @@ Le profondità non indagate non generano righe: il riepilogo distingue profondit
   - prove DPSH: non esiste una conversione in SPT di validità generale.
 - **Cedimento e LSN.** Solo con il metodo CPT, per piano campagna sub-orizzontale; nessuno spostamento laterale.
 - **Indici.** IL e LSN sono riportati senza classi: il giudizio resta del progettista.
-- **Dati e rete.** I dati delle prove e i calcoli restano nel browser: nessun dato del progetto viene inviato a server. La pagina richiede però a servizi esterni la libreria dei grafici (Chart.js, da cdn.jsdelivr.net) e i caratteri (IBM Plex, da Google Fonts): il browser contatta quei servizi, che ricevono le informazioni tecniche di ogni richiesta web (indirizzo IP, browser). Senza rete l'app non funziona.
+- **Dati e rete.** I dati delle prove e i calcoli restano nel browser: nessun dato del progetto viene inviato a server. La libreria dei grafici (Chart.js) e i caratteri (IBM Plex) sono inclusi nell'app, che non contatta servizi esterni. Una politica di sicurezza dei contenuti (CSP) ammette solo risorse della pagina stessa.

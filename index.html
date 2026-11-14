@@ -2,6 +2,8 @@
 <html lang="it">
 <head>
 <meta charset="utf-8">
+<!-- Difesa aggiuntiva: solo risorse locali, nessuno script inline, nessuna connessione di rete. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>LiquiSite – Verifica di liquefazione dei terreni</title>
 <meta name="description" content="GeoHub-LiquiSite: verifica a liquefazione del sito secondo le NTC 2018 con metodi semplificati da prove CPT/CPTU, SPT e Vs; esclusione §7.11.3.4.2, indice IL, cedimenti e LSN. Calcoli nel browser, gratuita e open source.">
@@ -21,10 +23,9 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="LiquiSite: logo, descrizione e profilo del fattore di sicurezza di un esempio sintetico CPTU">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/liquisite.css?v=20261114">
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<link rel="stylesheet" href="vendor/ibm-plex/ibm-plex.css?v=0.2.1">
+<link rel="stylesheet" href="css/liquisite.css?v=0.2.1">
+<script src="vendor/chart.js/chart.umd.js?v=4.4.4"></script>
 </head>
 <body>
 
@@ -158,7 +159,7 @@
 </div>
 
 <footer class="footer-note no-print">
-  I calcoli avvengono nel browser: i dati delle prove non vengono inviati a server. La libreria dei grafici (Chart.js) e i caratteri sono richiesti a servizi esterni (cdn.jsdelivr.net, Google Fonts): senza rete l'app non funziona.<br>
+  I calcoli avvengono nel browser: i dati delle prove non vengono inviati a server. La libreria dei grafici (Chart.js) e i caratteri sono inclusi nell'app: nessuna richiesta a servizi esterni.<br>
   Strumento di supporto al professionista. Le NTC 2018 non fissano un FS minimo: il valore di riferimento (predefinito 1,25, EN 1998-5) è scelto e motivato dal progettista. Non sostituisce la relazione geologica.<br>
   Basato su LiquiSite di Fabio Duronio, geologo — <a href="https://github.com/fabio-duronio/geohub-liquisite">github.com/fabio-duronio/geohub-liquisite</a> · licenza AGPL-3.0 con termini aggiuntivi (NOTICE).
 </footer>
@@ -210,20 +211,20 @@
   </div>
 </dialog>
 
-<script src="motore/liquisite.js?v=20261114"></script>
-<script src="motore/indici.js?v=20261114"></script>
-<script src="motore/cedimenti.js?v=20261114"></script>
-<script src="app/progetto.js?v=20261114"></script>
-<script src="app/profilo.js?v=20261114"></script>
-<script src="dati/fusi-ntc2018.js?v=20261114"></script>
-<script src="app/esclusione.js?v=20261114"></script>
-<script src="app/importa.js?v=20261114"></script>
-<script src="app/esporta.js?v=20261114"></script>
-<script src="app/esempio.js?v=20261114"></script>
-<script src="app/grafici.js?v=20261114"></script>
-<script src="app/ui.js?v=20261114"></script>
-<script src="app/workspace.js?v=20261114"></script>
-<script src="app/guida-importa.js?v=20261114"></script>
-<script src="app/import-workspace.js?v=20261114"></script>
+<script src="motore/liquisite.js?v=0.2.1"></script>
+<script src="motore/indici.js?v=0.2.1"></script>
+<script src="motore/cedimenti.js?v=0.2.1"></script>
+<script src="app/progetto.js?v=0.2.1"></script>
+<script src="app/profilo.js?v=0.2.1"></script>
+<script src="dati/fusi-ntc2018.js?v=0.2.1"></script>
+<script src="app/esclusione.js?v=0.2.1"></script>
+<script src="app/importa.js?v=0.2.1"></script>
+<script src="app/esporta.js?v=0.2.1"></script>
+<script src="app/esempio.js?v=0.2.1"></script>
+<script src="app/grafici.js?v=0.2.1"></script>
+<script src="app/ui.js?v=0.2.1"></script>
+<script src="app/workspace.js?v=0.2.1"></script>
+<script src="app/guida-importa.js?v=0.2.1"></script>
+<script src="app/import-workspace.js?v=0.2.1"></script>
 </body>
 </html>
