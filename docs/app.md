@@ -43,8 +43,8 @@ I campi numerici accettano la virgola o il punto come separatore decimale, non i
 - **Tabelle**: tutte le grandezze, riga per riga, con stato, motivo e lettura del FS rispetto a 1 e al FS di riferimento.
 - **Confronto**: fino a 3 scenari, anche su prove diverse (confronto per profondità dal piano campagna). L'app segnala:
   - scenari non aggiornati;
-  - metodi con basi di FS e P_L diverse;
-  - cambiamenti del dominio dei punti calcolati.
+  - metodi con basi di FS e P_L diverse, elencando solo quelle dei metodi presenti;
+  - tra scenari della stessa prova, profondità calcolate in uno scenario e non nell'altro (per esempio per una falda diversa), con il nome dello scenario. Tra prove diverse le profondità non coincidono per costruzione e vale l'avviso sulle prove diverse.
 
   Nessun risultato viene scelto automaticamente.
 - **Avvisi e assunzioni**: avvisi del metodo e dell'app, valori assunti, criterio di scelta del FS e assunzioni di IL, cedimento e LSN.

@@ -79,17 +79,22 @@
     for (let i = 1; i < zsS.length && !lacuna; i++) if (zsS[i] - zsS[i - 1] > tol) lacuna = true;
     const valori = righe.map(r => (r.stato === 'calcolato' && r.valori && isNum(r.valori[chiave])) ? r.valori[chiave] : null);
     const mancanti = valori.filter(v => v === null).length;
+    // punti senza valore perché Ic supera la soglia (metodo non applicabile), distinti dai dati mancanti
+    const conIcOltre = righe.filter((r, i) => valori[i] === null && r.codice === 'IC_OLTRE_SOGLIA').length;
     const noti = valori.filter(v => v !== null);
     const tipo = prova.tipo === 'SPT' ? 'SPT' : prova.tipo;
     const soglia = L.SOGLIE_CRITERIO3 ? L.SOGLIE_CRITERIO3[tipo].soglia : (tipo === 'SPT' ? 30 : 180);
     const grandezza = tipo === 'SPT' ? '(N1)60' : 'qc1N';
     const minimo = noti.length ? Math.min(...noti) : null;
     const sopra = noti.filter(v => v > soglia).length;
-    const base = { grandezza, soglia, punti: righe.length, mancanti, sopraSoglia: sopra, minimo, sabbiaPulita: ds.sabbiaPulita };
+    const base = { grandezza, soglia, punti: righe.length, mancanti, conIcOltre, sopraSoglia: sopra, minimo, sabbiaPulita: ds.sabbiaPulita };
     if (ds.sabbiaPulita === null) return { ...base, stato: 'dati_insufficienti', soddisfatto: null, motivo: 'indicare se lo strato è costituito da sabbie pulite' };
     if (ds.sabbiaPulita === false) return { ...base, stato: 'valutato', soddisfatto: false, motivo: 'lo strato non è dichiarato sabbia pulita' };
-    if (lacuna) return { ...base, stato: 'dati_insufficienti', soddisfatto: null, motivo: 'la prova non descrive tutto il tratto saturo dello strato (' + zDa.toFixed(2) + '–' + zA.toFixed(2) + ' m)' };
-    if (mancanti) return { ...base, stato: 'dati_insufficienti', soddisfatto: null, motivo: mancanti + ' punti senza ' + grandezza + ' calcolato: il deposito non è descritto per intero' };
+    if (lacuna) return { ...base, stato: 'dati_insufficienti', soddisfatto: null, motivo: 'la prova non descrive tutto il tratto saturo dello strato (' + zDa.toFixed(2).replace('.', ',') + '–' + zA.toFixed(2).replace('.', ',') + ' m)' };
+    if (mancanti) return { ...base, stato: 'dati_insufficienti', soddisfatto: null, motivo: [
+      conIcOltre ? conIcOltre + (conIcOltre === 1 ? ' punto' : ' punti') + ' con Ic oltre la soglia (comportamento non da sabbia pulita)' : '',
+      mancanti - conIcOltre ? (mancanti - conIcOltre) + (mancanti - conIcOltre === 1 ? ' punto' : ' punti') + ' senza ' + grandezza + ' calcolato' : ''
+    ].filter(Boolean).join(' e ') + ': lo strato non è descritto per intero come sabbia pulita' };
     // ogni punto passa dal criterio del motore: stessa regola e stessi avvisi
     const esiti = noti.map(v => L.criterio3(tipo, v, true));
     const soddisfatto = esiti.every(x => x.soddisfatto === true);

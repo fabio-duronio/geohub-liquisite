@@ -94,7 +94,8 @@ def profilo(rng):
 
 def attesi(pr):
     """Cedimento e LSN con integrazione numerica a passi fini: ogni punto rappresenta ±passo/2,
-    tratti senza punti tra 0 e 20 m (sotto falda) ignoti; sopra falda contributo nullo."""
+    ma la falda fa da confine tra l'ultimo punto non saturo e il primo saturo; tratti senza punti
+    tra 0 e 20 m (sotto falda) ignoti; sopra falda contributo nullo."""
     passo, falda = pr['passo'], pr['falda']
     per = {}
     for p in pr['punti']:
@@ -103,8 +104,15 @@ def attesi(pr):
     def stato(z):
         if z <= falda:
             return ('zero', 0)
-        p = per.get(round(z / passo))
-        if p is None or abs(p['z'] - z) > passo / 2 + 1e-12:
+        k = round(z / passo)
+        p = per.get(k)
+        if p is not None and p['z'] <= falda:
+            # intervallo di un punto non saturo che scende sotto la falda: lo prende il punto successivo
+            q = per.get(k + 1)
+            p = q if q is not None and q['z'] > falda else None
+        elif p is None or abs(p['z'] - z) > passo / 2 + 1e-12:
+            return ('ignoto', 0)
+        if p is None:
             return ('ignoto', 0)
         if p['categoria'] == 'FS':
             return ('noto', eps(p['FS'], p['qc1Ncs']))

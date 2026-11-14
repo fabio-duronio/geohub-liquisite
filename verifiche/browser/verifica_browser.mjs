@@ -174,6 +174,25 @@ console.log('4. FS di riferimento, calcolo ed esportazione');
   check('FS rif non numerico: salvataggio bloccato con motivo', dialoghi.some(m => m.includes('non numerico')), true);
 }
 
+console.log('4b. Testi del confronto, del riepilogo e della stampa');
+{
+  await page.evaluate(() => { window.confirm = () => true; });
+  await page.click('#btnEsempio'); await page.waitForTimeout(200);
+  await page.evaluate(() => { const S = window.LiquiUI.stato; for (const s of S.pr.scenari) window.LiquiUI.calcola(s); S.confronto = S.pr.scenari.map(s => s.id); window.LiquiUI.renderTutto(); });
+  await page.click('#tab-confronto'); await page.waitForTimeout(400);
+  const avvisi = await page.evaluate(() => [...document.querySelectorAll('#pan-confronto .alert')].map(a => a.textContent));
+  const dominio = avvisi.filter(t => t.includes('punti calcolati diversi'));
+  check('confronto: dominio segnalato solo tra scenari della stessa prova, con il nome esplicito', [dominio.length, /11 profondità hanno un FS solo in «SLV – falda alta 1,0 m»/.test(dominio[0] || '')], [1, true]);
+  check('confronto: basi solo dei metodi presenti', avvisi.some(t => t.includes('B&I 2014 SPT: PL non calcolata') && !t.includes('Cetin') && !t.includes('Kayen')), true);
+  await page.click('#tab-profili'); await page.waitForTimeout(200);
+  const kpi = await page.evaluate(() => document.getElementById('riepilogo').innerText);
+  check('riepilogo: intervalli non calcolati sotto i punti calcolati, non sotto gli avvisi', /non calcolati in 6 intervalli/.test(kpi) && !/Avvisi\s*\n?\s*1\s*\n?\s*6 intervalli/.test(kpi), true);
+  await page.evaluate(() => { window.print = () => {}; }); await page.click('#btnStampa'); await page.waitForTimeout(500);
+  const stampa = await page.evaluate(() => document.getElementById('stampa').innerText);
+  check('stampa: nessun codice interno negli intervalli', /NON_SATURO|IC_OLTRE_SOGLIA/.test(stampa), false);
+  check('stampa: nome dell\'app coerente nei margini', await page.evaluate(() => document.getElementById('stileMargini').textContent.includes('"GeoHub-LiquiSite 0.')), true);
+}
+
 console.log('5. Modifiche non salvate');
 {
   let chiesto = 0;
