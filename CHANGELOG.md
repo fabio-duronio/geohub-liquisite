@@ -2,7 +2,22 @@
 
 La versione dell'app e quella del motore di calcolo sono distinte: l'app è indicata in alto e nel piè di pagina della stampa insieme al motore.
 
-## App 0.2.1 — non pubblicata
+## App 0.2.2 — non pubblicata
+
+Esempio sintetico più realistico e omogeneo. Motore, formule e interfaccia invariati.
+- **Strato argilloso a metà profilo.** Al posto dell'argilla limosa di 3,4 m (12,4–15,8 m, dove il metodo CPT non si applica), un limo argilloso di 0,8 m (12,4–13,2 m).
+- **Strato profondo.** Al posto della ghiaia sabbiosa, poco credibile con la CPT e fuori dalla taratura del metodo, una sabbia da media a densa (13,2–20 m). La CPTU arriva a 20 m: IL e cedimento risultano completi, non più intervalli.
+- **Densità coerenti con le descrizioni.**
+  - Sabbia media mediamente addensata: qc1Ncs circa 120–140.
+  - Sabbia da media a densa: qc1Ncs circa 130–150.
+  - Nessun FS oltre la scala del grafico, né nel profilo né nel Confronto (prima 24 valori oltre 3).
+- **SPT** coerenti con la CPTU.
+- **Verifica preliminare.**
+  - Tre curve granulometriche, tutte interne ai fusi, come è proprio delle sabbie; nessuno strato escluso.
+  - L'esclusione con il criterio 4 resta verificata nei test con una variante dedicata.
+- **Verifiche aggiornate.** I casi di prova interrotta usano una copia dell'esempio troncata a 18,4 m. Nuovo controllo: nessun FS fuori scala nell'esempio.
+
+## App 0.2.1 — 2026-11-14
 
 Consolidamento dopo un audit del codice. Motore e formule invariati: a parità di input nessun risultato cambia.
 

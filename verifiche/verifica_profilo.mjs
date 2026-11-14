@@ -92,8 +92,10 @@ console.log('2. Intervalli: sopra falda, dati mancanti, non applicabili, fuori s
   check('CPTU: lettura mancante → dati insufficienti', [manc.stato, manc.codice], ['dati_insufficienti', 'DATO_MANCANTE']);
   check('CPTU: lettura mancante senza valori', manc.valori, undefined);
   check('CPTU: nessuna riga tra 12,0 e 12,6 m (non indagato)', rDif.righe.some(x => x.z > 12.0 && x.z < 12.6), false);
-  const argilla = rCpt.righe.filter(x => x.z > 12.6 && x.z < 15.6);
-  check('CPTU: argilla limosa → Ic oltre soglia', argilla.length > 100 && argilla.every(x => x.codice === 'IC_OLTRE_SOGLIA'), true);
+  const argilla = rCpt.righe.filter(x => x.z > 12.55 && x.z < 13.05);
+  check('CPTU: limo argilloso → Ic oltre soglia', argilla.length > 20 && argilla.every(x => x.codice === 'IC_OLTRE_SOGLIA'), true);
+  const fs = rCpt.righe.filter(x => x.stato === 'calcolato').map(x => x.valori.FS);
+  check('esempio: nessun FS oltre la scala del grafico (3)', fs.filter(v => v > 3).length, 0);
   const s2 = P.copia(sCpt); s2.strati = s2.strati.filter(s => s.a <= 12.4);
   const r2 = F.calcolaScenario(cptu, s2, L, { adesso: ADESSO });
   const fuori = r2.righe.filter(x => x.z > 12.4);
@@ -103,7 +105,7 @@ console.log('2. Intervalli: sopra falda, dati mancanti, non applicabili, fuori s
   const r3 = F.calcolaScenario(sptSenzaFC, s3, L, { adesso: ADESSO });
   check('SPT senza FC → dati insufficienti, nessun FS', r3.righe.filter(x => x.z > 2).every(x => x.stato === 'dati_insufficienti' && x.codice === 'FC_MANCANTE'), true);
   const q = rCpt.riepilogo;
-  check('riepilogo: profondità indagata', q.profonditaIndagata, { da: 0.6, a: 18.4 });
+  check('riepilogo: profondità indagata', q.profonditaIndagata, { da: 0.6, a: 20 });
   check('riepilogo: punti totali = righe', q.punti, cptu.dati.length);
   check('riepilogo: somma dei conteggi', Object.values(q.conteggi).reduce((a, b) => a + b, 0), q.punti);
   const fsCalc = rCpt.righe.filter(x => x.stato === 'calcolato').map(x => x.valori.FS);

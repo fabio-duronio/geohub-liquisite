@@ -10,11 +10,12 @@
  *   1,2–3,4   limo argilloso                   Ic > 2,6 nella maggior parte dei punti
  *   3,4–7,2   sabbia limosa sciolta            con una lente limosa a 5,10–5,35 m
  *   7,2–8,6   alternanze di limo e sabbia limosa
- *   8,6–12,4  sabbia media mediamente addensata
- *   12,4–15,8 argilla limosa                   sovrappressioni interstiziali in u2
- *   15,8–20,0 ghiaia sabbiosa addensata        CPTU interrotta per rifiuto a 18,4 m
- * Sondaggio S1 accanto alla CPTU: SPT nei livelli granulari, FC da analisi di laboratorio,
- * due curve granulometriche per la verifica preliminare (§7.11.3.4.2).
+ *   8,6–12,4  sabbia media mediamente addensata  (qc1Ncs circa 120–140)
+ *   12,4–13,2 limo argilloso                   sovrappressioni interstiziali in u2
+ *   13,2–20,0 sabbia da media a densa          (qc1Ncs circa 130–150); CPTU spinta fino a 20 m
+ * Le densità sono scelte coerenti con le descrizioni: nessun FS oltre la scala del grafico.
+ * Sondaggio S1 accanto alla CPTU: SPT nei livelli granulari, coerenti con la CPTU, FC da analisi
+ * di laboratorio, tre curve granulometriche per la verifica preliminare (§7.11.3.4.2).
  */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory(require('./progetto.js'));
@@ -46,8 +47,8 @@
     { da: 3.4, a: 7.2, gamma: 18.0, gammaSat: 19.0, FC: null, descrizione: 'Sabbia limosa sciolta' },
     { da: 7.2, a: 8.6, gamma: 18.5, gammaSat: 19.2, FC: null, descrizione: 'Alternanze di limo e sabbia limosa' },
     { da: 8.6, a: 12.4, gamma: 19.0, gammaSat: 20.0, FC: null, descrizione: 'Sabbia media mediamente addensata' },
-    { da: 12.4, a: 15.8, gamma: 19.0, gammaSat: 19.5, FC: null, descrizione: 'Argilla limosa' },
-    { da: 15.8, a: 20.0, gamma: 20.0, gammaSat: 21.0, FC: null, descrizione: 'Ghiaia sabbiosa addensata' }
+    { da: 12.4, a: 13.2, gamma: 19.0, gammaSat: 19.5, FC: null, descrizione: 'Limo argilloso' },
+    { da: 13.2, a: 20.0, gamma: 19.5, gammaSat: 20.5, FC: null, descrizione: 'Sabbia da media a densa' }
   ];
 
   /** Tensione verticale totale [kPa] con i pesi di volume della stratigrafia dell'esempio. */
@@ -77,15 +78,15 @@
       const sabbioso = Math.sin((z - 7.2) * Math.PI / 0.35) > 0;
       return sabbioso ? { qc: 3.4, Rf: 1.6, Bq: 0.03, sd: 0.12 } : { qc: 1.6, Rf: 3.4, Bq: 0.15, sd: 0.1 };
     }
-    if (z < 12.4) return { qc: 12.0 + 1.2 * (z - 8.6), Rf: 0.6, Bq: -0.005, sd: 0.12 };
-    if (z < 15.8) return { qc: 1.25 + 0.06 * (z - 12.4), Rf: 4.2, Bq: 0.3, sd: 0.06 };
-    return { qc: 17 + 1.2 * (z - 15.8), Rf: 0.55, Bq: -0.01, sd: 0.1 };
+    if (z < 12.4) return { qc: 12.5 + 0.5 * (z - 8.6), Rf: 0.65, Bq: 0, sd: 0.06 };
+    if (z < 13.2) return { qc: 1.7, Rf: 3.8, Bq: 0.2, sd: 0.06 };
+    return { qc: 16.0 + 0.45 * (z - 13.2), Rf: 0.55, Bq: 0, sd: 0.05 };
   }
 
-  /** CPTU con passo 2 cm da 0,60 m (preforo nel riporto) a 18,40 m (rifiuto). */
+  /** CPTU con passo 2 cm da 0,60 m (preforo nel riporto) a 20,00 m. */
   function cptu() {
     const rnd = generatore(20261113);
-    const passo = 0.02, z0 = 0.6, z1 = 18.4;
+    const passo = 0.02, z0 = 0.6, z1 = 20.0;
     const n = Math.round((z1 - z0) / passo) + 1;
     const grezzi = [];
     let eq = 0, ef = 0;
@@ -115,7 +116,7 @@
 
   /** Sondaggio S1: SPT nei livelli granulari; FC da analisi granulometrica sul campione. */
   function spt() {
-    return [[4.0, 9, 27], [5.5, 11, 22], [6.8, 13, 30], [9.5, 23, 7], [11.0, 27, 6], [16.5, 41, 5]];
+    return [[4.0, 9, 27], [5.5, 11, 22], [6.8, 13, 30], [9.5, 21, 7], [11.0, 23, 6], [14.5, 26, 5], [16.5, 28, 4], [18.5, 30, 4]];
   }
 
   /** Verifica preliminare dell'esempio: dati di sito e curve granulometriche (inventati). */
@@ -126,10 +127,12 @@
         { da: 3.4, a: 7.2, sabbiaPulita: false, campione: 'S1-C2, 5,0–5,5 m',
           curva: [[0.006, 3], [0.01, 6], [0.03, 12], [0.075, 27], [0.1, 38], [0.2, 70], [0.4, 92], [1, 99], [2, 100]],
           decisione4: 'non soddisfatto', motivazione4: '' },
-        { da: 8.6, a: 12.4, sabbiaPulita: true, campione: '', curva: null, decisione4: null, motivazione4: '' },
-        { da: 15.8, a: 20, sabbiaPulita: false, campione: 'S1-C5, 16,5–17,0 m',
-          curva: [[0.5, 1], [1.2, 3], [2, 8], [3, 12], [5, 22], [10, 42], [20, 68], [40, 90], [63, 100]],
-          decisione4: 'soddisfatto', motivazione4: '' }
+        { da: 8.6, a: 12.4, sabbiaPulita: true, campione: 'S1-C4, 10,0–10,5 m',
+          curva: [[0.063, 3], [0.075, 5], [0.125, 12], [0.25, 50], [0.5, 86], [1, 97], [2, 99], [4, 100]],
+          decisione4: 'non soddisfatto', motivazione4: '' },
+        { da: 13.2, a: 20, sabbiaPulita: true, campione: 'S1-C5, 16,5–17,0 m',
+          curva: [[0.063, 3], [0.075, 4], [0.125, 9], [0.25, 32], [0.5, 71], [1, 92], [2, 98], [4, 100]],
+          decisione4: 'non soddisfatto', motivazione4: '' }
       ]
     };
   }
@@ -141,7 +144,7 @@
       sito: 'Sito inventato (dati sintetici)',
       autore: '',
       note: 'Dati inventati per provare l\'applicazione: non rappresentano un sito reale. Falda a 1,8 m dal p.c.; ' +
-        'CPTU interrotta per rifiuto a 18,4 m; sondaggio S1 con SPT e FC da analisi di laboratorio; ' +
+        'CPTU spinta fino a 20 m; sondaggio S1 con SPT e FC da analisi di laboratorio; ' +
         'azione sismica e V*s,12 di fantasia, plausibili per una piana alluvionale.'
     };
     const a = P.nuovaProva('CPTU', 'CPTU 1 – esempio sintetico');
