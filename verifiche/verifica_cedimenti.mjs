@@ -91,7 +91,11 @@ console.log('4. Collegamento al profilo e all\'esempio');
   const r = F.calcolaScenario(pr.prove[0], s1, L, { adesso: '2026-11-13T00:00:00Z' });
   const c = r.cedimenti;
   check('cedimenti calcolati per la CPTU', c.stato, 'calcolato');
-  check('prova interrotta a 18,4 m: intervallo', c.completo, false);
+  check('prova fino a 20 m: cedimento e LSN completi', [c.completo, c.Smin === c.Smax, c.LSNmin === c.LSNmax], [true, true, true]);
+  const corta = JSON.parse(JSON.stringify(pr.prove[0])); corta.dati = corta.dati.filter(d => d[0] <= 18.4 + 1e-9);
+  const cc = F.calcolaScenario(corta, s1, L, { adesso: '2026-11-13T00:00:00Z' }).cedimenti;
+  check('prova interrotta a 18,4 m: intervallo', [cc.completo, cc.Smin < cc.Smax], [false, true]);
+  check('prova interrotta: S_min ≤ S completo ≤ S_max', cc.Smin <= c.Smin + 1e-12 && c.Smin <= cc.Smax + 1e-12, true);
   check('S_min ≤ S_max e LSN_min ≤ LSN_max', c.Smin <= c.Smax && c.LSNmin <= c.LSNmax, true);
   check('LSN 0–10 m ≤ LSN 0–20 m', c.LSN10min <= c.LSNmin + 1e-9 && c.LSN10max <= c.LSNmax + 1e-9, true);
   const calc = r.righe.filter(x => x.stato === 'calcolato');
@@ -105,7 +109,7 @@ console.log('4. Collegamento al profilo e all\'esempio');
   check('CSV: righe di intestazione di cedimento e LSN', csv.includes('# Cedimento post-sismico 0-20 m') && csv.includes('# LSN (senza classi)'), true);
   check('CSV: colonna εv', csv.split('\r\n').find(x => x.startsWith('z [m]')).includes('εv post-liquefazione [%]'), true);
   check('assunzioni dichiarate (curve, combinazione, esclusi, ambito, LSN, incompleto)',
-    ['ZHANG_CURVE', 'ZHANG_COMBINAZIONE', 'ZHANG_ESCLUSI', 'ZHANG_AMBITO', 'LSN_DEFINIZIONE', 'CEDIMENTI_INCOMPLETO'].every(k => c.assunzioni.some(a => a.codice === k)), true);
+    ['ZHANG_CURVE', 'ZHANG_COMBINAZIONE', 'ZHANG_ESCLUSI', 'ZHANG_AMBITO', 'LSN_DEFINIZIONE'].every(k => c.assunzioni.some(a => a.codice === k)) && cc.assunzioni.some(a => a.codice === 'CEDIMENTI_INCOMPLETO') && !c.assunzioni.some(a => a.codice === 'CEDIMENTI_INCOMPLETO'), true);
 }
 
 console.log('\nRisultato: ' + ok + ' controlli superati, ' + ko + ' non superati.');

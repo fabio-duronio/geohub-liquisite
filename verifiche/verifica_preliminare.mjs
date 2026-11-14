@@ -27,19 +27,31 @@ const cptu = pr.prove[0], spt = pr.prove[1];
 const [sCpt, sSpt] = pr.scenari;
 const calc = (pv, sc) => F.calcolaScenario(pv, sc, L, { adesso: ADESSO });
 const strato = (v, da) => v.strati.find(s => Math.abs(s.da - da) < 1e-9);
+// Variante di prova con una ghiaia sabbiosa nello strato profondo (curva esterna ai fusi) e la
+// sabbia media senza curva: serve a controllare l'esclusione con il criterio 4, che le sabbie
+// dell'esempio, interne ai fusi, non possono mostrare.
+const GHIAIA = [[0.5, 1], [1.2, 3], [2, 8], [3, 12], [5, 22], [10, 42], [20, 68], [40, 90], [63, 100]];
+const sG = P.copia(sCpt);
+Object.assign(sG.esclusione.strati.find(x => x.da === 13.2), { sabbiaPulita: false, curva: GHIAIA, decisione4: 'soddisfatto', motivazione4: '' });
+Object.assign(sG.esclusione.strati.find(x => x.da === 8.6), { curva: null, campione: '', decisione4: null });
 
 console.log('1. Esempio: esito e strati');
 {
   const v = X.valutaEsclusione(L, cptu, sCpt, calc(cptu, sCpt));
   check('criterio 1 non soddisfatto (amax 0,26 g)', v.criteri.c1.soddisfatto, false);
   check('criterio 2 non soddisfatto (falda 2,4 m)', v.criteri.c2.soddisfatto, false);
-  check('esito: esclusione non dimostrata per il sito', v.esito.codice, 'parziale');
+  check('esito: nessuno strato escluso, esclusione non dimostrata', [v.esito.codice, v.conteggi.stratiEsclusi], ['non_dimostrata', 0]);
   check('riporto sopra falda: non pertinente', strato(v, 0).esito, 'non_pertinente');
   check('sabbia limosa: non sabbia pulita, curva interna → non esclusa', strato(v, 3.4).esito, 'non_escluso');
   check('sabbia media dichiarata pulita, qc1N < 180 → criterio 3 non soddisfatto', strato(v, 8.6).c3.soddisfatto, false);
-  check('sabbia media senza curva → esclusione non dimostrata', strato(v, 8.6).esito, 'non_dimostrato');
-  check('ghiaia: curva esterna confermata → esclusa (criterio 4)', [strato(v, 15.8).esito, strato(v, 15.8).criteriEscludenti], ['escluso', [4]]);
-  check('ghiaia: proposta del motore «soddisfatto»', strato(v, 15.8).c4.proposta, 'soddisfatto');
+  check('sabbia media: curva interna ai fusi, confermata → non esclusa', [strato(v, 8.6).c4.proposta, strato(v, 8.6).esito], ['non soddisfatto', 'non_escluso']);
+  check('sabbia profonda: curva interna ai fusi, confermata → non esclusa', [strato(v, 13.2).c4.proposta, strato(v, 13.2).esito], ['non soddisfatto', 'non_escluso']);
+  check('curve lontane dal confine Uc = 3,5', [3.4, 8.6, 13.2].every(z => Math.abs(strato(v, z).c4.motore.Uc - 3.5) > 0.25), true);
+  const vg = X.valutaEsclusione(L, cptu, sG, calc(cptu, sG));
+  check('variante con ghiaia: esclusione parziale', vg.esito.codice, 'parziale');
+  check('variante: sabbia media senza curva → esclusione non dimostrata', strato(vg, 8.6).esito, 'non_dimostrato');
+  check('variante: ghiaia con curva esterna confermata → esclusa (criterio 4)', [strato(vg, 13.2).esito, strato(vg, 13.2).criteriEscludenti], ['escluso', [4]]);
+  check('variante: proposta del motore «soddisfatto»', strato(vg, 13.2).c4.proposta, 'soddisfatto');
   check('nota della Circolare con amax ≥ 0,1 g', v.note.some(n => n.includes('C7.11.3.4')), true);
   check('nota: l\'esito non modifica i FS', v.note.some(n => n.includes('non modifica i fattori di sicurezza')), true);
 }
@@ -92,25 +104,25 @@ console.log('3. Criterio 3 per strato');
 
 console.log('4. Criterio 4: conferma del geologo');
 {
-  const s = P.copia(sCpt);
-  const g = s.esclusione.strati.find(x => x.da === 15.8);
+  const s = P.copia(sG);
+  const g = s.esclusione.strati.find(x => x.da === 13.2);
   g.decisione4 = null;
-  check('proposta non confermata → da confermare, strato non escluso', [strato(X.valutaEsclusione(L, cptu, s, null), 15.8).c4.stato, strato(X.valutaEsclusione(L, cptu, s, null), 15.8).esito], ['da_confermare', 'non_dimostrato']);
+  check('proposta non confermata → da confermare, strato non escluso', [strato(X.valutaEsclusione(L, cptu, s, null), 13.2).c4.stato, strato(X.valutaEsclusione(L, cptu, s, null), 13.2).esito], ['da_confermare', 'non_dimostrato']);
   g.decisione4 = 'non soddisfatto';
-  check('scelta diversa dalla proposta senza motivazione → da confermare', strato(X.valutaEsclusione(L, cptu, s, null), 15.8).c4.stato, 'da_confermare');
+  check('scelta diversa dalla proposta senza motivazione → da confermare', strato(X.valutaEsclusione(L, cptu, s, null), 13.2).c4.stato, 'da_confermare');
   g.motivazione4 = 'campione non rappresentativo dello strato';
-  check('scelta diversa motivata → valutato, non soddisfatto', [strato(X.valutaEsclusione(L, cptu, s, null), 15.8).c4.stato, strato(X.valutaEsclusione(L, cptu, s, null), 15.8).c4.soddisfatto], ['valutato', false]);
-  const c = P.copia(sCpt); c.esclusione.strati.find(x => x.da === 15.8).curva = [[0.5, 30], [2, 60], [10, 80]];
-  check('copertura insufficiente: nessuna esclusione proposta', strato(X.valutaEsclusione(L, cptu, c, null), 15.8).c4.proposta !== 'soddisfatto', true);
-  const n = P.copia(sCpt); n.esclusione.strati.find(x => x.da === 15.8).curva = [[1, 50], [0.5, 60]];
-  check('curva non monotona → input non valido', strato(X.valutaEsclusione(L, cptu, n, null), 15.8).c4.stato, 'input_non_valido');
+  check('scelta diversa motivata → valutato, non soddisfatto', [strato(X.valutaEsclusione(L, cptu, s, null), 13.2).c4.stato, strato(X.valutaEsclusione(L, cptu, s, null), 13.2).c4.soddisfatto], ['valutato', false]);
+  const c = P.copia(sG); c.esclusione.strati.find(x => x.da === 13.2).curva = [[0.5, 30], [2, 60], [10, 80]];
+  check('copertura insufficiente: nessuna esclusione proposta', strato(X.valutaEsclusione(L, cptu, c, null), 13.2).c4.proposta !== 'soddisfatto', true);
+  const n = P.copia(sG); n.esclusione.strati.find(x => x.da === 13.2).curva = [[1, 50], [0.5, 60]];
+  check('curva non monotona → input non valido', strato(X.valutaEsclusione(L, cptu, n, null), 13.2).c4.stato, 'input_non_valido');
 }
 
 console.log('5. Esclusione del sito con i criteri 3–4');
 {
   const s = P.copia(sCpt);
   s.strati = [{ da: 0, a: 1.8, gamma: 18, gammaSat: 19, FC: null, descrizione: 'riporto' }, { da: 1.8, a: 20, gamma: 19, gammaSat: 20, FC: null, descrizione: 'ghiaia' }];
-  s.esclusione.strati = [{ da: 1.8, a: 20, sabbiaPulita: false, curva: sCpt.esclusione.strati.find(x => x.da === 15.8).curva, decisione4: 'soddisfatto', motivazione4: '' }];
+  s.esclusione.strati = [{ da: 1.8, a: 20, sabbiaPulita: false, curva: GHIAIA, decisione4: 'soddisfatto', motivazione4: '' }];
   check('unico strato saturo escluso → verifica omessa (criteri 3–4)', X.valutaEsclusione(L, cptu, s, null).esito.criterio, '3–4');
   const corta = P.copia(s); corta.strati[1].a = 15;
   corta.esclusione.strati[0].a = 15;
@@ -152,7 +164,8 @@ console.log('8. Carta di comportamento (zone da Ic, Robertson e Wride 1998, Tab.
   const conSbt = r.righe.filter(x => x.sbt);
   check('ogni lettura CPT ha Q, F e Ic per la carta', conSbt.length, r.righe.length);
   check('Ic della carta = Ic del calcolo', r.righe.filter(x => x.stato === 'calcolato').every(x => Math.abs(x.sbt.Ic - x.valori.Ic) < 1e-12), true);
-  check('argilla limosa (13–15 m) in zona 3 o 4', r.righe.filter(x => x.z > 13 && x.z < 15).every(x => [3, 4].includes(x.sbt.zona)), true);
+  check('limo argilloso (12,55–13,05 m) in zona 3 o 4', r.righe.filter(x => x.z > 12.55 && x.z < 13.05).every(x => [3, 4].includes(x.sbt.zona)), true);
+  check('sabbia profonda (14–19,8 m) in zona 6', r.righe.filter(x => x.z > 14 && x.z < 19.8).filter(x => x.sbt.zona === 6).length > 250, true);
   check('sabbia media (9,5–12 m) in zona 6', r.righe.filter(x => x.z > 9.5 && x.z < 12).filter(x => x.sbt.zona === 6).length > 100, true);
   check('nessun dato SBT per prove SPT', calc(spt, sSpt).righe.some(x => x.sbt), false);
 }
