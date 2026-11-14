@@ -2,6 +2,38 @@
 
 La versione dell'app e quella del motore di calcolo sono distinte: l'app è indicata in alto e nel piè di pagina della stampa insieme al motore.
 
+## App 0.2.1 — non pubblicata
+
+Consolidamento dopo un audit del codice. Motore e formule invariati: a parità di input nessun risultato cambia.
+
+**Apertura dei progetti**
+- Il file JSON è trattato come dato non attendibile e ricostruito con i soli campi noti:
+  - ogni campo è controllato per tipo;
+  - tipi di prova, metodi e unità si confrontano con le sole chiavi proprie delle tabelle;
+  - ID e colori hanno un formato fisso; gli ID degli scenari sono univoci;
+  - le unità sono obbligatorie dove ne esiste più di una.
+- Errori elencati con campo e motivo, senza eccezioni. Il progetto corrente viene sostituito solo dopo la validazione completa.
+- I risultati non sono più salvati nel file né ricaricati: si ricalcolano con «Calcola», e l'app lo segnala all'apertura.
+- Conferma prima di sostituire un progetto con modifiche non salvate (Nuovo, Demo sintetica, Apri).
+- Escape di tutti i valori inseriti nell'HTML, attributi compresi. Corretti più percorsi di iniezione: opzioni e parametri nei campi, conteggi e testi dei risultati, nomi degli scenari nel Confronto.
+
+**FS di riferimento**
+- Un valore esplicito non valido (es. 4, oppure testo) non viene più sostituito con 1,25: l'errore compare sotto il campo e nel riepilogo, e stampa ed esportazione restano bloccate fino alla correzione.
+- 1,25 si applica solo con il campo vuoto o per i progetti precedenti senza il campo.
+
+**Stampa e testi**
+- Intestazione e piè di pagina su ogni pagina (Chrome, Edge): titolo, progetto, scenario, versioni, firma degli input, numero di pagina. A4 verticale.
+- Chiarito che gli intervalli di IL, cedimento e LSN sono limiti convenzionali del modello, non intervalli di confidenza né massimi fisici garantiti.
+
+**Tecnica**
+- Chart.js 4.4.4 e caratteri IBM Plex inclusi in `vendor/` con le licenze: nessuna richiesta a servizi esterni, l'app funziona anche senza rete.
+- Content Security Policy come difesa aggiuntiva.
+- CSS: un solo `@page` e un solo blocco di stampa; tolte regole obsolete e sovrascritte (interfaccia invariata, verificata pixel per pixel).
+- Verifiche:
+  - `verifica_sicurezza.mjs` e controllo nel browser con Playwright;
+  - `verifiche/esegui.mjs` esegue tutto con un solo comando;
+  - workflow GitHub Actions a ogni push e pull request.
+
 ## App 0.2.0 — 2026-11-14
 
 Motore invariato (0.3.0): nessun FS cambia rispetto alla 0.1.0 a parità di input.

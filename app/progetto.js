@@ -10,7 +10,7 @@
  *   formato: 'geohub-liquisite-progetto', versioneFormato: 1,
  *   progetto: { titolo, sito, autore, note },
  *   prove: [Prova], scenari: [Scenario], provaAttiva, scenarioAttivo,
- *   risultati: { [scenarioId]: Risultato }        // facoltativo
+ *   risultati: { [scenarioId]: Risultato }        // solo in memoria: non salvato né ricaricato
  * }
  * Prova: { id, nome, tipo: 'CPTE'|'CPTU'|'SPT'|'VS', provenienza, esempio (bool),
  *          unita: { z, qc?, fs?, u2? }, colonne: [...], dati: [[numero|null, …]],
@@ -70,7 +70,7 @@
   const FS_RIFERIMENTO = 1.25;
 
   /** Versione dell'applicazione (distinta da quella del motore di calcolo). */
-  const VERSIONE_APP = '0.2.0';
+  const VERSIONE_APP = '0.2.1';
 
   let contatore = 0;
   function nuovoId(prefisso) {
@@ -172,96 +172,199 @@
   // ---------------------------------------------------------------------------
   // Validazione di un file di progetto
   // ---------------------------------------------------------------------------
+  // Il file è un dato non attendibile: ogni campo è controllato per tipo, i valori enumerati
+  // sono confrontati solo con le chiavi proprie delle tabelle (niente proprietà ereditate) e il
+  // progetto viene ricostruito con i soli campi noti. I risultati salvati non vengono ricaricati:
+  // si ricalcolano dagli input.
 
+  const proprio = (obj, k) => typeof k === 'string' && Object.prototype.hasOwnProperty.call(obj, k);
+  const isOggetto = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
+  const RE_ID = /^[A-Za-z0-9_.:-]{1,64}$/;
+  const RE_COLORE = /^#[0-9A-Fa-f]{6}$/;
+  const DECISIONI_4 = ['soddisfatto', 'non soddisfatto'];
+  /** Parametri della prova ammessi per tipo: n = numero o null, b = booleano. */
+  const PARAMETRI_TIPO = Object.freeze({
+    SPT: { CE: 'n', CB: 'n', CS: 'n', sporgenza: 'n', senzaRivestimento: 'b' },
+    CPTU: { ar: 'n' }, CPTE: {}, VS: {}
+  });
+  const OPZIONI_SCENARIO = ['Vs12', 'IcSoglia', 'CFC', 'FSrif'];
+
+  /**
+   * Controlla un oggetto progetto e, se è valido, ne restituisce una copia normalizzata.
+   * Esito: { ok, errori: [{ campo, motivo }], progetto?, avvisi: [testo] }. Non lancia eccezioni.
+   */
   function validaProgetto(obj) {
-    const errori = [];
+    const errori = [], avvisi = [];
     const err = (campo, motivo) => errori.push({ campo, motivo });
-    if (obj === null || typeof obj !== 'object' || Array.isArray(obj)) { err('file', 'non è un oggetto JSON'); return { ok: false, errori }; }
+    const testo = (v, campo, obbligatorio) => {
+      if (v === undefined || v === null) { if (obbligatorio) err(campo, 'mancante'); return ''; }
+      if (typeof v !== 'string') { err(campo, 'deve essere testo'); return ''; }
+      return v;
+    };
+    const numONull = (v, campo) => {
+      if (v === undefined || v === null) return null;
+      if (!isNum(v)) { err(campo, 'deve essere un numero o vuoto, trovato ' + descrivi(v)); return null; }
+      return v;
+    };
+    const numero = (v, campo) => { if (!isNum(v)) { err(campo, 'deve essere un numero, trovato ' + descrivi(v)); return NaN; } return v; };
+    const boolONull = (v, campo) => {
+      if (v === undefined || v === null) return null;
+      if (typeof v !== 'boolean') { err(campo, 'deve essere sì/no (true/false), trovato ' + descrivi(v)); return null; }
+      return v;
+    };
+    const id = (v, campo) => {
+      if (typeof v !== 'string' || !RE_ID.test(v)) { err(campo, 'identificativo mancante o non valido (lettere, cifre, - _ . :, max 64 caratteri)'); return null; }
+      return v;
+    };
+
+    if (!isOggetto(obj)) { err('file', 'non è un oggetto JSON'); return { ok: false, errori, avvisi }; }
     if (obj.formato !== FORMATO) err('formato', 'atteso "' + FORMATO + '"');
-    if (obj.versioneFormato !== VERSIONE_FORMATO) err('versioneFormato', 'versione ' + JSON.stringify(obj.versioneFormato) + ' non supportata (attesa ' + VERSIONE_FORMATO + ')');
-    if (!obj.progetto || typeof obj.progetto !== 'object') err('progetto', 'mancante');
-    else for (const k of ['titolo', 'sito', 'autore', 'note']) if (obj.progetto[k] !== undefined && typeof obj.progetto[k] !== 'string') err('progetto.' + k, 'deve essere testo');
+    if (obj.versioneFormato !== VERSIONE_FORMATO) err('versioneFormato', 'versione ' + descrivi(obj.versioneFormato) + ' non supportata (attesa ' + VERSIONE_FORMATO + ')');
+    if (!isOggetto(obj.progetto)) err('progetto', 'mancante o non è un oggetto');
     if (!Array.isArray(obj.prove)) err('prove', 'deve essere un elenco');
     if (!Array.isArray(obj.scenari)) err('scenari', 'deve essere un elenco');
-    if (errori.length) return { ok: false, errori };
+    if (errori.length) return { ok: false, errori, avvisi };
+
+    const out = nuovoProgetto();
+    for (const k of ['titolo', 'sito', 'autore', 'note']) out.progetto[k] = testo(obj.progetto[k], 'progetto.' + k, false);
 
     const idProve = new Set();
     obj.prove.forEach((p, i) => {
       const c = 'prove[' + i + ']';
-      if (!p || typeof p !== 'object') { err(c, 'non è un oggetto'); return; }
-      if (typeof p.id !== 'string' || !p.id) err(c + '.id', 'mancante');
-      else if (idProve.has(p.id)) err(c + '.id', 'ripetuto');
-      else idProve.add(p.id);
-      if (typeof p.nome !== 'string') err(c + '.nome', 'deve essere testo');
-      if (!TIPI_PROVA[p.tipo]) { err(c + '.tipo', 'tipo non riconosciuto: ' + JSON.stringify(p.tipo)); return; }
+      if (!isOggetto(p)) { err(c, 'non è un oggetto'); return; }
+      const pid = id(p.id, c + '.id');
+      if (pid !== null && idProve.has(pid)) err(c + '.id', 'ripetuto: ' + pid);
+      if (pid !== null) idProve.add(pid);
+      const nome = testo(p.nome, c + '.nome', true);
+      if (!proprio(TIPI_PROVA, p.tipo)) { err(c + '.tipo', 'tipo non riconosciuto: ' + descrivi(p.tipo) + ' (ammessi ' + Object.keys(TIPI_PROVA).join(', ') + ')'); return; }
+      const tipo = p.tipo, def = TIPI_PROVA[tipo];
+      const ammesse = def.colonne.concat(def.facoltative);
       if (!Array.isArray(p.colonne)) { err(c + '.colonne', 'deve essere un elenco'); return; }
-      for (const col of TIPI_PROVA[p.tipo].colonne) if (!p.colonne.includes(col)) err(c + '.colonne', 'manca la colonna ' + col);
+      const colonne = [];
       for (const col of p.colonne) {
-        if (!UNITA[col]) { err(c + '.colonne', 'colonna non riconosciuta: ' + col); continue; }
-        const u = p.unita && p.unita[col];
-        if (u !== undefined && UNITA[col].fattori[u] === undefined) err(c + '.unita.' + col, 'unità non ammessa: ' + JSON.stringify(u));
+        if (!ammesse.includes(col)) { err(c + '.colonne', 'colonna non ammessa per ' + tipo + ': ' + descrivi(col)); continue; }
+        if (colonne.includes(col)) { err(c + '.colonne', 'colonna ripetuta: ' + col); continue; }
+        colonne.push(col);
+      }
+      for (const col of def.colonne) if (!colonne.includes(col)) err(c + '.colonne', 'manca la colonna ' + col);
+      if (colonne.length !== p.colonne.length) return;
+      // Unità: obbligatorie dove esiste più di un'unità ammessa (nessuna conversione sottintesa).
+      if (p.unita !== undefined && !isOggetto(p.unita)) { err(c + '.unita', 'deve essere un oggetto'); return; }
+      const unita = { z: 'm', FC: '%' };
+      for (const col of colonne) {
+        const fattori = UNITA[col].fattori, scelte = Object.keys(fattori);
+        const u = p.unita ? p.unita[col] : undefined;
+        if (u === undefined || u === null) {
+          if (scelte.length > 1) err(c + '.unita.' + col, 'unità mancante per la colonna ' + col + ' (ammesse ' + scelte.join(', ') + ')');
+          else unita[col] = scelte[0];
+        } else if (!proprio(fattori, u)) err(c + '.unita.' + col, 'unità non ammessa: ' + descrivi(u) + ' (ammesse ' + scelte.join(', ') + ')');
+        else unita[col] = u;
       }
       if (!Array.isArray(p.dati)) { err(c + '.dati', 'deve essere un elenco'); return; }
+      const dati = [];
       p.dati.forEach((r, k) => {
-        if (!Array.isArray(r) || r.length !== p.colonne.length) { err(c + '.dati[' + k + ']', 'numero di valori diverso dalle colonne'); return; }
-        r.forEach((v, j) => { if (v !== null && !isNum(v)) err(c + '.dati[' + k + '][' + j + ']', 'deve essere un numero o null'); });
+        if (!Array.isArray(r) || r.length !== colonne.length) { err(c + '.dati[' + k + ']', 'numero di valori diverso dalle colonne'); return; }
+        dati.push(r.map((v, j) => { if (v !== null && !isNum(v)) { err(c + '.dati[' + k + '][' + j + ']', 'deve essere un numero o null'); return null; } return v; }));
       });
-      if (p.parametri !== undefined && (p.parametri === null || typeof p.parametri !== 'object')) err(c + '.parametri', 'deve essere un oggetto');
+      if (p.parametri !== undefined && !isOggetto(p.parametri)) { err(c + '.parametri', 'deve essere un oggetto'); return; }
+      const parametri = parametriPredefiniti(tipo);
+      for (const [k, t] of Object.entries(PARAMETRI_TIPO[tipo])) {
+        if (!p.parametri || !proprio(p.parametri, k)) continue;
+        parametri[k] = t === 'b' ? (boolONull(p.parametri[k], c + '.parametri.' + k) ?? false) : numONull(p.parametri[k], c + '.parametri.' + k);
+      }
+      out.prove.push({ id: pid, nome, tipo, provenienza: testo(p.provenienza, c + '.provenienza', false),
+        esempio: boolONull(p.esempio, c + '.esempio') === true, unita, colonne, dati, parametri });
     });
+
+    const idScenari = new Set();
     obj.scenari.forEach((s, i) => {
       const c = 'scenari[' + i + ']';
-      if (!s || typeof s !== 'object') { err(c, 'non è un oggetto'); return; }
-      if (typeof s.id !== 'string' || !s.id) err(c + '.id', 'mancante');
-      if (!idProve.has(s.provaId)) err(c + '.provaId', 'non corrisponde a nessuna prova');
-      const prova = obj.prove.find(p => p && p.id === s.provaId);
-      if (prova && TIPI_PROVA[prova.tipo] && !METODI_PER_TIPO[prova.tipo].includes(s.metodo)) err(c + '.metodo', 'metodo ' + JSON.stringify(s.metodo) + ' non compatibile con la prova ' + prova.tipo);
-      for (const k of ['Mw', 'amax', 'zFalda']) if (s[k] !== null && s[k] !== undefined && !isNum(s[k])) err(c + '.' + k, 'deve essere un numero o null');
+      if (!isOggetto(s)) { err(c, 'non è un oggetto'); return; }
+      const sid = id(s.id, c + '.id');
+      if (sid !== null && idScenari.has(sid)) err(c + '.id', 'ripetuto: ' + sid);
+      if (sid !== null) idScenari.add(sid);
+      const nome = testo(s.nome, c + '.nome', true);
+      let colore = COLORI_SCENARI[i % COLORI_SCENARI.length];
+      if (s.colore !== undefined && s.colore !== null) {
+        if (typeof s.colore !== 'string' || !RE_COLORE.test(s.colore)) err(c + '.colore', 'colore non valido (atteso #RRGGBB)');
+        else colore = s.colore;
+      }
+      if (typeof s.provaId !== 'string' || !idProve.has(s.provaId)) err(c + '.provaId', 'non corrisponde a nessuna prova');
+      const prova = out.prove.find(p => p.id === s.provaId);
+      if (!proprio(NOMI_METODI, s.metodo)) err(c + '.metodo', 'metodo non riconosciuto: ' + descrivi(s.metodo));
+      else if (prova && !METODI_PER_TIPO[prova.tipo].includes(s.metodo)) err(c + '.metodo', 'metodo ' + s.metodo + ' non compatibile con la prova ' + prova.tipo);
+      const strati = [];
       if (!Array.isArray(s.strati)) err(c + '.strati', 'deve essere un elenco');
       else s.strati.forEach((st, k) => {
-        for (const kk of ['da', 'a', 'gamma', 'gammaSat']) if (!isNum(st && st[kk])) err(c + '.strati[' + k + '].' + kk, 'deve essere un numero');
-        if (st && st.FC !== null && st.FC !== undefined && !isNum(st.FC)) err(c + '.strati[' + k + '].FC', 'deve essere un numero o null');
+        const cs = c + '.strati[' + k + ']';
+        if (!isOggetto(st)) { err(cs, 'non è un oggetto'); return; }
+        strati.push({ da: numero(st.da, cs + '.da'), a: numero(st.a, cs + '.a'), gamma: numero(st.gamma, cs + '.gamma'), gammaSat: numero(st.gammaSat, cs + '.gammaSat'),
+          FC: numONull(st.FC, cs + '.FC'), descrizione: testo(st.descrizione, cs + '.descrizione', false) });
       });
-      if (s.opzioni !== undefined && (s.opzioni === null || typeof s.opzioni !== 'object')) err(c + '.opzioni', 'deve essere un oggetto');
-      if (s.esclusione !== undefined) {
-        const e = s.esclusione;
-        if (e === null || typeof e !== 'object' || Array.isArray(e)) err(c + '.esclusione', 'deve essere un oggetto');
+      if (s.opzioni !== undefined && !isOggetto(s.opzioni)) err(c + '.opzioni', 'deve essere un oggetto');
+      const opzioni = { Vs12: null, IcSoglia: 2.6, CFC: 0, FSrif: FS_RIFERIMENTO };
+      for (const k of OPZIONI_SCENARIO) if (isOggetto(s.opzioni) && proprio(s.opzioni, k)) opzioni[k] = numONull(s.opzioni[k], c + '.opzioni.' + k);
+      const esclusione = esclusioneVuota();
+      if (s.esclusione !== undefined && s.esclusione !== null) {
+        const e = s.esclusione, ce = c + '.esclusione';
+        if (!isOggetto(e)) err(ce, 'deve essere un oggetto');
         else {
-          if (e.faldaMediaStagionale !== null && e.faldaMediaStagionale !== undefined && !isNum(e.faldaMediaStagionale)) err(c + '.esclusione.faldaMediaStagionale', 'deve essere un numero o null');
-          if (e.strati !== undefined && !Array.isArray(e.strati)) err(c + '.esclusione.strati', 'deve essere un elenco');
+          esclusione.faldaMediaStagionale = numONull(e.faldaMediaStagionale, ce + '.faldaMediaStagionale');
+          esclusione.pcSubOrizzontale = boolONull(e.pcSubOrizzontale, ce + '.pcSubOrizzontale');
+          esclusione.fondazioniSuperficiali = boolONull(e.fondazioniSuperficiali, ce + '.fondazioniSuperficiali');
+          if (e.strati !== undefined && !Array.isArray(e.strati)) err(ce + '.strati', 'deve essere un elenco');
           else (e.strati || []).forEach((x, k) => {
-            if (!x || !isNum(x.da) || !isNum(x.a)) err(c + '.esclusione.strati[' + k + ']', 'servono da e a numerici');
-            else if (x.curva !== undefined && x.curva !== null && !Array.isArray(x.curva)) err(c + '.esclusione.strati[' + k + '].curva', 'deve essere un elenco [d, p]');
+            const cx = ce + '.strati[' + k + ']';
+            if (!isOggetto(x)) { err(cx, 'non è un oggetto'); return; }
+            let curva = null;
+            if (x.curva !== undefined && x.curva !== null) {
+              if (!Array.isArray(x.curva) || !x.curva.every(q => Array.isArray(q) && q.length === 2 && isNum(q[0]) && isNum(q[1]))) err(cx + '.curva', 'deve essere un elenco di coppie numeriche [d, p]');
+              else curva = x.curva.map(q => [q[0], q[1]]);
+            }
+            let decisione4 = null;
+            if (x.decisione4 !== undefined && x.decisione4 !== null) {
+              if (!DECISIONI_4.includes(x.decisione4)) err(cx + '.decisione4', 'valore non ammesso: ' + descrivi(x.decisione4));
+              else decisione4 = x.decisione4;
+            }
+            esclusione.strati.push({ da: numero(x.da, cx + '.da'), a: numero(x.a, cx + '.a'), sabbiaPulita: boolONull(x.sabbiaPulita, cx + '.sabbiaPulita'),
+              curva, campione: testo(x.campione, cx + '.campione', false), decisione4, motivazione4: testo(x.motivazione4, cx + '.motivazione4', false) });
           });
         }
       }
+      out.scenari.push({ id: sid, nome, colore, provaId: s.provaId, metodo: s.metodo,
+        Mw: numONull(s.Mw, c + '.Mw'), amax: numONull(s.amax, c + '.amax'), zFalda: numONull(s.zFalda, c + '.zFalda'),
+        strati, opzioni, note: testo(s.note, c + '.note', false), esclusione });
     });
-    if (obj.risultati !== undefined && (obj.risultati === null || typeof obj.risultati !== 'object' || Array.isArray(obj.risultati))) err('risultati', 'deve essere un oggetto');
-    return { ok: errori.length === 0, errori };
+
+    if (errori.length) return { ok: false, errori, avvisi };
+    out.provaAttiva = out.prove.some(p => p.id === obj.provaAttiva) ? obj.provaAttiva : (out.prove[0] ? out.prove[0].id : null);
+    out.scenarioAttivo = out.scenari.some(s => s.id === obj.scenarioAttivo) ? obj.scenarioAttivo : (out.scenari[0] ? out.scenari[0].id : null);
+    if (obj.risultati !== undefined && obj.risultati !== null && !(isOggetto(obj.risultati) && Object.keys(obj.risultati).length === 0))
+      avvisi.push('I risultati salvati nel file non sono stati ricaricati: premere «Calcola» per ricalcolarli dagli input.');
+    return { ok: true, errori, avvisi, progetto: out };
   }
 
-  /**
-   * Apre un progetto da testo JSON. I risultati salvati nel file vengono conservati ma
-   * marcati con origine 'file': l'interfaccia li tratta come non aggiornati fino al ricalcolo.
-   */
+  /** Descrizione breve e sicura di un valore per i messaggi di errore. */
+  function descrivi(v) {
+    if (v === undefined) return 'nessun valore';
+    if (v === null) return 'null';
+    if (typeof v === 'string') return '"' + (v.length > 40 ? v.slice(0, 40) + '…' : v) + '"';
+    if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+    return Array.isArray(v) ? 'un elenco' : 'un oggetto';
+  }
+
+  /** Apre un progetto da testo JSON. Non modifica nulla se il file non è valido; non lancia eccezioni. */
   function apriProgetto(testo) {
     let obj;
-    try { obj = JSON.parse(testo); } catch (e) { return { ok: false, errori: [{ campo: 'file', motivo: 'JSON non valido: ' + e.message }] }; }
-    const v = validaProgetto(obj);
-    if (!v.ok) return v;
-    obj.risultati = obj.risultati || {};
-    for (const k of Object.keys(obj.risultati)) obj.risultati[k].origine = 'file';
-    if (!obj.prove.some(p => p.id === obj.provaAttiva)) obj.provaAttiva = obj.prove[0] ? obj.prove[0].id : null;
-    if (!obj.scenari.some(s => s.id === obj.scenarioAttivo)) obj.scenarioAttivo = obj.scenari[0] ? obj.scenari[0].id : null;
-    for (const s of obj.scenari) {
-      s.opzioni = Object.assign({ Vs12: null, IcSoglia: 2.6, CFC: 0, FSrif: FS_RIFERIMENTO }, s.opzioni || {});
-      s.esclusione = Object.assign(esclusioneVuota(), s.esclusione || {});
-    }
-    for (const p of obj.prove) p.parametri = Object.assign(parametriPredefiniti(p.tipo), p.parametri || {});
-    return { ok: true, errori: [], progetto: obj };
+    try { obj = JSON.parse(testo); } catch (e) { return { ok: false, avvisi: [], errori: [{ campo: 'file', motivo: 'JSON non valido: ' + e.message }] }; }
+    try { return validaProgetto(obj); }
+    catch (e) { return { ok: false, avvisi: [], errori: [{ campo: 'file', motivo: 'struttura non leggibile (' + e.message + ')' }] }; }
   }
 
+  /** Il file salvato contiene solo gli input: i risultati si ricalcolano all'apertura. */
   function salvaProgetto(progetto) {
-    return JSON.stringify(progetto, null, 2);
+    const { risultati, ...input } = progetto;
+    return JSON.stringify(input, null, 2);
   }
 
   return {

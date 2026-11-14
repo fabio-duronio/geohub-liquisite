@@ -1,0 +1,28 @@
+# Verifiche automatiche a ogni push e pull request: calcoli (Node.js), seconde implementazioni
+# indipendenti (Python) e controllo nel browser (Playwright con Chromium).
+name: Verifiche
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  verifiche:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verifiche numeriche (Node.js e Python)
+        run: node verifiche/esegui.mjs
+      - name: Installazione di Playwright e Chromium
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Controllo nel browser (importazione, sicurezza, calcolo, esportazione, stampa)
+        run: npm run test:browser

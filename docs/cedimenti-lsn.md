@@ -28,7 +28,7 @@ Proprietà delle equazioni pubblicate, verificate: ai raccordi tra i due tratti 
 - Interpolazione lineare in FS tra le curve; FS ≤ 0,5: curva limite; FS ≥ 2,0: εv = 0.
 - (qc1N)cs fuori da 33–200 ricondotto al limite più vicino, con avviso; sotto 33 la scelta può sottostimare εv rispetto all'estrapolazione della curva limite (non cautelativa).
 - Ic oltre la soglia dello scenario (2,6 predefinita) e punti sopra falda: εv = 0.
-- Tratti non indagati o senza risultato: S e LSN come intervalli; minimo con contributo nullo, massimo con la deformazione limite 102·33^−0,82 = 5,80 %.
+- Tratti non indagati o senza risultato: S e LSN come intervalli; minimo con contributo nullo, massimo con la deformazione della curva limite 102·33^−0,82 = 5,80 %. Sono **limiti convenzionali del modello**, non un intervallo di confidenza né un massimo fisico garantito: con (qc1N)cs < 33 la deformazione reale può essere maggiore.
 - Integrazione su 0–20 m; LSN anche su 0–10 m per confronto.
 - In LSN εv entra come decimale: lo specifica la guida MBIE-NZGS «Earthquake geotechnical engineering practice», Modulo 3, nota 7 alla definizione di van Ballegooy et al. (2014) (https://www.building.govt.nz/assets/Uploads/building-code-compliance/b-stability/b1-structure/geotechnical-guidelines/module-3-liquefaction-hazards-version-1.pdf). Forma equivalente in letteratura: 10·εv[%]/z. Integrale ∫dz/z esatto in ogni tratto. Con falda al piano campagna e superficie senza dati il massimo non è limitato e viene segnalato.
 - Combinazione dichiarata: curve ricavate con (qc1N)cs e FS di Robertson e Wride (1998), applicate con quelli di Boulanger e Idriss (2014).

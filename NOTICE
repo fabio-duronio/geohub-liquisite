@@ -92,6 +92,13 @@ Downdrag: Examples and Supporting Materials, Appendix G, Design Example 5.
 Washington, DC: The National Academies Press. Valori trascritti dalle
 Tabelle G3-G7 per il solo confronto numerico.
 
+Componenti di terze parti inclusi in vendor/ (con le rispettive licenze):
+- Chart.js 4.4.4, (c) Chart.js Contributors, licenza MIT
+  (vendor/chart.js/LICENSE.md). https://www.chartjs.org
+- IBM Plex Sans e IBM Plex Mono, Copyright 2017 IBM Corp., SIL Open Font
+  License 1.1 (vendor/ibm-plex/LICENSE-OFL-Sans.txt, LICENSE-OFL-Mono.txt);
+  file woff2 dai pacchetti Fontsource 5.3.0.
+
 Riferimenti normativi: D.M. 17/01/2018 (NTC 2018), §7.11.3.4; Circolare
 21/01/2019 n. 7 C.S.LL.PP., C7.11.3.4.
 

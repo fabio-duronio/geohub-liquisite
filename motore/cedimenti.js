@@ -20,7 +20,8 @@
  *    può sottostimare εv rispetto all'estrapolazione della curva limite (non cautelativo);
  *  - tratti con Ic oltre la soglia e tratti sopra falda: εv = 0, secondo le ipotesi del modello;
  *  - tratti non indagati o senza risultato: S e LSN come intervalli, con contributo nullo
- *    (minimo) e deformazione limite (massimo); nessun tratto ignoto è considerato sicuro;
+ *    (minimo) e deformazione della curva limite (massimo): limiti convenzionali del modello, non un
+ *    intervallo di confidenza né un massimo fisico; nessun tratto ignoto è considerato sicuro;
  *  - integrazione 0–20 m; LSN anche su 0–10 m per confronto con gli studi di origine;
  *  - nell'LSN εv entra come decimale (εv[%] / 100), come indicato nella guida MBIE-NZGS
  *    «Earthquake geotechnical engineering practice», Modulo 3, nota 7 alla definizione di LSN.
@@ -139,7 +140,7 @@
       { codice: 'ZHANG_AMBITO', descrizione: 'Piano campagna sub-orizzontale, lontano da scarpate libere: deformazione volumetrica = deformazione verticale. Gli autori indicano il metodo per progetti a rischio basso o medio e come stima preliminare per gli altri; nessuno spostamento laterale è calcolato.' },
       { codice: 'LSN_DEFINIZIONE', descrizione: 'LSN = 1000 · ∫ εv / z dz (Tonkin & Taylor 2015, App. A, §A4.3.5), con εv come decimale (MBIE-NZGS, Modulo 3), integrale esatto in ogni tratto; 0–20 m e, per confronto, 0–10 m. Senza classi: il giudizio resta del progettista.' }
     ];
-    if (!completo) assunzioni.push({ codice: 'CEDIMENTI_INCOMPLETO', descrizione: 'Tratti senza risultato in 0–20 m (' + il.spessori.ignoto.toFixed(2) + ' m): cedimento e LSN compresi tra il minimo (contributo nullo) e il massimo (deformazione limite ' + EPS_LIMITE.toFixed(2) + ' %).' });
+    if (!completo) assunzioni.push({ codice: 'CEDIMENTI_INCOMPLETO', descrizione: 'Tratti senza risultato in 0–20 m (' + il.spessori.ignoto.toFixed(2) + ' m): cedimento e LSN compresi tra il minimo (contributo nullo) e il massimo (deformazione della curva limite di Zhang et al. 2002, ' + EPS_LIMITE.toFixed(2) + ' %). I due valori sono limiti convenzionali del modello, non un intervallo di confidenza né un massimo fisico garantito: con (qc1N)cs < 33 la deformazione può essere maggiore.' });
     return {
       stato: 'calcolato', versione: VERSIONE_CEDIMENTI, completo,
       Smin, Smax, S: completo ? Smin : null,

@@ -1,0 +1,14 @@
+{
+  "name": "geohub-liquisite",
+  "private": true,
+  "description": "Verifica a liquefazione del sito secondo NTC 2018: script di verifica (l'app non richiede compilazione né dipendenze)",
+  "license": "AGPL-3.0-only",
+  "scripts": {
+    "test": "node verifiche/esegui.mjs",
+    "test:browser": "node verifiche/browser/verifica_browser.mjs",
+    "test:tutto": "node verifiche/esegui.mjs --browser"
+  },
+  "devDependencies": {
+    "playwright": "^1.50.0"
+  }
+}
