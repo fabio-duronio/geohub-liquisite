@@ -106,10 +106,12 @@ console.log('8. Confronto con campionamento fitto (seconda implementazione)');
     const dz = ps.slice(1).map((p, i) => p.z - ps[i].z).sort((a, b) => a - b);
     const med = dz.length ? dz[Math.floor(dz.length / 2)] : 0, vmax = med ? 3 * med : Infinity;
     const N = 200000, h = 20 / N; let lo = 0, hi = 0;
+    // confine tra punti consecutivi: metà distanza, oppure la falda se cade tra i due
+    const conf = (z1, z2) => (z1 <= zf && zf < z2 ? zf : (z1 + z2) / 2);
     const iv = ps.map((p, j) => {
       const pr = ps[j - 1], su = ps[j + 1];
-      const a = p.z - (pr ? (p.z - pr.z > vmax ? med / 2 : (p.z - pr.z) / 2) : med / 2);
-      const b = p.z + (su ? (su.z - p.z > vmax ? med / 2 : (su.z - p.z) / 2) : med / 2);
+      const a = pr && p.z - pr.z <= vmax ? conf(pr.z, p.z) : p.z - med / 2;
+      const b = su && su.z - p.z <= vmax ? conf(p.z, su.z) : p.z + med / 2;
       return { a, b, F: p.categoria === 'FS' ? (p.FS <= 1 ? 1 - p.FS : 0) : p.categoria === 'ignoto' || p.categoria === 'sopraFalda' ? null : 0 };
     });
     let j = 0;
@@ -143,6 +145,9 @@ console.log('9. Collegamento con il profilo (esempio sintetico)');
   check('FS dei punti = FS delle righe', punti.filter(p => p.categoria === 'FS').every(p => p.FS === r.righe.find(x => x.z === p.z).valori.FS), true);
   check('ricalcolo diretto identico', I.indiceIL(punti, sc.zFalda).ILmin, ind.ILmin, 0);
   check('prova fino a 20 m: indice completo, IL = IL_min = IL_max', [ind.completo, ind.IL === ind.ILmin && ind.ILmin === ind.ILmax], [true, true]);
+  const sAlta = pr.scenari[2], indAlta = F.calcolaScenario(cptu, sAlta, L, { adesso: '2026-11-13T00:00:00Z' }).indiceIL;
+  check('falda su una lettura (1,00 m): nessun tratto ignoto fittizio, indice completo', [sAlta.zFalda, indAlta.completo, indAlta.spessori.ignoto], [1, true, 0]);
+  check('falda come confine: punti sintetici a 1,00 (non saturo) e 1,02', I.indiceIL([{ z: 0.98, categoria: 'sopraFalda' }, { z: 1.0, categoria: 'sopraFalda' }, { z: 1.02, categoria: 'FS', FS: 0.5 }, { z: 1.04, categoria: 'FS', FS: 0.5 }], 1.0).tratti.some(t => t.categoria === 'ignoto' && t.a <= 1.05), false);
   const corta = JSON.parse(JSON.stringify(cptu)); corta.dati = corta.dati.filter(d => d[0] <= 18.4 + 1e-9);
   const indC = F.calcolaScenario(corta, sc, L, { adesso: '2026-11-13T00:00:00Z' }).indiceIL;
   check('prova interrotta a 18,4 m: incompleto', indC.completo, false);

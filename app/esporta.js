@@ -24,7 +24,7 @@
     let s;
     if (typeof v === 'number') {
       if (!Number.isFinite(v)) return '';
-      s = String(v);
+      s = String(v); // rappresentazione esatta del valore calcolato: si rilegge identico
       if (opz.decimale === ',') s = s.replace('.', ',');
       return s;
     }
@@ -46,7 +46,7 @@
     const colIn = prova.colonne.filter(c => c !== 'z');
     const righe = [];
     const riga = (arr) => righe.push(arr.map(v => cella(v, opz)).join(opz.separatore));
-    riga(['# GeoHub-LiquiSite – risultati']);
+    riga(['# GeoHub-LiquiSite – risultati', 'versione', P.VERSIONE_APP]);
     riga(['# Progetto', progetto.progetto.titolo || '']);
     riga(['# Sito', progetto.progetto.sito || '']);
     riga(['# Prova', prova.nome + ' (' + prova.tipo + ')' + (prova.esempio ? ' – ESEMPIO SINTETICO' : '')]);

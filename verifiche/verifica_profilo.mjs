@@ -105,6 +105,9 @@ console.log('2. Intervalli: sopra falda, dati mancanti, non applicabili, fuori s
   const r3 = F.calcolaScenario(sptSenzaFC, s3, L, { adesso: ADESSO });
   check('SPT senza FC → dati insufficienti, nessun FS', r3.righe.filter(x => x.z > 2).every(x => x.stato === 'dati_insufficienti' && x.codice === 'FC_MANCANTE'), true);
   const q = rCpt.riepilogo;
+  const ivIc = q.intervalliNonCalcolati.filter(i => i.codice === 'IC_OLTRE_SOGLIA' && i.n > 1);
+  check('intervalli con Ic oltre soglia: motivo riferito al tratto, con l\'intervallo di Ic', ivIc.length > 0 && ivIc.every(i => /^Ic \d,\d\d–\d,\d\d > soglia 2,6:/.test(i.motivo) && i.motivo.includes('in questo tratto')), true);
+  check('messaggi del motore con la virgola decimale', rCpt.righe.filter(x => x.codice === 'IC_OLTRE_SOGLIA').every(x => /^Ic = \d,\d\d > soglia 2,6:/.test(x.motivo)), true);
   check('riepilogo: profondità indagata', q.profonditaIndagata, { da: 0.6, a: 20 });
   check('riepilogo: punti totali = righe', q.punti, cptu.dati.length);
   check('riepilogo: somma dei conteggi', Object.values(q.conteggi).reduce((a, b) => a + b, 0), q.punti);

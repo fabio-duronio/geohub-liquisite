@@ -62,18 +62,18 @@ Le verifiche numeriche non hanno dipendenze; il controllo nel browser richiede P
 | `verifica_motore.mjs` | valori pubblicati dagli autori | 123 |
 | `verifica_robustezza.mjs` | input non validi, soglie, stati di esito, convergenza | 262 |
 | `verifica_esclusione.mjs` | criteri 1–4 e fusi digitalizzati della Fig. 7.11.1 | 33 |
-| `verifica_profilo.mjs` | profilo, importazione, unità, CSV, progetto JSON | 108 |
-| `verifica_il.mjs` | indice IL: profili analitici e seconda implementazione | 51 |
-| `verifica_preliminare.mjs` | verifica preliminare per strato e per sito, carta di comportamento | 49 |
-| `verifica_cedimenti.mjs` | equazioni di Zhang et al. (2002), cedimento, LSN | 50 |
+| `verifica_profilo.mjs` | profilo, importazione, unità, CSV, progetto JSON, motivi degli intervalli | 111 |
+| `verifica_il.mjs` | indice IL: profili analitici, seconda implementazione, falda come confine | 55 |
+| `verifica_preliminare.mjs` | verifica preliminare per strato e per sito, carta di comportamento | 55 |
+| `verifica_cedimenti.mjs` | equazioni di Zhang et al. (2002), cedimento, LSN | 52 |
 | `verifica_riferimento.mjs` | caso pubblicato National Academies (2024) | 24 |
 | `verifica_casuale.mjs` | prove casuali ripetibili (opzioni `--casi`, `--seme`) | 20 |
 | `verifica_restituzione.mjs` | coerenza di Ic tra grafici, tabelle e CSV | 6 |
 | `verifica_usabilita.mjs` | decimali, intestazioni senza dati, incolla da foglio elettronico | 12 |
 | `verifica_sicurezza.mjs` | apertura di progetti alterati (tipi, valori enumerati, proprietà ereditate, ID, risultati), 1500 alterazioni casuali, FS di riferimento senza ripiego | 73 |
-| `browser/verifica_browser.mjs` | nel browser: file alterati e valori iniettati in memoria senza esecuzione di codice; testo libero in tutte le schede, nel confronto e in stampa; FS di riferimento non valido con stampa e CSV bloccati; conferma per modifiche non salvate; intestazione e piè di pagina di stampa; nessuna richiesta esterna né violazione della CSP | 28 |
+| `browser/verifica_browser.mjs` | nel browser: file alterati e valori iniettati in memoria senza esecuzione di codice; testo libero in tutte le schede, nel confronto e in stampa; FS di riferimento non valido con stampa e CSV bloccati; conferma per modifiche non salvate; intestazione e piè di pagina di stampa; nessuna richiesta esterna né violazione della CSP; testi del confronto, del riepilogo e della stampa | 33 |
 
-In totale sono 811 controlli JavaScript, i due confronti Python e 28 controlli nel browser. I payload dei test di sicurezza sono innocui: al massimo impostano una variabile di prova.
+In totale sono 826 controlli JavaScript, i due confronti Python e 33 controlli nel browser. I payload dei test di sicurezza sono innocui: al massimo impostano una variabile di prova.
 
 ## Limiti della validazione
 

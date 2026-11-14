@@ -16,7 +16,7 @@ Nessuna classe: classi e zone appartengono alla microzonazione; per la verifica 
 
 ## Discretizzazione (scelta di LiquiSite)
 
-- Ogni punto rappresenta l'intervallo fino a metà distanza dai punti adiacenti. Verso un vuoto maggiore di 3 volte il passo mediano, e agli estremi del profilo, il punto copre metà del passo mediano.
+- Ogni punto rappresenta l'intervallo fino a metà distanza dai punti adiacenti. Se la falda di verifica cade tra due punti consecutivi, il confine tra i due è la falda stessa: il punto non saturo non si estende sotto la falda e quello saturo arriva fino alla falda. Verso un vuoto maggiore di 3 volte il passo mediano, e agli estremi del profilo, il punto copre metà del passo mediano.
 - F è costante nell'intervallo; l'integrale del peso è esatto: ∫ w dz = 10·(b − a) − 0,25·(b² − a²).
 - Per le SPT ogni prova rappresenta quindi l'intervallo fino a metà distanza dalle prove adiacenti: è un'assunzione forte, dichiarata.
 

@@ -333,7 +333,7 @@
   // ---------------------------------------------------------------------------
   /** Motivi brevi per tabelle e grafici (il motivo completo resta in riga.motivo). */
   const MOTIVI_BREVI = {
-    NON_SATURO: 'sopra falda (u = 0)', IC_OLTRE_SOGLIA: 'escluso: comportamento argilloso (Ic oltre soglia), FS N.A.',
+    NON_SATURO: 'sopra falda (u = 0)', IC_OLTRE_SOGLIA: 'Ic oltre soglia: metodo non applicabile (comportamento argilloso), FS N.A.',
     DATO_MANCANTE: 'dato mancante', FC_MANCANTE: 'FC mancante', FUORI_STRATIGRAFIA: 'fuori dalla stratigrafia',
     OLTRE_LIMITE_APP: 'oltre 20 m (limite di LiquiSite)', AMAX_NULLA: 'amax = 0', U2_MANCANTE: 'u2 mancante (CPTU)',
     IC_NON_CALCOLABILE: 'Ic non calcolabile', Z_NON_VALIDA: 'profondità non valida', DATO_NON_NUMERICO: 'valore non numerico'
@@ -361,11 +361,19 @@
     for (const r of righe) {
       if (r.stato !== 'calcolato' && isNum(r.z)) {
         const chiave = r.stato + '|' + (r.codice || '');
+        const ic = r.valori && isNum(r.valori.Ic) ? r.valori.Ic : (r.sbt && isNum(r.sbt.Ic) ? r.sbt.Ic : null);
         if (cur && cur.chiave === chiave) { cur.a = r.z; cur.n++; }
-        else { cur = { chiave, stato: r.stato, codice: r.codice || null, motivo: r.motivo || '', da: r.z, a: r.z, n: 1 }; intervalli.push(cur); }
+        else { cur = { chiave, stato: r.stato, codice: r.codice || null, motivo: r.motivo || '', da: r.z, a: r.z, n: 1, IcMin: null, IcMax: null }; intervalli.push(cur); }
+        if (ic !== null) { cur.IcMin = cur.IcMin === null ? ic : Math.min(cur.IcMin, ic); cur.IcMax = cur.IcMax === null ? ic : Math.max(cur.IcMax, ic); }
       } else cur = null;
     }
-    intervalli.forEach(i => delete i.chiave);
+    // Il motivo del primo punto vale per tutto il tratto; per Ic oltre soglia si riporta l'intervallo di Ic.
+    const virgola = (v) => v.toFixed(2).replace('.', ',');
+    intervalli.forEach(i => {
+      if (i.codice === 'IC_OLTRE_SOGLIA' && i.IcMin !== null && i.n > 1)
+        i.motivo = i.motivo.replace(/^Ic = [\d,.]+ > soglia/, 'Ic ' + virgola(i.IcMin) + '–' + virgola(i.IcMax) + ' > soglia').replace('a questo punto', 'in questo tratto');
+      delete i.chiave; delete i.IcMin; delete i.IcMax;
+    });
 
     const avvisi = {};
     const assunzioni = {};

@@ -2,7 +2,41 @@
 
 La versione dell'app e quella del motore di calcolo sono distinte: l'app è indicata in alto e nel piè di pagina della stampa insieme al motore.
 
-## App 0.2.2 — non pubblicata
+## App 0.2.3 — non pubblicata
+
+Revisione completa dei testi mostrati dall'app (tutte le schede, il confronto, le impostazioni, la stampa e il CSV) e correzione degli errori trovati. Formule invariate.
+
+**Errore di calcolo corretto**
+- **Indice IL e cedimento.** Con la falda di verifica esattamente su una lettura della prova, il punto non saturo si estendeva per metà passo sotto la falda. Il risultato era un tratto «senza risultato» fittizio di 1 cm, che trasformava IL e cedimento in intervalli (es. IL «tra 9,4 e 9,5» invece di 9,39).
+  - Ora la falda fa da confine tra i due punti consecutivi.
+  - Lo scenario principale dell'esempio non cambia (IL 7,14).
+  - Aggiornate allo stesso criterio anche le implementazioni indipendenti usate nelle verifiche.
+
+**Confronto**
+- **Avviso sul «dominio dei punti calcolati».**
+  - Ora compare solo tra scenari della stessa prova; tra prove diverse le profondità non coincidono per costruzione.
+  - Indica per nome lo scenario con le profondità in più. Prima scriveva «nel primo» o «nel secondo» con riferimenti invertiti rispetto all'ordine dei nomi, e suggeriva sempre «la falda diversa».
+- **Avviso sui metodi diversi.** Elenca solo le basi dei metodi presenti.
+- **Nota delle falde.** I nomi degli scenari sono ora tra virgolette.
+
+**Testi e coerenza**
+- **Intervalli non calcolati.** Il motivo vale per tutto il tratto e riporta l'intervallo di Ic (es. «Ic 2,61–2,95 > soglia 2,6 … in questo tratto»), non più il valore del primo punto. Il motivo breve non dice più «escluso», per non confonderlo con l'esclusione del §7.11.3.4.2.
+- **Numeri con la virgola decimale** nei messaggi del motore e dell'indice IL (prima, ad esempio, «Ic = 2.62», «3.19 m»). Nel motore cambiano solo i testi: i valori calcolati sono identici.
+- **Riepilogo.** Il numero di intervalli non calcolati è indicato sotto «Punti calcolati», non più sotto «Avvisi».
+- **Criterio 3.** I punti con Ic oltre la soglia sono distinti dai dati mancanti (prima «78 senza valore»).
+- **Tabelle.** «1 ≤ FS < 1,25» invece di «FS < 1,25» per il margine inferiore al riferimento.
+- **Stampa.**
+  - Motivi in chiaro al posto dei codici interni negli intervalli non calcolati.
+  - Didascalie delle tavole con i soli elementi presenti.
+  - Nome dell'app uniforme nei margini di pagina.
+  - Nessuna maiuscola dopo i due punti nelle assunzioni.
+- **Unità e suggerimenti.**
+  - L'unità in metri non viene più resa «M» dal maiuscoletto.
+  - Unità di γsat nella tabella degli strati.
+  - Suggerimento su CE riscritto.
+- **CSV.** Versione dell'app nella prima riga.
+
+## App 0.2.2 — 2026-11-14
 
 Esempio sintetico più realistico e omogeneo. Motore, formule e interfaccia invariati.
 - **Strato argilloso a metà profilo.** Al posto dell'argilla limosa di 3,4 m (12,4–15,8 m, dove il metodo CPT non si applica), un limo argilloso di 0,8 m (12,4–13,2 m).

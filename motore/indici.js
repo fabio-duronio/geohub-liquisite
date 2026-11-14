@@ -19,7 +19,8 @@
  * verifica di sito si riporta il valore e il giudizio resta del progettista.
  *
  * DISCRETIZZAZIONE (scelta di LiquiSite, dichiarata nei risultati):
- *  - ogni punto rappresenta l'intervallo fino a metà distanza dai punti adiacenti; verso un
+ *  - ogni punto rappresenta l'intervallo fino a metà distanza dai punti adiacenti, oppure fino alla
+ *    falda di verifica se questa cade tra due punti consecutivi; verso un
  *    vuoto maggiore di `vuotoMax` (default 3 volte il passo mediano) metà del passo mediano;
  *    il primo e l'ultimo punto si estendono di metà del passo verso l'esterno;
  *  - F è costante nell'intervallo del punto; l'integrale di w è calcolato esattamente:
@@ -46,6 +47,8 @@
   const VERSIONE_INDICI = '0.1.0';
   const Z_IL = 20;
   const CATEGORIE = ['FS', 'sopraFalda', 'argilloso', 'ignoto'];
+  /** Numero con virgola decimale, per i testi in italiano. */
+  const decimale = (v, cifre) => v.toFixed(cifre).replace('.', ',');
   const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
 
   /** Peso di Iwasaki w(z) = 10 − 0,5 z [m⁻¹], per 0 ≤ z ≤ 20. */
@@ -76,14 +79,17 @@
    * Intervalli rappresentati dai punti, senza sovrapposizioni.
    * punti: [{ z, categoria, FS? }] ordinati e con z distinte.
    */
-  function intervalliDeiPunti(punti, vuotoMax, mediano) {
+  function intervalliDeiPunti(punti, vuotoMax, mediano, zFalda) {
     const n = punti.length;
     const meta = (mediano || 0) / 2;
+    // Confine tra due punti consecutivi: metà distanza; se la falda di verifica cade tra i due
+    // (punto superiore non sotto la falda, inferiore sotto), il confine è la falda stessa.
+    const confine = (z1, z2) => (z1 <= zFalda && zFalda < z2) ? zFalda : (z1 + z2) / 2;
     return punti.map((p, i) => {
       const prec = i > 0 ? punti[i - 1].z : null, succ = i < n - 1 ? punti[i + 1].z : null;
-      const sopra = prec === null ? meta : (p.z - prec > vuotoMax ? meta : (p.z - prec) / 2);
-      const sotto = succ === null ? meta : (succ - p.z > vuotoMax ? meta : (succ - p.z) / 2);
-      return { da: p.z - sopra, a: p.z + sotto, z: p.z, categoria: p.categoria, FS: p.FS ?? null };
+      const da = prec === null || p.z - prec > vuotoMax ? p.z - meta : confine(prec, p.z);
+      const a = succ === null || succ - p.z > vuotoMax ? p.z + meta : confine(p.z, succ);
+      return { da, a, z: p.z, categoria: p.categoria, FS: p.FS ?? null };
     });
   }
 
@@ -112,7 +118,7 @@
     }
     const mediano = passoMediano(ord.map(p => p.z));
     const vuotoMax = opz.vuotoMax ?? (mediano ? 3 * mediano : Infinity);
-    const base = ord.length ? intervalliDeiPunti(ord, vuotoMax, mediano) : [];
+    const base = ord.length ? intervalliDeiPunti(ord, vuotoMax, mediano, zFalda) : [];
 
     // Copertura di 0–20 m: falda (sempre nota), intervalli dei punti, resto ignoto.
     // Si costruisce una partizione su tutti i bordi e si assegna a ogni pezzo la categoria.
@@ -155,11 +161,11 @@
     }
     const completo = spessori.ignoto < 1e-9;
     const assunzioni = [
-      { codice: 'IL_INTERVALLI', descrizione: 'Ogni punto rappresenta l\'intervallo fino a metà distanza dai punti adiacenti (metà del passo mediano verso i vuoti oltre ' + (isFinite(vuotoMax) ? vuotoMax.toFixed(2) : '∞') + ' m e agli estremi); F costante nell\'intervallo, integrale di w esatto.' },
+      { codice: 'IL_INTERVALLI', descrizione: 'Ogni punto rappresenta l\'intervallo fino a metà distanza dai punti adiacenti, oppure fino alla falda di verifica se questa cade tra due punti (metà del passo mediano verso i vuoti oltre ' + (isFinite(vuotoMax) ? decimale(vuotoMax, 2) : '∞') + ' m e agli estremi); F costante nell\'intervallo, integrale di w esatto.' },
       { codice: 'IL_SOPRA_FALDA', descrizione: 'Tra il piano campagna e la falda di verifica contributo nullo all\'indice: terreno non saturo.' }
     ];
-    if (spessori.argilloso > 0) assunzioni.push({ codice: 'IL_ARGILLOSO', descrizione: 'Tratti esclusi per Ic oltre la soglia adottata (CNR-CentroMS 2024, §3.2.1.2, pag. 32: dati CPT con Ic ≤ 2,6, soglia adattabile tra 2,4 e 2,8): FS non applicabile (N.A.), non calcolato. Per convenzione operativa di calcolo il contributo F(z) di questi tratti all\'indice è assunto pari a zero (' + spessori.argilloso.toFixed(2) + ' m): non equivale a un fattore di sicurezza nullo e non coincide con la condizione FS > 1 della definizione di F(z). L\'esclusione non dimostra l\'assenza di perdita di resistenza ciclica: nei terreni fini sensibili o di transizione serve una verifica specifica (granulometria, limiti di Atterberg, criteri di suscettibilità).' });
-    if (!completo) assunzioni.push({ codice: 'IL_INCOMPLETO', descrizione: 'Tratti senza risultato in 0–20 m (' + spessori.ignoto.toFixed(2) + ' m: dati mancanti, non calcolati o profondità non indagate): IL compreso tra IL_min (contributo nullo in quei tratti) e IL_max (contributo massimo del modello in quei tratti). I due valori sono limiti convenzionali del modello, non un intervallo di confidenza né un massimo fisico garantito.' });
+    if (spessori.argilloso > 0) assunzioni.push({ codice: 'IL_ARGILLOSO', descrizione: 'Tratti esclusi per Ic oltre la soglia adottata (CNR-CentroMS 2024, §3.2.1.2, pag. 32: dati CPT con Ic ≤ 2,6, soglia adattabile tra 2,4 e 2,8): FS non applicabile (N.A.), non calcolato. Per convenzione operativa di calcolo il contributo F(z) di questi tratti all\'indice è assunto pari a zero (' + decimale(spessori.argilloso, 2) + ' m): non equivale a un fattore di sicurezza nullo e non coincide con la condizione FS > 1 della definizione di F(z). L\'esclusione non dimostra l\'assenza di perdita di resistenza ciclica: nei terreni fini sensibili o di transizione serve una verifica specifica (granulometria, limiti di Atterberg, criteri di suscettibilità).' });
+    if (!completo) assunzioni.push({ codice: 'IL_INCOMPLETO', descrizione: 'Tratti senza risultato in 0–20 m (' + decimale(spessori.ignoto, 2) + ' m: dati mancanti, non calcolati o profondità non indagate): IL compreso tra IL_min (contributo nullo in quei tratti) e IL_max (contributo massimo del modello in quei tratti). I due valori sono limiti convenzionali del modello, non un intervallo di confidenza né un massimo fisico garantito.' });
     return {
       stato: 'calcolato', versione: VERSIONE_INDICI,
       ILmin, ILmax, completo, IL: completo ? ILmin : null,

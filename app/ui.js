@@ -92,7 +92,7 @@
     const par = pv.parametri || {};
     if (pv.tipo === 'SPT') {
       h += '<div class="alert alert-warn">Inserire N della prova SPT originale, non N60 né (N1)60 già corretti. Il motore applica le correzioni indicate sotto. I colpi DPSH non sono N SPT.</div><div class="group-label">Attrezzatura SPT</div>' +
-        '<div class="field-row"><div class="field"><label for="pvCE">CE = ER / 60 (SPT grezzo)</label><input type="text" inputmode="decimal" step="0.01" id="pvCE" value="' + esc(par.CE ?? '') + '"><div class="hint">ERm/60 %</div></div>' +
+        '<div class="field-row"><div class="field"><label for="pvCE">CE = ER / 60 (SPT grezzo)</label><input type="text" inputmode="decimal" step="0.01" id="pvCE" value="' + esc(par.CE ?? '') + '"><div class="hint">ERm = rendimento energetico misurato [%]; es. ERm 72 % → CE = 1,20</div></div>' +
         '<div class="field"><label for="pvSporg">Sporgenza aste [m]</label><input type="text" inputmode="decimal" step="0.1" id="pvSporg" value="' + esc(par.sporgenza ?? '') + '"></div></div>' +
         '<div class="field-row"><div class="field"><label for="pvCB">CB (diametro foro)</label><input type="text" inputmode="decimal" step="0.01" id="pvCB" value="' + esc(par.CB ?? '') + '"></div>' +
         '<div class="field"><label for="pvCS">CS (campionatore)</label><input type="text" inputmode="decimal" step="0.01" id="pvCS" value="' + esc(par.CS ?? '') + '"' + (par.senzaRivestimento ? ' disabled' : '') + '></div></div>' +
@@ -224,7 +224,7 @@
     $('scFalda').disabled = $('btnAggiungiStrato').disabled = !sc;
     if (!sc) { tb.innerHTML = ''; $('scFalda').value = ''; $('sumStrati').textContent = ''; $('hintFC').textContent = ''; $('erroriStrati').innerHTML = ''; return; }
     $('scFalda').value = sc.zFalda ?? '';
-    const etich = { da: 'da [m]', a: 'a [m]', gamma: 'γ', gammaSat: 'γsat', FC: 'FC [%]' };
+    const etich = { da: 'da [m]', a: 'a [m]', gamma: 'γ [kN/m³]', gammaSat: 'γsat [kN/m³]', FC: 'FC [%]' };
     tb.innerHTML = sc.strati.map((s, i) => '<tr data-i="' + i + '" class="r1">' +
       ['da', 'a', 'gamma', 'gammaSat', 'FC'].map(k => '<td><input type="text" inputmode="decimal" step="0.1" data-k="' + k + '" aria-label="' + etich[k] + ', strato ' + (i + 1) + '" value="' + esc(s[k] ?? '') + '"></td>').join('') + '</tr>' +
       '<tr data-i="' + i + '" class="r2"><td colspan="4"><input class="txt" type="text" data-k="descrizione" placeholder="descrizione" aria-label="descrizione, strato ' + (i + 1) + '" value="' + esc(s.descrizione || '') + '"></td>' +
@@ -361,8 +361,8 @@
         kv('FS minimo calcolato', q.fsMin ? fmt(q.fsMin.FS) : '–', '', q.fsMin ? 'a z = ' + fmt(q.fsMin.z) + ' m' : 'nessun punto calcolato') +
         kv('Profondità indagata', q.profonditaIndagata ? fmt(q.profonditaIndagata.da, 1) + '–' + fmt(q.profonditaIndagata.a, 1) : '–', 'm') +
         kv('Estensione analizzata', q.estensioneAnalizzata ? fmt(q.estensioneAnalizzata.da, 1) + '–' + fmt(q.estensioneAnalizzata.a, 1) : '–', 'm', 'tra il primo e l\'ultimo punto calcolato') +
-        kv('Punti calcolati', esc((q.conteggi.calcolato || 0) + ' / ' + q.punti), '', nNon ? esc(nNon) + ' non calcolati' : 'tutti calcolati') +
-        kv('Avvisi', esc(q.avvisi.length), '', esc(q.intervalliNonCalcolati.length) + ' intervalli non calcolati') + '</div>' +
+        kv('Punti calcolati', esc((q.conteggi.calcolato || 0) + ' / ' + q.punti), '', nNon ? esc(nNon) + ' non calcolati in ' + esc(q.intervalliNonCalcolati.length) + (q.intervalliNonCalcolati.length === 1 ? ' intervallo' : ' intervalli') : 'tutti calcolati') +
+        kv('Avvisi', esc(q.avvisi.length), '', q.avvisi.length ? 'tipi di avviso: vedi «Avvisi e assunzioni»' : 'nessun avviso') + '</div>' +
         (F.statoFsRiferimento(sc).valido
           ? '<div class="hint">Il FS minimo non descrive da solo la risposta del sito: vedere profili, intervalli non calcolati e avvisi. FS di riferimento ' + fmt(F.fsRiferimento(sc)) + ' (EN 1998-5, § 4.1.4; le NTC 2018 non fissano un minimo e il margine è valutato e motivato dal progettista).</div>'
           : '<div class="alert alert-danger"><span class="alert-title">FS di riferimento da correggere</span>' + esc(F.statoFsRiferimento(sc).motivo) + '</div>');
@@ -640,7 +640,7 @@
         return intest(k.startsWith('t:') ? k.slice(2) : k);
       }).join('') + '</tr></thead><tbody>' +
         r.righe.map(x => '<tr data-indice="' + x.indice + '" class="' + (S.selezione === x.indice ? 'hl ' : '') + (x.stato !== 'calcolato' ? 'muted' : '') + '"><td>' + fmt(x.z) + '</td>' + cols.map(k => {
-          if (k === 'letturaFS') { const fs = F.valoreRisultato(x, 'FS'); return '<td class="txt">' + (fs === null ? (x.codice === 'IC_OLTRE_SOGLIA' ? 'FS N.A. · escluso per comportamento argilloso' : 'Non valutabile: vedere motivo') : (() => { const rf = F.fsRiferimento(sc); return '<span class="esito-chip ' + (fs < 1 ? 'esito-critico' : rf === null ? 'esito-neutro' : fs < rf ? 'esito-attesa' : 'esito-neutro') + '">' + (fs < 1 ? 'FS < 1 · domanda > resistenza' : rf === null ? 'FS ≥ 1 · riferimento da correggere' : fs < rf ? 'FS < ' + fmt(rf) + ' · margine inferiore al riferimento' : 'FS ≥ ' + fmt(rf) + ' · margine ≥ riferimento') + '</span>'; })()) + '</td>'; }
+          if (k === 'letturaFS') { const fs = F.valoreRisultato(x, 'FS'); return '<td class="txt">' + (fs === null ? (x.codice === 'IC_OLTRE_SOGLIA' ? 'FS N.A. · escluso per comportamento argilloso' : 'Non valutabile: vedere motivo') : (() => { const rf = F.fsRiferimento(sc); return '<span class="esito-chip ' + (fs < 1 ? 'esito-critico' : rf === null ? 'esito-neutro' : fs < rf ? 'esito-attesa' : 'esito-neutro') + '">' + (fs < 1 ? 'FS < 1 · domanda > resistenza' : rf === null ? 'FS ≥ 1 · riferimento da correggere' : fs < rf ? '1 ≤ FS < ' + fmt(rf) + ' · margine inferiore al riferimento' : 'FS ≥ ' + fmt(rf) + ' · margine ≥ riferimento') + '</span>'; })()) + '</td>'; }
           if (k === 'stato') return '<td><span class="stato-tag ' + esc(x.stato) + '">' + esc(F.ETICHETTE_STATI[x.stato] || x.stato) + '</span></td>';
           if (k === 'motivo') return '<td class="txt" title="' + esc(x.motivo || '') + '">' + esc([x.codice ? (F.MOTIVI_BREVI[x.codice] || x.codice) : null, ...x.avvisi.map(a => a.codice)].filter(Boolean).join(' · ')) + '</td>';
           if (k === 'origineFC') return '<td class="txt" style="min-width:120px;">' + esc(x.origineFC || '–') + '</td>';
@@ -675,14 +675,20 @@
     const avvisi = [];
     if (stati.some(st => st !== 'aggiornato')) avvisi.push(['warn', 'Alcuni scenari non sono calcolati o non sono aggiornati: premi «Calcola gli scenari selezionati».']);
     if (prove.size > 1) avvisi.push(['info', 'Scenari su prove diverse: il confronto è per profondità dal piano campagna, senza quote assolute né distanze.']);
-    if (metodi.size > 1) avvisi.push(['info', 'Metodi diversi: FS e PL hanno basi diverse (B&I 2014 CPT: FS = 1 ↔ PL ≈ 16 %; Cetin 2018: FS = 1 ↔ PL = 50 %; Kayen 2013: FS riferito a PL = 15 %). Nessun risultato viene scelto automaticamente.']);
+    const BASI = { bi2014Cpt: 'B&I 2014 CPT: FS = 1 ↔ PL ≈ 16 %', bi2014Spt: 'B&I 2014 SPT: PL non calcolata', cetin2018Spt: 'Cetin 2018: FS = 1 ↔ PL = 50 %', kayen2013Vs: 'Kayen 2013: FS riferito a PL = 15 %' };
+    if (metodi.size > 1) avvisi.push(['info', 'Metodi diversi: confrontare i FS tenendo conto della base di ciascun metodo (' + [...metodi].map(m => BASI[m]).join('; ') + '). Nessun risultato viene scelto automaticamente.']);
     const calcolati = sel.filter((s, i) => stati[i] === 'aggiornato' && risultatoDi(s).stato === 'calcolato');
     if (calcolati.length > 1) {
-      const rif = risultatoDi(calcolati[0]);
-      for (const s of calcolati.slice(1)) {
-        const d = F.confrontaDominio(rif, risultatoDi(s));
-        if (!d.uguale) avvisi.push(['warn', 'Il dominio dei punti calcolati di «' + esc(s.nome) + '» è diverso da quello di «' + esc(calcolati[0].nome) + '»: ' +
-          (d.soloA.length ? d.soloA.length + ' punti calcolati solo nel primo' : '') + (d.soloA.length && d.soloB.length ? ', ' : '') + (d.soloB.length ? d.soloB.length + ' solo nel secondo' : '') + ' (es. per la falda diversa).']);
+      // Il confronto punto per punto ha senso solo tra scenari della stessa prova: con prove diverse
+      // le profondità non coincidono per costruzione (vedi l'avviso sulle prove diverse).
+      for (let i = 0; i < calcolati.length; i++) for (let j = i + 1; j < calcolati.length; j++) {
+        const A = calcolati[i], B = calcolati[j];
+        if (A.provaId !== B.provaId) continue;
+        const d = F.confrontaDominio(risultatoDi(A), risultatoDi(B));
+        if (d.uguale) continue;
+        const parte = (n, s) => n + (n === 1 ? ' profondità ha' : ' profondità hanno') + ' un FS solo in «' + esc(s.nome) + '»';
+        avvisi.push(['warn', 'Stessa prova, punti calcolati diversi: ' + [d.soloA.length ? parte(d.soloA.length, A) : '', d.soloB.length ? parte(d.soloB.length, B) : ''].filter(Boolean).join('; ') +
+          (A.zFalda !== B.zFalda ? ' (falde di verifica diverse: ' + fmt(A.zFalda) + ' e ' + fmt(B.zFalda) + ' m).' : '.') + ' Nei tratti calcolati in un solo scenario il confronto dei FS non è possibile.']);
       }
     }
     h += avvisi.map(([t, m]) => '<div class="alert alert-' + t + '">' + m + '</div>').join('');
@@ -724,7 +730,7 @@
         falda: sel.length === 1 ? sel[0].zFalda : undefined, riferimentiX: [{ x: 1, etichetta: 'FS = 1' }].concat([...new Set(sel.map(s => F.fsRiferimento(s)).filter(v => v !== null))].map(v => ({ x: v, etichetta: 'FS rif ' + fmt(v) }))) });
       S.grafici.push({ id: 'confronto', titolo: 'FS a confronto', chart });
       const falde = [...new Set(sel.map(s => s.zFalda))];
-      $('notaConf').textContent = (fuori ? fuori + ' valori FS > 3 non visibili (fuori scala). ' : '') + 'Falde: ' + sel.map(s => s.nome + ' ' + fmt(s.zFalda) + ' m').join('; ') + '.' + (att ? '' : '');
+      $('notaConf').textContent = (fuori ? fuori + ' valori FS > 3 non visibili (fuori scala). ' : '') + 'Falde di verifica: ' + sel.map(s => '«' + s.nome + '» ' + fmt(s.zFalda) + ' m').join('; ') + '.' + (att ? '' : '');
       if (falde.length === 1) $('notaConf').textContent += ' Linea tratteggiata blu: falda comune.';
       if (falde.length === 1) { chart.options.plugins.linee.falda = falde[0]; chart.update('none'); }
       $('pngConf').addEventListener('click', () => scarica(Gr.png(chart), nomeFile('confronto-FS', 'png'), true));
@@ -804,10 +810,10 @@
     if (!sel) dett += '<div class="empty">Nessuno strato nello scenario: definisci la stratigrafia.</div>';
     else {
       const c3 = sel.c3, c4 = sel.c4, m4 = c4.motore;
-      dett += '<div class="section-title">Strato ' + fmt(sel.da) + '–' + fmt(sel.a) + ' m</div><p class="escl-desc">' + esc(sel.descrizione || '—') + (sel.pertinente ? '' : ' · <b>non pertinente</b>: sopra la falda di verifica o oltre 20 m') + '</p>';
+      dett += '<div class="section-title">Strato ' + fmt(sel.da) + '–' + fmt(sel.a) + ' <span style="text-transform:none">m</span></div><p class="escl-desc">' + esc(sel.descrizione || '—') + (sel.pertinente ? '' : ' · <b>non pertinente</b>: sopra la falda di verifica o oltre 20 m') + '</p>';
       dett += '<div class="escl-blocco"><div class="escl-tit">' + icona(iconaCriterio(c3)) + ' <b>Criterio 3</b> · sabbie pulite con ' + (c3.grandezza ? esc(c3.grandezza) + ' > ' + c3.soglia : '(N1)60 > 30 o qc1N > 180') + '</div>' +
         '<div class="field"><label for="exSabbia">Strato costituito da sabbie pulite</label>' + sceltaSiNo('exSabbia', sel.dati.sabbiaPulita) + '<div class="hint">giudizio del geologo, da granulometria e descrizione</div></div>' +
-        (isNum(c3.punti) ? '<p class="hint">Punti saturi nello strato: ' + c3.punti + (c3.mancanti ? ' (' + c3.mancanti + ' senza valore)' : '') + ' · minimo ' + esc(c3.grandezza) + ' = ' + fmt(c3.minimo, 1) + ' · oltre soglia: ' + c3.sopraSoglia + '. Normalizzazione: ' + esc(P.NOMI_METODI[sc.metodo]) + '.</p>' : '') +
+        (isNum(c3.punti) ? '<p class="hint">Punti saturi nello strato: ' + c3.punti + (c3.mancanti ? ' (senza ' + esc(c3.grandezza) + ': ' + [c3.conIcOltre ? c3.conIcOltre + ' con Ic oltre la soglia' : '', c3.mancanti - c3.conIcOltre ? (c3.mancanti - c3.conIcOltre) + ' per dati mancanti o non calcolati' : ''].filter(Boolean).join(', ') + ')' : '') + ' · minimo ' + esc(c3.grandezza) + ' = ' + fmt(c3.minimo, 1) + ' · oltre soglia: ' + c3.sopraSoglia + '. Normalizzazione: ' + esc(P.NOMI_METODI[sc.metodo]) + '.</p>' : '') +
         '<p class="escl-motivo">' + esc(c3.motivo || '') + '</p></div>';
       dett += '<div class="escl-blocco"><div class="escl-tit">' + icona(iconaCriterio(c4)) + ' <b>Criterio 4</b> · granulometria esterna ai fusi della Fig. 7.11.1</div>' +
         '<div class="field"><label for="exCampione">Campione</label><input type="text" id="exCampione" value="' + esc(sel.dati.campione) + '" placeholder="es. S1-C3, 6,0–6,5 m"></div>' +
@@ -881,7 +887,7 @@
     h += '<div class="section-title">Assunzioni</div><ul>' + q.assunzioni.map(a => '<li>' + esc(a.descrizione) + (a.n ? ' <span class="hint">(' + esc(a.n) + ' punti)</span>' : '') + '</li>').join('') +
       (pv.tipo === 'CPTE' ? '' : '') + '</ul>';
     h += '<div class="section-title">Basi del metodo</div><ul><li>' + esc(q.notaFS) + '</li><li>' + esc(q.notaPL) + '</li>' +
-      '<li>Criterio di verifica: ' + esc(F.criterioFS(sc)) + '</li>' +
+      '<li><b>Criterio di verifica.</b> ' + esc(F.criterioFS(sc)) + '</li>' +
       '<li>' + (r.cedimenti && r.cedimenti.stato === 'calcolato' ? 'Cedimento post-sismico e LSN: ' + esc(testoCedimento(r.cedimenti)) + '; LSN ' + esc(testoLSN(r.cedimenti)) + '. Spostamenti laterali: non calcolati.' : 'Cedimenti post-sismici: calcolati solo con prove CPT. Spostamenti laterali: non calcolati.') + '</li></ul>';
     if (r.cedimenti && r.cedimenti.stato === 'calcolato') h += '<div class="section-title">Cedimento e LSN: assunzioni</div><ul>' + r.cedimenti.assunzioni.concat(r.cedimenti.avvisi.map(a => ({ descrizione: a.messaggio }))).map(a => '<li>' + esc(a.descrizione) + '</li>').join('') + '<li>' + esc(r.cedimenti.fonte) + '</li></ul>';
     const ind = r.indiceIL;
@@ -1082,6 +1088,15 @@
 
   const nFS = (r, soglia) => r.righe.filter(x => x.stato === 'calcolato' && isNum(x.valori?.FS) && x.valori.FS < soglia).length;
 
+  /** Didascalia di una tavola di stampa: solo gli elementi presenti nei pannelli. */
+  function legendaTavola(ids) {
+    const parti = ['Falda: linea blu tratteggiata.'];
+    if (ids.includes('csrcrr')) parti.push('CSR: rossa tratteggiata; CRR: verde continua.');
+    if (ids.includes('FS')) parti.push('FS &lt; 1: domanda maggiore della resistenza del modello, non classificazione normativa.');
+    parti.push('Le interruzioni non indicano sicurezza.');
+    return parti.join(' ');
+  }
+
   function stampaEsclusione(pv, sc, r) {
     const v = EX.valutaEsclusione(L, pv, sc, r && r.stato === 'calcolato' ? r : null);
     const d = EX.datiEsclusione(sc);
@@ -1101,7 +1116,7 @@
     const conCurva = v.strati.filter(x => x.dati.curva && x.dati.curva.length);
     if (conCurva.length) h += '<div class="st-grafici st-fusi">' + conCurva.map(x => '<figure><img alt="Curva granulometrica" src="' +
       Gr.immagineDa(Gr.fusoGranulometrico, { fusi: fusiDaMostrare(x.c4), curva: x.dati.curva }, 520, 380) + '"><figcaption>Strato ' + fmt(x.da) + '–' + fmt(x.a) + ' m' + (x.dati.campione ? ' · ' + esc(x.dati.campione) : '') + '</figcaption></figure>').join('') + '</div>';
-    h += '<p class="st-nota">' + v.note.map(esc).join(' ') + ' Criterio 3: per strato, con la normalizzazione del metodo (' + esc(P.NOMI_METODI[sc.metodo]) + '); lo strato è escluso solo se dichiarato sabbia pulita e se tutti i punti saturi superano la soglia. Criterio 4: fusi digitalizzati dalla Fig. 7.11.1, nessuna estrapolazione della curva, esito confermato dal geologo.</p>';
+    h += '<p class="st-nota">' + v.note.map(esc).join(' ') + ' Criterio 3: per strato, con la normalizzazione del metodo ' + esc(P.NOMI_METODI[sc.metodo]) + '; lo strato è escluso solo se dichiarato sabbia pulita e se tutti i punti saturi superano la soglia. Criterio 4: fusi digitalizzati dalla Fig. 7.11.1, nessuna estrapolazione della curva, esito confermato dal geologo.</p>';
     return h;
   }
 
@@ -1138,14 +1153,14 @@
       (r.cedimenti && r.cedimenti.stato === 'calcolato' ? riga('Cedimento post-sismico da CPT (Zhang et al. 2002, 0–20 m)', esc(testoCedimento(r.cedimenti)) + (r.cedimenti.completo ? '' : ' — copertura incompleta: contributo nullo nel valore inferiore, deformazione della curva limite ' + fmt(r.cedimenti.epsLimite, 2) + ' % nel superiore (limiti convenzionali del modello, non un intervallo di confidenza)')) +
         riga('LSN (senza classi)', '0–20 m: ' + esc(testoLSN(r.cedimenti)) + ' · 0–10 m: ' + esc(testoLSN(r.cedimenti, true))) : '') +
       riga('Indice IL (Iwasaki, 0–20 m, senza classi)', r.indiceIL ? esc(testoIL(r.indiceIL)) + (r.indiceIL.stato === 'calcolato' && !r.indiceIL.completo ? ' — copertura incompleta: ' + fmt(r.indiceIL.spessori.ignoto, 2) + ' m senza risultato, con contributo nullo nel valore inferiore e contributo massimo del modello nel superiore (limiti convenzionali del modello, non un intervallo di confidenza)' : '') : '–') +
-      riga('Intervalli non calcolati', q.intervalliNonCalcolati.length ? q.intervalliNonCalcolati.map(i => fmt(i.da) + '–' + fmt(i.a) + ' m: ' + esc(F.ETICHETTE_STATI[i.stato]) + (i.codice ? ' (' + esc(i.codice) + ')' : '')).join('; ') : 'nessuno') +
+      riga('Intervalli non calcolati', q.intervalliNonCalcolati.length ? q.intervalliNonCalcolati.map(i => fmt(i.da) + '–' + fmt(i.a) + ' m: ' + esc(i.codice && F.MOTIVI_BREVI[i.codice] ? F.MOTIVI_BREVI[i.codice] : F.ETICHETTE_STATI[i.stato])).join('; ') : 'nessuno') +
       '</tbody></table><p class="st-nota"><b>Criterio di verifica e scelta del coefficiente di sicurezza.</b> ' + esc(F.criterioFS(sc)) + '</p><p class="st-nota">Il FS minimo non descrive da solo la risposta del sito. ' + esc(q.notaFS) + ' ' + esc(q.notaPL) + '</p>';
     const tavole = S.grafici.filter(g => g.cfg);
     for (let i = 0; i < tavole.length; i += 2) {
       h += '<div class="st-h st-pagina">4. Profili · Tavola ' + (i / 2 + 1) + ' · ' + esc(pv.nome) + (pv.esempio ? ' · ESEMPIO SINTETICO' : '') + '</div>' +
         '<p class="st-nota">' + esc(S.pr.progetto.titolo) + ' · ' + esc(sc.nome) + '<br>' + esc(P.NOMI_METODI[sc.metodo]) + ' · Mw ' + fmt(sc.Mw) + ' · amax ' + fmt(sc.amax,3) + ' g · falda ' + fmt(sc.zFalda) + ' m</p><div class="st-grafici">' +
         tavole.slice(i,i+2).map(g => '<figure><img alt="' + esc(g.titolo) + '" src="' + Gr.immagineStampa(g.cfg, 400, 700) + '"><figcaption>' + esc(g.titolo) + ($('nota-' + g.id) && $('nota-' + g.id).textContent ? ' – ' + esc($('nota-' + g.id).textContent) : '') + '</figcaption></figure>').join('') + '</div>' +
-        '<p class="st-nota">Falda: linea blu tratteggiata. CSR: rossa tratteggiata; CRR: verde continua. FS &lt; 1: domanda maggiore della resistenza del modello, non classificazione normativa. Le interruzioni non indicano sicurezza.</p>';
+        '<p class="st-nota">' + legendaTavola(tavole.slice(i, i + 2).map(g => g.id)) + '</p>';
     }
     const sbt = S.grafici.find(g => g.id === 'sbt');
     if (sbt) h += '<div class="st-h st-pagina">5. Carta di comportamento CPT</div><figure class="st-sbt"><img alt="Carta di comportamento CPT" src="' +
@@ -1155,8 +1170,8 @@
       q.avvisi.map(a => '<li><b>' + esc(a.codice) + '</b> (' + esc(a.n) + ' punti, z ' + fmt(a.zDa) + '–' + fmt(a.zA) + ' m): ' + esc(a.messaggio) + '</li>').join('') +
       q.assunzioni.map(a => '<li>Assunzione: ' + esc(a.descrizione) + (a.n ? ' (' + esc(a.n) + ' punti)' : '') + '</li>').join('') +
       '<li>Profondità oltre ' + fmt(q.profonditaIndagata ? q.profonditaIndagata.a : 0) + ' m non indagate; un intervallo non calcolato non è un intervallo sicuro.</li>' +
-      (r.indiceIL && r.indiceIL.stato === 'calcolato' ? r.indiceIL.assunzioni.map(a => '<li>IL: ' + esc(a.descrizione) + '</li>').join('') + '<li>IL: ' + esc(r.indiceIL.fonte) + '</li>' : '') +
-      (r.cedimenti && r.cedimenti.stato === 'calcolato' ? r.cedimenti.assunzioni.concat(r.cedimenti.avvisi.map(a => ({ descrizione: a.messaggio }))).map(a => '<li>Cedimento e LSN: ' + esc(a.descrizione) + '</li>').join('') + '<li>Cedimento e LSN: ' + esc(r.cedimenti.fonte) + '</li>' : '<li>Cedimenti post-sismici: calcolati solo con prove CPT.</li>') +
+      (r.indiceIL && r.indiceIL.stato === 'calcolato' ? r.indiceIL.assunzioni.map(a => '<li><b>Indice IL.</b> ' + esc(a.descrizione) + '</li>').join('') + '<li><b>Indice IL.</b> ' + esc(r.indiceIL.fonte) + '</li>' : '') +
+      (r.cedimenti && r.cedimenti.stato === 'calcolato' ? r.cedimenti.assunzioni.concat(r.cedimenti.avvisi.map(a => ({ descrizione: a.messaggio }))).map(a => '<li><b>Cedimento e LSN.</b> ' + esc(a.descrizione) + '</li>').join('') + '<li>Cedimento e LSN: ' + esc(r.cedimenti.fonte) + '</li>' : '<li>Cedimenti post-sismici: calcolati solo con prove CPT.</li>') +
       '<li>Spostamenti laterali: non calcolati.</li></ul>';
     h += '<div class="st-piede"><span>GeoHub-LiquiSite ' + esc(P.VERSIONE_APP) + ' · motore ' + esc(r.versioneMotore) + ' · calcolato il ' + esc(new Date(r.calcolatoIl).toLocaleString('it-IT')) + ' · firma input ' + esc(r.firma) + '</span><span>Basato su LiquiSite di Fabio Duronio, geologo</span></div>';
     $('stampa').innerHTML = h;
@@ -1174,7 +1189,7 @@
     const testo = '@page{' +
       '@top-left{content:' + str('GeoHub-LiquiSite – Verifica a liquefazione') + '; ' + font + '}' +
       '@top-right{content:' + str((S.pr.progetto.titolo ? S.pr.progetto.titolo + ' · ' : '') + sc.nome, 90) + '; ' + font + '}' +
-      '@bottom-left{content:' + str('LiquiSite ' + P.VERSIONE_APP + ' · motore ' + r.versioneMotore + ' · firma input ' + r.firma) + '; ' + font + '}' +
+      '@bottom-left{content:' + str('GeoHub-LiquiSite ' + P.VERSIONE_APP + ' · motore ' + r.versioneMotore + ' · firma input ' + r.firma) + '; ' + font + '}' +
       '@bottom-right{content:"pagina " counter(page) " di " counter(pages); ' + font + '}}';
     let st = document.getElementById('stileMargini');
     if (!st) { st = document.createElement('style'); st.id = 'stileMargini'; document.head.appendChild(st); }

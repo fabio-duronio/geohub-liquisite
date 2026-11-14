@@ -180,7 +180,7 @@
   function nonConvergente(metodo, z, convergenza, diagnostica, avvisi) {
     return {
       metodo, z, stato: STATI.NON_CONVERGENTE,
-      motivo: 'iterazione non convergente dopo ' + convergenza.numeroIterazioni + ' passi (residuo ' + convergenza.residuoFinale + ')',
+      motivo: 'iterazione non convergente dopo ' + convergenza.numeroIterazioni + ' passi (residuo ' + numeroIt(convergenza.residuoFinale) + ')',
       convergenza, diagnostica, avvisi
     };
   }
@@ -259,6 +259,8 @@
   }
 
   const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
+  /** Numero nei messaggi in italiano: virgola decimale (solo testo, nessun effetto sui calcoli). */
+  const numeroIt = (v) => String(v).replace('.', ',');
 
   // ---------------------------------------------------------------------------
   // Tensioni litostatiche
@@ -316,7 +318,7 @@
     const u = Math.max(0, zz - zw) * GAMMA_W;
     const sve = sv - u;
     if (zz > 0 && !(sve > 0)) {
-      return { stato: STATI.INPUT_NON_VALIDO, errori: [{ campo: 'strati', codice: 'SVE_NON_POSITIVA', motivo: 'tensione efficace non positiva a ' + zz + ' m: pesi di volume incoerenti con la falda' }] };
+      return { stato: STATI.INPUT_NON_VALIDO, errori: [{ campo: 'strati', codice: 'SVE_NON_POSITIVA', motivo: 'tensione efficace non positiva a ' + numeroIt(zz) + ' m: pesi di volume incoerenti con la falda' }] };
     }
     return { stato: STATI.CALCOLATO, sv, u, sve };
   }
@@ -536,7 +538,7 @@
     const { amax, Mw } = sisma;
     const PA = BI.PA;
     avvisi.push(...avvisiProfonditaBI(z));
-    if (IcSoglia < 2.4 || IcSoglia > 2.8) avvisi.push(avviso('IC_SOGLIA_INSOLITA', 'fuori_campo', 'Soglia di Ic = ' + IcSoglia + ' fuori dai valori 2,4–2,8 indicati per l\'analisi di sensibilità [B&I 2014, pag. 99].'));
+    if (IcSoglia < 2.4 || IcSoglia > 2.8) avvisi.push(avviso('IC_SOGLIA_INSOLITA', 'fuori_campo', 'Soglia di Ic = ' + numeroIt(IcSoglia) + ' fuori dai valori 2,4–2,8 indicati per l\'analisi di sensibilità [B&I 2014, pag. 99].'));
 
     // qt [B&I 2014, Eq. 2.3, pag. 6]
     let qt;
@@ -566,7 +568,7 @@
 
     if (cls.Ic > IcSoglia) {
       return nonApplicabile(metodo, z, 'IC_OLTRE_SOGLIA',
-        'Ic = ' + cls.Ic.toFixed(2) + ' > soglia ' + IcSoglia + ': comportamento di tipo argilloso, il metodo non si applica a questo punto [B&I 2014, pag. 21 e 99]. ' +
+        'Ic = ' + cls.Ic.toFixed(2).replace('.', ',') + ' > soglia ' + numeroIt(IcSoglia) + ': comportamento di tipo argilloso, il metodo non si applica a questo punto [B&I 2014, pag. 21 e 99]. ' +
         'Non è un\'esclusione ai sensi del §7.11.3.4.2 delle NTC 2018 e non dimostra l\'assenza di problemi ciclici: il comportamento dei terreni fini va valutato con altri criteri.',
         { tipo, qt, ar, ...cls, FC, origineFC, IcSoglia, assunzioni });
     }
@@ -674,12 +676,12 @@
     if (verticale.CB === undefined) avvisi.push(avviso('CB_PREDEFINITO', 'assunzione', 'CB non indicato: si assume 1 (foro di diametro standard).'));
     if (verticale.sporgenza === undefined) avvisi.push(avviso('SPORGENZA_PREDEFINITA', 'assunzione', 'Sporgenza delle aste non indicata: si assume 0 m.'));
     if (verticale.CS === undefined && senzaRiv !== true) avvisi.push(avviso('CS_PREDEFINITO', 'assunzione', 'CS non indicato: si assume 1 (campionatore standard).'));
-    if (Vs12 > 230) { avvisi.push(avviso('VS12_LIMITATA', 'fuori_campo', 'V*s,12 = ' + Vs12 + ' m/s > 230: si usa 230 m/s come raccomandato dagli autori [Cetin 2018 SDEE, pag. 703–704].')); Vs12 = 230; }
+    if (Vs12 > 230) { avvisi.push(avviso('VS12_LIMITATA', 'fuori_campo', 'V*s,12 = ' + numeroIt(Vs12) + ' m/s > 230: si usa 230 m/s come raccomandato dagli autori [Cetin 2018 SDEE, pag. 703–704].')); Vs12 = 230; }
     if (Vs12 < 90) avvisi.push(avviso('VS12_BASSA', 'fuori_campo', 'V*s,12 < 90 m/s: nessun caso della banca dati [Cetin 2018 SDEE, pag. 703–704].'));
     if (Mw < 5.5 || Mw > 8.4) avvisi.push(avviso('MW_FUORI_CAMPO', 'fuori_campo', 'Mw fuori dall\'intervallo 5,5–8,4 di KMw [Cetin 2018 SDEE, Eq. 15].'));
 
     let FC = punto.FC;
-    if (FC < 5 || FC > 35) { avvisi.push(avviso('FC_LIMITATO', 'fuori_campo', 'FC = ' + FC + ' % limitato all\'intervallo 5–35 % [Cetin 2018, pag. 705].')); FC = clamp(FC, 5, 35); }
+    if (FC < 5 || FC > 35) { avvisi.push(avviso('FC_LIMITATO', 'fuori_campo', 'FC = ' + numeroIt(FC) + ' % limitato all\'intervallo 5–35 % [Cetin 2018, pag. 705].')); FC = clamp(FC, 5, 35); }
 
     const { CE, CB } = vert;
     const d = vert.sporgenza + z;
@@ -714,7 +716,7 @@
     const KMw = Math.pow(Mw / 7.5, -C.t2 / C.t6);
     const CSRrif = CSR / (Ksigma * KMw);
     const sveAtm = sve / C.PA;
-    if (sveAtm < 0.25 || sveAtm > 1.8) avvisi.push(avviso('SVE_FUORI_CAMPO', 'fuori_campo', 'σ\'v = ' + sveAtm.toFixed(2) + ' atm fuori da 0,25–1,8 atm per Kσ [Cetin 2018, pag. 706].'));
+    if (sveAtm < 0.25 || sveAtm > 1.8) avvisi.push(avviso('SVE_FUORI_CAMPO', 'fuori_campo', 'σ\'v = ' + sveAtm.toFixed(2).replace('.', ',') + ' atm fuori da 0,25–1,8 atm per Kσ [Cetin 2018, pag. 706].'));
     if (CSRrif > 0.6) avvisi.push(avviso('CSR_RIF_ALTO', 'fuori_campo', 'CSR di riferimento > 0,6 [Cetin 2018 SDEE, Eq. 13].'));
 
     return chiudi({
@@ -759,7 +761,7 @@
     }
     if (Mw < 5.5 || Mw > 9.0) avvisi.push(avviso('MW_FUORI_CAMPO', 'fuori_campo', 'Mw fuori dall\'intervallo 5,5–9,0 della DWF [Kayen 2013, Eq. 17].'));
     if (sve > 180) avvisi.push(avviso('SVE_OLTRE_BANCA_DATI', 'fuori_campo',
-      'σ\'v0 = ' + sve.toFixed(1) + ' kPa > 180 kPa: oltre i siti della banca dati (entro 22 m e 180 kPa); gli autori non la ritengono adatta a valutare Kσ oltre 200 kPa. ' +
+      'σ\'v0 = ' + sve.toFixed(1).replace('.', ',') + ' kPa > 180 kPa: oltre i siti della banca dati (entro 22 m e 180 kPa); gli autori non la ritengono adatta a valutare Kσ oltre 200 kPa. ' +
       'Le Eq. 13–14 si applicano senza modifiche; Kσ = 1 riguarda solo CSR* dell\'Eq. 15 [Kayen 2013, pag. 413–414].'));
 
     // Vs1 [Kayen 2013, Eq. 2], CVs ≤ 1,5
