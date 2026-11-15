@@ -2,7 +2,7 @@
 
 La versione dell'app e quella del motore di calcolo sono distinte: l'app è indicata in alto e nel piè di pagina della stampa insieme al motore.
 
-## App 0.3.0 — non pubblicata
+## App 0.3.0 — 2026-11-16
 
 **Magnitudo M_w proposta dalle zone sismogenetiche ZS9.** Motore di calcolo invariato (0.3.0): la M_w entra nel calcolo come prima.
 
@@ -14,7 +14,9 @@ La versione dell'app e quella del motore di calcolo sono distinte: l'app è indi
 - **Formato del progetto**: nuovi campi facoltativi `progetto.lat`, `progetto.lon`, `progetto.noteZS9` e `scenari[].magnitudo`. I file precedenti si aprono con M_w «inserimento manuale».
 - **Verifiche**: `verifica_zs9.mjs` e `verifica_zs9.py` di SismaSite (invariati), nuovo `verifica_magnitudo.mjs` (91 controlli), 17 nuovi controlli nel browser. Il workflow installa pyproj, shapely e numpy per la verifica Python.
 
-## App 0.2.3 — non pubblicata
+## App 0.2.3 — compresa nella 0.3.0
+
+Nessuna release dedicata: le modifiche sotto sono state pubblicate con la 0.3.0.
 
 Revisione completa dei testi mostrati dall'app (tutte le schede, il confronto, le impostazioni, la stampa e il CSV) e correzione degli errori trovati. Formule invariate.
 
