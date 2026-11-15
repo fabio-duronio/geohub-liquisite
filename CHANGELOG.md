@@ -2,6 +2,18 @@
 
 La versione dell'app e quella del motore di calcolo sono distinte: l'app è indicata in alto e nel piè di pagina della stampa insieme al motore.
 
+## App 0.3.0 — non pubblicata
+
+**Magnitudo M_w proposta dalle zone sismogenetiche ZS9.** Motore di calcolo invariato (0.3.0): la M_w entra nel calcolo come prima.
+
+- **Coordinate del sito** nel pannello Progetto, in gradi decimali WGS84, con controllo di valori non numerici, intervallo, ordine lat/lon e punti fuori dall'Italia. Non entrano nel calcolo del FS se non attraverso la M_w.
+- **Proposta di M_w** dal modulo ZS9 v1.2.0 di GeoHub-SismaSite (PR #31), copiato senza modifiche con i dati delle 36 zone (stessa impronta SHA-256) e le sue verifiche. Sito interno: M_w,max della zona (Linee guida LQ, Tab. A1.1). Sito esterno: tabella completa delle 36 zone (R_i, M_s,i, M_i, esito), comprese le zone escluse, in app e in stampa. Nessuna zona con M_s,i < M_i: «disaggregazione richiesta», con inserimento manuale (la disaggregazione non è implementata).
+- **Scenario**: M_w proposta oppure inserita a mano, sempre modificabile; motivazione obbligatoria se diversa dalla proposta, altrimenti stampa e CSV sono bloccati. Avvisi per M_w < 5 (condizioni delle Linee guida LQ) e < 5,5 (campo di Cetin 2018).
+- **Scheda «Magnitudo M_w»** e **sezione 1.1 della stampa**: esito, M_w adottata e origine, motivazione, segnalazioni del geologo, fonte, criterio («interpretazione della regola delle Linee guida LQ, pag. 30»), datum non dichiarato del file ZS9 e criticità delle Linee guida (pag. 31–32).
+- **CSV**: riga con l'origine della M_w.
+- **Formato del progetto**: nuovi campi facoltativi `progetto.lat`, `progetto.lon`, `progetto.noteZS9` e `scenari[].magnitudo`. I file precedenti si aprono con M_w «inserimento manuale».
+- **Verifiche**: `verifica_zs9.mjs` e `verifica_zs9.py` di SismaSite (invariati), nuovo `verifica_magnitudo.mjs` (91 controlli), 17 nuovi controlli nel browser. Il workflow installa pyproj, shapely e numpy per la verifica Python.
+
 ## App 0.2.3 — non pubblicata
 
 Revisione completa dei testi mostrati dall'app (tutte le schede, il confronto, le impostazioni, la stampa e il CSV) e correzione degli errori trovati. Formule invariate.

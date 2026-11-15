@@ -102,6 +102,27 @@ Componenti di terze parti inclusi in vendor/ (con le rispettive licenze):
 Riferimenti normativi: D.M. 17/01/2018 (NTC 2018), §7.11.3.4; Circolare
 21/01/2019 n. 7 C.S.LL.PP., C7.11.3.4.
 
+Magnitudo di riferimento Mw (moduli/zs9.js, dati/zs9-data.json):
+- Meletti C., Galadini F., Valensise G., Stucchi M., Basili R., Barba S.,
+  Vannucci G., Boschi E. (2004). Zonazione sismogenetica ZS9 [Data set].
+  Istituto Nazionale di Geofisica e Vulcanologia (INGV).
+  https://doi.org/10.13127/sh/zs9 — licenza CC BY 4.0. File ZS9.ZIP del
+  06/05/2004, convertito con strumenti/convert_zs9.py (coordinate invariate,
+  arrotondate a 6 decimali).
+- Commissione tecnica per la microzonazione sismica (2018). Microzonazione
+  sismica. Linee guida per la gestione del territorio in aree interessate da
+  liquefazioni (LQ), versione 1.0. Dipartimento della Protezione Civile —
+  licenza CC BY 4.0. Tab. A1.1 (pag. 31) e procedura di pag. 30–31.
+- Meletti C., Valensise G. (a cura di) (2004). Zonazione sismogenetica ZS9 –
+  App. 2 al Rapporto Conclusivo, INGV, pag. 31–32 e Fig. 19 (fasce di
+  incertezza dei confini).
+- Vincenty T. (1975). Direct and inverse solutions of geodesics on the
+  ellipsoid with application of nested equations. Survey Review 23(176),
+  88-93. (distanze sull'ellissoide WGS84)
+Il modulo moduli/zs9.js (v1.2.0) e le sue verifiche provengono da
+GeoHub-SismaSite (https://github.com/fabio-duronio/geohub-sismasite, PR #31)
+e sono copiati senza modifiche.
+
 dati/fusi-ntc2018.json — coordinate dei fusi granulometrici della Fig. 7.11.1
   del D.M. 17/01/2018 (NTC 2018), S.O. n. 8 alla G.U. n. 42 del 20/02/2018,
   pag. 280, ricavate per digitalizzazione dell'immagine ufficiale

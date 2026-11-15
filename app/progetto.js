@@ -8,7 +8,7 @@
  * Progetto (serializzabile):
  * {
  *   formato: 'geohub-liquisite-progetto', versioneFormato: 1,
- *   progetto: { titolo, sito, autore, note },
+ *   progetto: { titolo, sito, lat, lon, noteZS9, autore, note },   // lat, lon: gradi decimali WGS84 o null
  *   prove: [Prova], scenari: [Scenario], provaAttiva, scenarioAttivo,
  *   risultati: { [scenarioId]: Risultato }        // solo in memoria: non salvato né ricaricato
  * }
@@ -17,7 +17,8 @@
  *          parametri: { CE, CB, CS, sporgenza, senzaRivestimento, ar } (secondo il tipo) }
  * Scenario: { id, nome, colore, provaId, metodo, Mw, amax, zFalda,
  *             strati: [{ da, a, gamma, gammaSat, FC|null, descrizione }],
- *             opzioni: { Vs12, IcSoglia, CFC, FSrif }, note }
+ *             opzioni: { Vs12, IcSoglia, CFC, FSrif }, note,
+ *             magnitudo: { origine: 'zs9'|'manuale', motivazione } }   // vedi app/magnitudo.js
  */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();
@@ -70,7 +71,7 @@
   const FS_RIFERIMENTO = 1.25;
 
   /** Versione dell'applicazione (distinta da quella del motore di calcolo). */
-  const VERSIONE_APP = '0.2.3';
+  const VERSIONE_APP = '0.3.0';
 
   let contatore = 0;
   function nuovoId(prefisso) {
@@ -106,20 +107,24 @@
     return { faldaMediaStagionale: null, pcSubOrizzontale: null, fondazioniSuperficiali: null, strati: [] };
   }
 
+  /** Origine della Mw dello scenario: proposta dalle zone ZS9 o inserimento manuale (app/magnitudo.js). */
+  const ORIGINI_MW = ['zs9', 'manuale'];
+  function magnitudoVuota() { return { origine: 'manuale', motivazione: '' }; }
+
   function nuovoScenario(prova, nome, indice = 0) {
     return {
       id: nuovoId('scen'), nome: nome || 'Scenario ' + (indice + 1), colore: COLORI_SCENARI[indice % COLORI_SCENARI.length],
       provaId: prova ? prova.id : null, metodo: prova ? METODI_PER_TIPO[prova.tipo][0] : null,
       Mw: null, amax: null, zFalda: null,
       strati: [], opzioni: { Vs12: null, IcSoglia: 2.6, CFC: 0, FSrif: FS_RIFERIMENTO }, note: '',
-      esclusione: esclusioneVuota()
+      esclusione: esclusioneVuota(), magnitudo: magnitudoVuota()
     };
   }
 
   function nuovoProgetto() {
     return {
       formato: FORMATO, versioneFormato: VERSIONE_FORMATO,
-      progetto: { titolo: '', sito: '', autore: '', note: '' },
+      progetto: { titolo: '', sito: '', lat: null, lon: null, noteZS9: '', autore: '', note: '' },
       prove: [], scenari: [], provaAttiva: null, scenarioAttivo: null, risultati: {}
     };
   }
@@ -226,7 +231,11 @@
     if (errori.length) return { ok: false, errori, avvisi };
 
     const out = nuovoProgetto();
-    for (const k of ['titolo', 'sito', 'autore', 'note']) out.progetto[k] = testo(obj.progetto[k], 'progetto.' + k, false);
+    for (const k of ['titolo', 'sito', 'noteZS9', 'autore', 'note']) out.progetto[k] = testo(obj.progetto[k], 'progetto.' + k, false);
+    // Coordinate del sito: numeri o vuote. L'intervallo è controllato dall'app (app/magnitudo.js) e
+    // segnalato come errore, senza sostituire il valore (come per il FS di riferimento).
+    out.progetto.lat = numONull(obj.progetto.lat, 'progetto.lat');
+    out.progetto.lon = numONull(obj.progetto.lon, 'progetto.lon');
 
     const idProve = new Set();
     obj.prove.forEach((p, i) => {
@@ -331,9 +340,22 @@
           });
         }
       }
+      // Origine della Mw: assente nei file precedenti alla 0.3.0, dove la Mw era sempre inserita a mano.
+      const magnitudo = magnitudoVuota();
+      if (s.magnitudo !== undefined && s.magnitudo !== null) {
+        const m = s.magnitudo, cm = c + '.magnitudo';
+        if (!isOggetto(m)) err(cm, 'deve essere un oggetto');
+        else {
+          if (m.origine !== undefined && m.origine !== null) {
+            if (!ORIGINI_MW.includes(m.origine)) err(cm + '.origine', 'valore non ammesso: ' + descrivi(m.origine) + ' (ammessi ' + ORIGINI_MW.join(', ') + ')');
+            else magnitudo.origine = m.origine;
+          }
+          magnitudo.motivazione = testo(m.motivazione, cm + '.motivazione', false);
+        }
+      }
       out.scenari.push({ id: sid, nome, colore, provaId: s.provaId, metodo: s.metodo,
         Mw: numONull(s.Mw, c + '.Mw'), amax: numONull(s.amax, c + '.amax'), zFalda: numONull(s.zFalda, c + '.zFalda'),
-        strati, opzioni, note: testo(s.note, c + '.note', false), esclusione });
+        strati, opzioni, note: testo(s.note, c + '.note', false), esclusione, magnitudo });
     });
 
     if (errori.length) return { ok: false, errori, avvisi };
@@ -369,7 +391,7 @@
 
   return {
     VERSIONE_APP, FORMATO, VERSIONE_FORMATO, FS_RIFERIMENTO, TIPI_PROVA, METODI_PER_TIPO, NOMI_METODI, UNITA, ETICHETTE_COLONNE, COLORI_SCENARI,
-    nuovoId, nuovaProva, nuovoScenario, esclusioneVuota, nuovoProgetto, duplicaScenario, copia,
+    nuovoId, nuovaProva, nuovoScenario, esclusioneVuota, magnitudoVuota, ORIGINI_MW, nuovoProgetto, duplicaScenario, copia,
     datiInterni, firmaInput, validaProgetto, apriProgetto, salvaProgetto, parametriPredefiniti, unitaPredefinite
   };
 });

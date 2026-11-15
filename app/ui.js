@@ -9,7 +9,8 @@
 (function () {
   'use strict';
   const L = window.LiquiSite, P = window.LiquiProgetto, F = window.LiquiProfilo, I = window.LiquiImporta,
-    X = window.LiquiEsporta, E = window.LiquiEsempio, Gr = window.LiquiGrafici, EX = window.LiquiEsclusione;
+    X = window.LiquiEsporta, E = window.LiquiEsempio, Gr = window.LiquiGrafici, EX = window.LiquiEsclusione,
+    MG = window.LiquiMagnitudo, Z9 = window.ZS9, Z9D = window.LiquiZS9Dati;
   const $ = (id) => document.getElementById(id);
   const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -33,6 +34,14 @@
   const scenario = () => S.pr.scenari.find(s => s.id === S.pr.scenarioAttivo) || null;
   const provaDi = (s) => S.pr.prove.find(p => p.id === s.provaId) || null;
   const risultatoDi = (s) => (S.pr.risultati || {})[s.id] || null;
+
+  /** Proposta di Mw dalle zone ZS9 per le coordinate del progetto (ricalcolata solo se cambiano). */
+  let cacheProposta = { chiave: null, valore: null };
+  function proposta() {
+    const p = S.pr.progetto, chiave = String(p.lat) + '|' + String(p.lon);
+    if (cacheProposta.chiave !== chiave) cacheProposta = { chiave, valore: MG.proposta(S.pr, Z9, Z9D) };
+    return cacheProposta.valore;
+  }
 
   /** 'aggiornato' | 'non_aggiornato' | 'assente' */
   function statoRisultato(s) {
@@ -60,10 +69,46 @@
     const p = S.pr.progetto;
     $('prTitolo').value = p.titolo || ''; $('prSito').value = p.sito || '';
     $('prAutore').value = p.autore || ''; $('prNote').value = p.note || '';
+    // Un valore non numerico resta come scritto nel campo (segnalato), non viene sostituito.
+    for (const [id, k] of [['prLat', 'lat'], ['prLon', 'lon']]) if (!Number.isNaN(p[k])) $(id).value = p[k] ?? '';
+    $('prNoteZS9').value = p.noteZS9 || '';
     $('sumProgetto').textContent = p.titolo || '';
+    renderCoordinate();
   }
   for (const [id, k] of [['prTitolo', 'titolo'], ['prSito', 'sito'], ['prAutore', 'autore'], ['prNote', 'note']]) {
     $(id).addEventListener('input', (e) => { S.pr.progetto[k] = e.target.value; $('sumProgetto').textContent = S.pr.progetto.titolo || ''; renderRiepilogo(); });
+  }
+  // Coordinate del sito: aggiornano la proposta ZS9 e, negli scenari che la seguono, la Mw.
+  for (const [id, k] of [['prLat', 'lat'], ['prLon', 'lon']]) {
+    $(id).addEventListener('input', (e) => {
+      const prima = proposta();
+      S.pr.progetto[k] = leggiNumero(e.target);
+      const dopo = proposta();
+      if (MG.allineaScenari(S.pr.scenari, prima, dopo)) inputCambiato();
+      renderCoordinate(); renderScenario();
+      if (S.tab === 'magnitudo' || S.tab === 'avvisi') renderRisultati();
+    });
+  }
+  $('prNoteZS9').addEventListener('input', (e) => { S.pr.progetto.noteZS9 = e.target.value; });
+
+  /** Controllo delle coordinate e sintesi della proposta ZS9 nel pannello Progetto. */
+  function renderCoordinate() {
+    const p = S.pr.progetto, st = MG.statoCoordinate(p.lat, p.lon), prop = proposta();
+    const err = $('prCoordErr');
+    err.textContent = st.errori.map(e => e.motivo).join('. ');
+    err.hidden = !st.errori.length;
+    for (const [id, k] of [['prLat', 'lat'], ['prLon', 'lon']]) {
+      if (st.errori.some(e => e.campo === k)) $(id).setAttribute('aria-invalid', 'true'); else $(id).removeAttribute('aria-invalid');
+    }
+    let h = '';
+    if (st.stato === 'vuote') h = 'Con le coordinate l\'app propone la M<sub>w</sub> dalle zone sismogenetiche ZS9. Le coordinate non entrano nel calcolo del FS se non attraverso la M<sub>w</sub>.';
+    else if (st.stato === 'valide') {
+      h = '<b>Proposta ZS9:</b> ' + esc(prop.titolo) + '.';
+      if (prop.esito === 'disaggregazione_richiesta') h += ' ' + esc(MG.TESTI.disaggregazione);
+      else if (!prop.disponibile && prop.motivo) h += ' ' + esc(prop.motivo);
+      h += ' Dettagli nella scheda «Magnitudo M<sub>w</sub>».';
+    }
+    $('prZs9').innerHTML = h;
   }
 
   // ---------------------------------------------------------------------------
@@ -158,8 +203,16 @@
     let h = '<div class="field"><label for="scNome">Nome dello scenario</label><input type="text" id="scNome" value="' + esc(sc.nome) + '"></div>';
     h += '<div class="field"><label for="scMetodo">Metodo</label><select id="scMetodo">' + metodi.map(m => '<option value="' + m + '"' + (sc.metodo === m ? ' selected' : '') + '>' + esc(P.NOMI_METODI[m]) + '</option>').join('') + '</select>' +
       '<div class="hint">' + esc(F.METODI[sc.metodo].notaFS) + '</div></div>';
-    h += '<div class="field-row"><div class="field"><label for="scMw">Magnitudo M<sub>w</sub></label><input type="text" inputmode="decimal" step="0.01" id="scMw" value="' + esc(sc.Mw ?? '') + '"></div>' +
-      '<div class="field"><label for="scAmax">a<sub>max</sub> in superficie [g]</label><input type="text" inputmode="decimal" step="0.001" min="0" id="scAmax" value="' + esc(sc.amax ?? '') + '"></div></div>';
+    const dm = MG.datiMagnitudo(sc);
+    h += '<div class="mw-blocco"><div class="group-label">Magnitudo M<sub>w</sub> di riferimento</div>' +
+      '<div class="mw-origine" role="radiogroup" aria-label="Origine della magnitudo">' +
+      '<label><input type="radio" name="scMwOrig" value="zs9"' + (dm.origine === 'zs9' ? ' checked' : '') + '> Proposta dalle zone ZS9 (coordinate del sito)</label>' +
+      '<label><input type="radio" name="scMwOrig" value="manuale"' + (dm.origine === 'manuale' ? ' checked' : '') + '> Inserimento manuale</label></div>' +
+      '<div class="mw-proposta hint" id="scMwProp"></div>' +
+      '<div class="field-row"><div class="field"><label for="scMw">M<sub>w</sub> adottata</label><input type="text" inputmode="decimal" step="0.01" id="scMw" value="' + esc(sc.Mw ?? '') + '"></div>' +
+      '<div class="field"><label for="scAmax">a<sub>max</sub> in superficie [g]</label><input type="text" inputmode="decimal" step="0.001" min="0" id="scAmax" value="' + esc(sc.amax ?? '') + '"></div></div>' +
+      '<div class="field"><label for="scMwMot">Motivazione della M<sub>w</sub> (obbligatoria se diversa dalla proposta ZS9)</label><textarea id="scMwMot" placeholder="es. disaggregazione INGV, nodo …, probabilità di superamento …">' + esc(dm.motivazione) + '</textarea></div>' +
+      '<div id="scMwMsg"></div></div>';
     h += '<div class="hint" style="margin:-4px 0 10px;">Consulta <a href="https://fabio-duronio.github.io/geohub-sismasite/" target="_blank" rel="noopener noreferrer">GeoHub-SismaSite</a> o le <a href="https://esse1-gis.mi.ingv.it/" target="_blank" rel="noopener noreferrer">mappe INGV MPS04-S1 ↗</a>. Inserisci a<sub>max</sub> in superficie: il valore di pericolosità di base non coincide automaticamente con quello di sito. Documenta fonte, probabilità/tempo di ritorno e trattamento degli effetti locali nelle note. Nessuna importazione automatica.</div>';
     if (sc.metodo === 'cetin2018Spt' || sc.metodo === 'kayen2013Vs') {
       h += '<div class="field"><label for="scVs12">V*<sub>s,12</sub> [m/s]</label><input type="text" inputmode="decimal" step="1" id="scVs12" value="' + esc(sc.opzioni.Vs12 ?? '') + '"><div class="hint">Vs media nei primi 12 m, usata nel coefficiente r<sub>d</sub> del metodo.</div></div>';
@@ -177,7 +230,14 @@
     $('scNote').addEventListener('input', (e) => { sc.note = e.target.value; });
     $('scMetodo').addEventListener('change', (e) => { sc.metodo = e.target.value; S.pannelli = null; renderScenario(); inputCambiato(); renderStrati(); });
     const num = (id, set) => { const el = $(id); if (el) el.addEventListener('input', () => { set(leggiNumero(el)); inputCambiato(); }); };
-    num('scMw', v => { sc.Mw = v; }); num('scAmax', v => { sc.amax = v; });
+    num('scMw', v => { sc.Mw = v; aggiornaMsgMw(); }); num('scAmax', v => { sc.amax = v; });
+    box.querySelectorAll('input[name="scMwOrig"]').forEach(el => el.addEventListener('change', () => {
+      sc.magnitudo = { ...MG.datiMagnitudo(sc), origine: el.value };
+      if (el.value === 'zs9') MG.applicaProposta(sc, proposta());
+      renderScenario(); inputCambiato();
+    }));
+    $('scMwMot').addEventListener('input', (e) => { sc.magnitudo = { ...MG.datiMagnitudo(sc), motivazione: e.target.value }; aggiornaMsgMw(); });
+    aggiornaMsgMw();
     num('scVs12', v => { sc.opzioni.Vs12 = v; }); num('scIc', v => { sc.opzioni.IcSoglia = v; }); num('scCfc', v => { sc.opzioni.CFC = v; }); const elRif = $('scFsRif');
     if (elRif) elRif.addEventListener('input', () => {
       // Il valore inserito viene conservato anche se non valido: nessuna sostituzione con il predefinito.
@@ -195,6 +255,7 @@
     const s = P.nuovoScenario(pv, null, S.pr.scenari.length);
     const att = scenario();
     if (att) s.strati = P.copia(att.strati);
+    MG.applicaProposta(s, proposta());
     S.pr.scenari.push(s); S.pr.scenarioAttivo = s.id; renderTutto();
   });
   $('btnDuplicaScenario').addEventListener('click', () => {
@@ -392,7 +453,7 @@
   // ---------------------------------------------------------------------------
   // Schede
   // ---------------------------------------------------------------------------
-  const TABS = ['esclusione', 'profili', 'tabelle', 'confronto', 'avvisi'];
+  const TABS = ['esclusione', 'profili', 'tabelle', 'confronto', 'magnitudo', 'avvisi'];
   function mostraTab(t) {
     S.tab = t;
     for (const x of TABS) {
@@ -420,6 +481,7 @@
     else if (S.tab === 'esclusione') renderEsclusione();
     else if (S.tab === 'tabelle') renderTabelle();
     else if (S.tab === 'confronto') renderConfronto();
+    else if (S.tab === 'magnitudo') renderMagnitudo();
     else renderAvvisi();
   }
 
@@ -862,6 +924,86 @@
   }
 
   // ---------------------------------------------------------------------------
+  // Magnitudo Mw: proposta ZS9, messaggi dello scenario, scheda e stampa
+  // ---------------------------------------------------------------------------
+  /** Riga della proposta nel pannello Scenario, con il pulsante per adottarla. */
+  function testoPropostaScenario(prop, sc) {
+    if (!prop.disponibile) {
+      let t = 'Proposta ZS9 non disponibile: ' + esc(prop.motivo || prop.titolo) + '.';
+      if (prop.esito === 'coordinate') t += ' Le coordinate del sito si inseriscono in «Progetto».';
+      if (prop.esito === 'disaggregazione_richiesta') t += ' ' + esc(MG.TESTI.disaggregazione);
+      return '<span>' + t + '</span>';
+    }
+    const usa = MG.datiMagnitudo(sc).origine !== 'zs9' || !isNum(sc.Mw) || MG.diversaDallaProposta(sc, prop);
+    return '<span><b>Proposta ZS9:</b> ' + esc(prop.titolo) + '.</span>' + (usa ? '<button class="btn btn-sm" type="button" id="scMwUsa">Usa la proposta (' + fmt(prop.mw) + ')</button>' : '');
+  }
+  /** Aggiorna proposta, errori e avvisi della Mw senza ridisegnare i campi (il cursore resta dov'è). */
+  function aggiornaMsgMw() {
+    const sc = scenario(), box = $('scMwMsg'); if (!sc || !box) return;
+    const prop = proposta(), st = MG.statoMagnitudo(sc, prop);
+    $('scMwProp').innerHTML = testoPropostaScenario(prop, sc);
+    const usa = $('scMwUsa');
+    if (usa) usa.addEventListener('click', () => { const s = scenario(); MG.applicaProposta(s, proposta()); renderScenario(); inputCambiato(); });
+    box.innerHTML = (st.errori.length ? '<div class="alert alert-danger" role="alert"><ul>' + st.errori.map(e => '<li>' + esc(e.motivo) + '</li>').join('') + '</ul></div>' : '') +
+      (st.avvisi.length ? '<div class="alert alert-warn"><ul>' + st.avvisi.map(a => '<li>' + esc(a.testo) + '</li>').join('') + '</ul></div>' : '');
+    const mot = $('scMwMot');
+    if (mot) { if (st.errori.some(e => e.campo === 'magnitudo.motivazione')) mot.setAttribute('aria-invalid', 'true'); else mot.removeAttribute('aria-invalid'); }
+  }
+  function testoCoordinate() {
+    const p = S.pr.progetto;
+    if (isNum(p.lat) && isNum(p.lon)) return 'lat ' + fmt(p.lat, 4) + '°, lon ' + fmt(p.lon, 4) + '° (gradi decimali, WGS84)';
+    return p.lat === null && p.lon === null ? 'non inserite' : 'non valide';
+  }
+  /** Tabella completa delle 36 zone per i siti esterni (comprese le zone escluse). */
+  function tabellaZS9(r, classe) {
+    return '<table class="' + classe + '"><thead><tr><th scope="col">zona</th><th scope="col">R<sub>i</sub> [km]</th><th scope="col">M<sub>s,i</sub></th><th scope="col">M<sub>i</sub></th><th scope="col">esito</th><th scope="col">M<sub>w</sub> proposta</th></tr></thead><tbody>' +
+      r.tabella.map(t => '<tr' + (t.selezionata ? ' class="zs9-mw"' : '') + '><td>' + esc(t.zona) + '</td><td>' + fmt(t.r_km, 2) + '</td><td>' + fmt(t.ms, 2) + '</td><td>' + fmt(t.m, 2) + '</td>' +
+        '<td' + (t.ammissibile ? ' class="zs9-conta"' : '') + '>' + (t.ammissibile ? 'ammissibile, M<sub>s,i</sub> &lt; M<sub>i</sub>' : 'esclusa, M<sub>s,i</sub> ≥ M<sub>i</sub>') + '</td><td>' + (t.selezionata ? 'sì' : '–') + '</td></tr>').join('') + '</tbody></table>';
+  }
+  function noteMetodoZS9(classe) {
+    const p = (t) => '<p class="' + classe + '">' + t + '</p>';
+    return p('<b>Fonte.</b> ' + esc(MG.TESTI.fonte)) + p('<b>Criterio.</b> ' + esc(MG.TESTI.criterio)) +
+      p('<b>Dati geografici.</b> ' + esc(MG.TESTI.datum)) +
+      p('<b>' + esc(MG.TESTI.criticitaFonte) + ':</b> ' + MG.TESTI.criticita.map(esc).join(' ')) +
+      p(esc(MG.TESTI.natura) + ' Modulo ZS9 v' + esc(Z9.VERSIONE) + ', copiato da GeoHub-SismaSite senza modifiche.');
+  }
+  function renderMagnitudo() {
+    const box = $('pan-magnitudo'), sc = scenario(), prop = proposta(), r = prop.zs9, p = S.pr.progetto;
+    const riga = (k, v) => '<tr><td class="txt"><b>' + k + '</b></td><td class="txt">' + v + '</td></tr>';
+    let h = '<div class="section-title">Magnitudo di riferimento dalle zone sismogenetiche ZS9</div>' +
+      '<div class="table-scroll"><table class="data-table"><tbody>' +
+      riga('Coordinate del sito', esc(testoCoordinate())) +
+      riga('Esito', esc(prop.titolo) + (!prop.disponibile && prop.motivo ? ': ' + esc(prop.motivo) : '')) +
+      (sc ? riga('Scenario «' + esc(sc.nome) + '»', esc(MG.testoOrigine(sc, prop))) : '') +
+      riga('Segnalazioni del geologo', esc((p.noteZS9 || '').trim() || '—')) + '</tbody></table></div>';
+    if (prop.esito === 'coordinate') h += '<div class="alert alert-info" style="margin-top:10px;">Inserisci le coordinate del sito in «Progetto» per ottenere la proposta.</div>';
+    if (prop.esito === 'disaggregazione_richiesta') h += '<div class="alert alert-warn" style="margin-top:10px;">' + esc(MG.TESTI.disaggregazione) + '</div>';
+    if (sc) {
+      const st = MG.statoMagnitudo(sc, prop);
+      if (st.errori.length) h += '<div class="alert alert-danger" style="margin-top:10px;"><ul>' + st.errori.map(e => '<li>' + esc(e.motivo) + '</li>').join('') + '</ul></div>';
+      if (st.avvisi.length) h += '<div class="alert alert-warn" style="margin-top:10px;"><ul>' + st.avvisi.map(a => '<li>' + esc(a.testo) + '</li>').join('') + '</ul></div>';
+    }
+    if (r && r.avvisi.length) h += '<div class="alert alert-warn" style="margin-top:10px;"><ul>' + r.avvisi.map(a => '<li>' + esc(a.testo) + '</li>').join('') + '</ul></div>';
+    if (r && r.tabella) h += '<div class="section-title">Sito esterno: tabella delle 36 zone</div><div class="table-scroll">' + tabellaZS9(r, 'data-table zs9-tab') + '</div>';
+    h += '<div class="section-title">Fonte, criterio e limiti</div>' + noteMetodoZS9('hint');
+    box.innerHTML = h;
+  }
+  /** Sezione 1.1 della stampa. */
+  function stampaMagnitudo(sc) {
+    const prop = proposta(), r = prop.zs9, p = S.pr.progetto, dm = MG.datiMagnitudo(sc), st = MG.statoMagnitudo(sc, prop);
+    const riga = (k, v) => '<tr><th>' + k + '</th><td>' + v + '</td></tr>';
+    let h = '<div class="st-h">1.1 Magnitudo di riferimento M<sub>w</sub></div><table class="st-tab"><tbody>' +
+      riga('Coordinate del sito', esc(testoCoordinate())) +
+      riga('Esito ZS9', esc(prop.titolo) + (!prop.disponibile && prop.motivo ? ': ' + esc(prop.motivo) : '')) +
+      riga('M<sub>w</sub> adottata', fmt(sc.Mw) + ' – ' + esc(MG.ETICHETTE_ORIGINE[dm.origine]) + (st.diversa ? ' (diversa dalla proposta ZS9, ' + fmt(prop.mw) + ')' : '')) +
+      riga('Motivazione del geologo', esc(dm.motivazione.trim() || '—')) +
+      riga('Segnalazioni del geologo', esc((p.noteZS9 || '').trim() || '—')) + '</tbody></table>';
+    if (r && r.tabella) h += '<p class="st-nota">Sito esterno alle zone: distanza minima R<sub>i</sub> da ciascuna delle 36 zone, M<sub>s,i</sub> = 1 + 3·log<sub>10</sub>R<sub>i</sub> e confronto con M<sub>i</sub> = M<sub>w,max</sub> della zona (Tab. A1.1), comprese le zone escluse.</p>' + tabellaZS9(r, 'st-tab num');
+    if (r && r.avvisi.length) h += '<ul class="st-lista">' + r.avvisi.map(a => '<li>' + esc(a.testo) + '</li>').join('') + '</ul>';
+    return h + noteMetodoZS9('st-nota');
+  }
+
+  // ---------------------------------------------------------------------------
   // Avvisi e assunzioni
   // ---------------------------------------------------------------------------
   function renderAvvisi() {
@@ -874,6 +1016,9 @@
       h += '<div class="alert alert-danger"><span class="alert-title">Input non validi</span><ul>' + r.errori.map(e => '<li>' + esc(e.campo) + ': ' + esc(e.motivo) + '</li>').join('') + '</ul></div>';
       box.innerHTML = h; return;
     }
+    const mg = MG.statoMagnitudo(sc, proposta());
+    if (mg.errori.length || mg.avvisi.length) h += '<div class="section-title">Magnitudo M<sub>w</sub></div><ul>' +
+      mg.errori.map(e => '<li><b>Da correggere prima di stampa ed esportazione:</b> ' + esc(e.motivo) + '</li>').join('') + mg.avvisi.map(a => '<li>' + esc(a.testo) + '</li>').join('') + '</ul>';
     const q = r.riepilogo;
     h += '<div class="section-title">Intervalli non calcolati</div>';
     h += q.intervalliNonCalcolati.length ? '<div class="table-scroll"><table class="data-table"><thead><tr><th scope="col">da<span class="u">[m]</span></th><th scope="col">a<span class="u">[m]</span></th><th scope="col">punti</th><th scope="col">stato</th><th scope="col" style="text-align:left;">motivo</th></tr></thead><tbody>' +
@@ -996,6 +1141,7 @@
       pv = P.nuovaProva($('imTipo').value, $('imNome').value.trim() || null);
       S.pr.prove.push(pv); S.pr.provaAttiva = pv.id;
       const s = P.nuovoScenario(pv, null, S.pr.scenari.length);
+      MG.applicaProposta(s, proposta());
       S.pr.scenari.push(s); S.pr.scenarioAttivo = s.id;
     } else pv = prova();
     pv.colonne = ris.colonne; pv.dati = ris.dati; pv.unita = ris.unita;
@@ -1056,13 +1202,15 @@
     if (!sc || statoRisultato(sc) !== 'aggiornato' || risultatoDi(sc).stato !== 'calcolato') return 'Calcola lo scenario attivo prima di ' + azione + ': i risultati devono essere aggiornati.';
     const rif = F.statoFsRiferimento(sc);
     if (!rif.valido) return rif.motivo;
+    const mg = MG.statoMagnitudo(sc, proposta());
+    if (mg.errori.length) return mg.errori.map(e => e.motivo).join(' ');
     return null;
   }
   $('btnCsv').addEventListener('click', () => {
     const sc = scenario(), blocco = bloccoUscite(sc, 'esportare');
     if (blocco) { alert(blocco); return; }
     const pre = EX.valutaEsclusione(L, prova(), sc, risultatoDi(sc));
-    const csv = X.csvRisultati(S.pr, prova(), sc, risultatoDi(sc), { preliminare: pre.esito.titolo + '. ' + pre.esito.testo });
+    const csv = X.csvRisultati(S.pr, prova(), sc, risultatoDi(sc), { preliminare: pre.esito.titolo + '. ' + pre.esito.testo, magnitudo: MG.testoOrigine(sc, proposta()) });
     scarica(URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' })), nomeFile('risultati-' + sc.nome, 'csv'));
   });
 
@@ -1139,10 +1287,11 @@
       riga('Provenienza dei dati', esc(pv.provenienza || '—')) +
       riga('Parametri della prova', esc(parProva || '—')) +
       riga('Scenario', esc(sc.nome)) + riga('Metodo', esc(P.NOMI_METODI[sc.metodo]) + (opz ? ' · ' + esc(opz) : '')) +
-      riga('Magnitudo Mw', fmt(sc.Mw)) + riga('amax in superficie', fmt(sc.amax, 3) + ' g') + riga('Falda di verifica', fmt(sc.zFalda) + ' m dal p.c.') +
+      riga('Magnitudo Mw', fmt(sc.Mw) + ' – ' + esc(MG.ETICHETTE_ORIGINE[MG.datiMagnitudo(sc).origine]) + ' (vedi 1.1)') + riga('amax in superficie', fmt(sc.amax, 3) + ' g') + riga('Falda di verifica', fmt(sc.zFalda) + ' m dal p.c.') +
       (sc.note ? riga('Note e fonti dei parametri', esc(sc.note)) : '') + '</tbody></table>';
     h += '<table class="st-tab num"><thead><tr><th>da [m]</th><th>a [m]</th><th>γ [kN/m³]</th><th>γsat [kN/m³]</th><th>FC [%]</th><th>descrizione</th></tr></thead><tbody>' +
       sc.strati.map(s => '<tr><td>' + fmt(s.da) + '</td><td>' + fmt(s.a) + '</td><td>' + fmt(s.gamma, 1) + '</td><td>' + fmt(s.gammaSat, 1) + '</td><td>' + (isNum(s.FC) ? fmt(s.FC, 0) : '–') + '</td><td style="text-align:left;">' + esc(s.descrizione || '') + '</td></tr>').join('') + '</tbody></table>';
+    h += stampaMagnitudo(sc);
     h += stampaEsclusione(pv, sc, r);
     h += '<div class="st-h">3. Riepilogo</div><table class="st-tab"><tbody>' +
       riga('Profondità indagata', q.profonditaIndagata ? fmt(q.profonditaIndagata.da) + ' – ' + fmt(q.profonditaIndagata.a) + ' m' : '–') +
@@ -1169,6 +1318,7 @@
     h += '<div class="st-h st-pagina">' + (sbt ? '6' : '5') + '. Avvisi, assunzioni e limiti</div><ul class="st-lista">' +
       q.avvisi.map(a => '<li><b>' + esc(a.codice) + '</b> (' + esc(a.n) + ' punti, z ' + fmt(a.zDa) + '–' + fmt(a.zA) + ' m): ' + esc(a.messaggio) + '</li>').join('') +
       q.assunzioni.map(a => '<li>Assunzione: ' + esc(a.descrizione) + (a.n ? ' (' + esc(a.n) + ' punti)' : '') + '</li>').join('') +
+      MG.statoMagnitudo(sc, proposta()).avvisi.map(a => '<li><b>Magnitudo.</b> ' + esc(a.testo) + '</li>').join('') +
       '<li>Profondità oltre ' + fmt(q.profonditaIndagata ? q.profonditaIndagata.a : 0) + ' m non indagate; un intervallo non calcolato non è un intervallo sicuro.</li>' +
       (r.indiceIL && r.indiceIL.stato === 'calcolato' ? r.indiceIL.assunzioni.map(a => '<li><b>Indice IL.</b> ' + esc(a.descrizione) + '</li>').join('') + '<li><b>Indice IL.</b> ' + esc(r.indiceIL.fonte) + '</li>' : '') +
       (r.cedimenti && r.cedimenti.stato === 'calcolato' ? r.cedimenti.assunzioni.concat(r.cedimenti.avvisi.map(a => ({ descrizione: a.messaggio }))).map(a => '<li><b>Cedimento e LSN.</b> ' + esc(a.descrizione) + '</li>').join('') + '<li>Cedimento e LSN: ' + esc(r.cedimenti.fonte) + '</li>' : '<li>Cedimenti post-sismici: calcolati solo con prove CPT.</li>') +

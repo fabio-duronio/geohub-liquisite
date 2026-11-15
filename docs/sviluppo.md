@@ -23,12 +23,19 @@ app/                interfaccia: nessuna formula di liquefazione
   esporta.js          CSV con protezione dalle formule
   grafici.js          profili, carta di comportamento e fusi (Chart.js, solo disegno)
   esempio.js          progetto di esempio sintetico (dati inventati, seme fisso)
+  magnitudo.js        coordinate del sito e Mw dello scenario: proposta ZS9, motivazione, avvisi
   ui.js · workspace.js · import-workspace.js · guida-importa.js
+moduli/
+  zs9.js              modulo ZS9 v1.2.0 di GeoHub-SismaSite (PR #31), copiato senza modifiche
 dati/
   fusi-ntc2018.json   fusi della Fig. 7.11.1 digitalizzati
   fusi-ntc2018.js     stessi dati per il browser (verificati uguali al JSON)
+  zs9-data.json       36 zone ZS9 (INGV, CC BY 4.0), copiato da SismaSite (SHA-256 3a15606a…1dc0)
+  zs9-data.js         stesso testo per il browser: la CSP non permette di leggere file con fetch
 strumenti/
   digitalizza_fusi.py ricava dati/fusi-ntc2018.json dalle immagini del testo ufficiale
+  convert_zs9.py      converte lo shapefile ZS9.ZIP in dati/zs9-data.json (da SismaSite, invariato)
+  zs9_per_browser.mjs genera dati/zs9-data.js da dati/zs9-data.json
 verifiche/          script di controllo (vedi validazione.md) e dati del caso di riferimento
   esegui.mjs          esegue tutte le verifiche e riassume l'esito
   browser/            controllo nel browser con Playwright
@@ -76,7 +83,7 @@ La CSP è una difesa aggiuntiva: la protezione principale resta la validazione d
 
 ```
 { formato: 'geohub-liquisite-progetto', versioneFormato: 1,
-  progetto: { titolo, sito, autore, note },
+  progetto: { titolo, sito, lat, lon, noteZS9, autore, note },   // lat, lon: gradi decimali o null
   prove: [{ id, nome, tipo: 'CPTE'|'CPTU'|'SPT'|'VS', provenienza, esempio,
             unita: { z: 'm'|'cm', qc: 'MPa'|'kPa', fs: 'kPa'|'MPa', u2: 'kPa'|'MPa', … },
             colonne: ['z', …], dati: [[numero|null, …]],
@@ -86,7 +93,8 @@ La CSP è una difesa aggiuntiva: la protezione principale resta la validazione d
               opzioni: { Vs12, IcSoglia, CFC, FSrif },
               esclusione: { faldaMediaStagionale, pcSubOrizzontale, fondazioniSuperficiali,
                             strati: [{ da, a, sabbiaPulita, curva, campione, decisione4, motivazione4 }] },
-              note }],
+              note,
+              magnitudo: { origine: 'zs9'|'manuale', motivazione } }],
   provaAttiva, scenarioAttivo }
 ```
 
@@ -102,9 +110,9 @@ La CSP è una difesa aggiuntiva: la protezione principale resta la validazione d
   Il progetto viene ricostruito con i soli campi noti. Se un controllo fallisce, l'app elenca gli errori con il campo e il motivo e non tocca il progetto corrente.
 - **Unità.** Sono obbligatorie per le colonne che ammettono più di un'unità (z, qc, fs, u2); per le altre (N, Vs, FC) l'unità è unica e viene assunta.
 - **Risultati.** Non sono salvati nel file. Quelli presenti in file di versioni precedenti non vengono ricaricati: si ricalcolano dagli input con «Calcola», e l'app lo segnala all'apertura.
-- **Progetti precedenti.** I file senza `FSrif` o senza `esclusione` si aprono con i valori predefiniti. Un `FSrif` presente ma fuori dall'intervallo 1–3 resta com'è ed è segnalato come errore.
+- **Progetti precedenti.** I file senza `FSrif` o senza `esclusione` si aprono con i valori predefiniti. I file senza coordinate o senza `magnitudo` (versioni fino alla 0.2.3) si aprono con coordinate vuote e M_w «inserimento manuale», con il valore salvato. Coordinate fuori intervallo restano come sono e sono segnalate dall'app. Un `FSrif` presente ma fuori dall'intervallo 1–3 resta com'è ed è segnalato come errore.
 - **Rendering.** Ogni valore inserito nell'HTML passa da `esc()`, compresi gli attributi e i valori calcolati. `verifiche/verifica_sicurezza.mjs` e `verifiche/browser/verifica_browser.mjs` lo controllano con progetti alterati.
-- **Firma degli input.** È un'impronta FNV-1a di prova, scenario e versione del motore. Non la modificano nome, note, FS di riferimento e dati della verifica preliminare, perché riguardano la lettura dei risultati e non il calcolo.
+- **Firma degli input.** È un'impronta FNV-1a di prova, scenario e versione del motore. Non la modificano nome, note, FS di riferimento, dati della verifica preliminare, coordinate del sito e origine o motivazione della M_w, perché riguardano la lettura dei risultati e non il calcolo. La M_w invece vi entra.
 
 ## Regole per le modifiche
 
