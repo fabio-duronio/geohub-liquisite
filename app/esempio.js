@@ -142,6 +142,8 @@
     pr.progetto = {
       titolo: 'Esempio sintetico – piana alluvionale',
       sito: 'Sito inventato (dati sintetici)',
+      // nessuna coordinata: il sito è inventato, la Mw dell'esempio è inserita a mano
+      lat: null, lon: null, noteZS9: '',
       autore: '',
       note: 'Dati inventati per provare l\'applicazione: non rappresentano un sito reale. Falda a 1,8 m dal p.c.; ' +
         'CPTU spinta fino a 20 m; sondaggio S1 con SPT e FC da analisi di laboratorio; ' +

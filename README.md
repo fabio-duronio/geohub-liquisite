@@ -27,6 +27,7 @@ Applicazione web per geologi e ingegneri della famiglia GeoHub. A partire dalle 
 - **Indice del potenziale di liquefazione IL** (Iwasaki et al. 1978), senza classi. Se la verticale non è indagata per intero fino a 20 m, l'indice è dato come intervallo minimo–massimo: sono limiti convenzionali del modello, non un intervallo di confidenza.
 - **Cedimento post-sismico e indice LSN** da CPT, con le equazioni originali di Zhang et al. (2002). Anche qui i tratti non indagati sono dati come intervalli, cioè limiti convenzionali del modello e non massimi fisici garantiti.
 - **Carta di comportamento del terreno** (Robertson & Wride 1998) con i punti della CPT.
+- **Magnitudo M_w proposta dalle zone sismogenetiche ZS9** a partire dalle coordinate del sito (Linee guida LQ, Tab. A1.1 e procedura di pag. 30). Per i siti esterni alle zone c'è la tabella completa delle 36 zone. Il geologo può adottare un altro valore, con motivazione obbligatoria.
 - **Confronto tra scenari**: fino a 3, con falda, metodo, magnitudo o accelerazione diversi.
 - **Importazione** da foglio elettronico o CSV, con scelta esplicita di separatori, colonne e unità. Gli errori sono segnalati con riga e colonna.
 - **Stampa A4 verticale come allegato alla relazione**:
@@ -43,7 +44,7 @@ I tratti non indagati o non calcolati non sono mai considerati sicuri.
 ## Come si usa
 
 1. Premi **Demo sintetica** per provare il percorso con dati inventati, oppure **Nuovo** per iniziare.
-2. In **Prove** inserisci o incolla i dati della prova; in **Scenario** scegli il metodo, la magnitudo M_w e l'accelerazione a_max al sito.
+2. In **Progetto** inserisci le coordinate del sito (gradi decimali, WGS84) per la proposta di M_w; in **Prove** inserisci o incolla i dati della prova; in **Scenario** scegli il metodo, conferma o modifica la M_w e inserisci l'accelerazione a_max al sito.
 3. In **Stratigrafia** indica la falda e gli strati (pesi di volume, contenuto di fini se disponibile).
 4. Premi **Calcola** e consulta la verifica preliminare, i profili, le tabelle e gli avvisi.
 5. Per allegare i risultati alla relazione usa **Stampa / PDF** (consigliati Chrome o Edge). Salva il progetto in JSON per riprenderlo.
@@ -53,7 +54,8 @@ I tratti non indagati o non calcolati non sono mai considerati sicuri.
 È uno strumento di supporto per il professionista e **non** sostituisce la relazione geologica e geotecnica.
 
 **Cosa non fa:**
-- non sceglie M_w né a_max;
+- non sceglie a_max; per M_w propone il valore delle zone ZS9, che il geologo conferma o modifica con motivazione;
+- non calcola la disaggregazione della pericolosità sismica;
 - non impone un fattore di sicurezza minimo;
 - non usa classi o zone della microzonazione sismica;
 - non calcola gli spostamenti laterali;

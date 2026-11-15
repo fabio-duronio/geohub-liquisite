@@ -23,8 +23,8 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="LiquiSite: logo, descrizione e profilo del fattore di sicurezza di un esempio sintetico CPTU">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="stylesheet" href="vendor/ibm-plex/ibm-plex.css?v=0.2.3">
-<link rel="stylesheet" href="css/liquisite.css?v=0.2.3">
+<link rel="stylesheet" href="vendor/ibm-plex/ibm-plex.css?v=0.3.0">
+<link rel="stylesheet" href="css/liquisite.css?v=0.3.0">
 <script src="vendor/chart.js/chart.umd.js?v=4.4.4"></script>
 </head>
 <body>
@@ -68,6 +68,16 @@
         <div class="panel-body">
           <div class="field"><label for="prTitolo">Titolo</label><input type="text" id="prTitolo"></div>
           <div class="field"><label for="prSito">Sito</label><input type="text" id="prSito"></div>
+          <div class="zs9-blocco">
+            <div class="group-label">Coordinate del sito · gradi decimali, WGS84</div>
+            <div class="field-row">
+              <div class="field"><label for="prLat">Latitudine [°]</label><input type="text" inputmode="decimal" id="prLat" placeholder="es. 42,3498" aria-describedby="prCoordErr prZs9"></div>
+              <div class="field"><label for="prLon">Longitudine [°]</label><input type="text" inputmode="decimal" id="prLon" placeholder="es. 13,3995" aria-describedby="prCoordErr prZs9"></div>
+            </div>
+            <div class="field-err" id="prCoordErr" role="alert" hidden></div>
+            <div class="hint" id="prZs9" aria-live="polite"></div>
+            <div class="field"><label for="prNoteZS9">Segnalazioni del geologo sulla magnitudo ZS9 (facoltative)</label><textarea id="prNoteZS9" placeholder="es. distanze dalle zone, applicabilità del modello al sito"></textarea></div>
+          </div>
           <div class="field"><label for="prAutore">Autore (facoltativo)</label><input type="text" id="prAutore"></div>
           <div class="field"><label for="prNote">Note (facoltative)</label><textarea id="prNote"></textarea></div>
         </div>
@@ -143,12 +153,14 @@
           <button role="tab" id="tab-profili" aria-controls="pan-profili" aria-selected="true">Profili</button>
           <button role="tab" id="tab-tabelle" aria-controls="pan-tabelle" aria-selected="false">Tabelle</button>
           <button role="tab" id="tab-confronto" aria-controls="pan-confronto" aria-selected="false">Confronto</button>
+          <button role="tab" id="tab-magnitudo" aria-controls="pan-magnitudo" aria-selected="false">Magnitudo M<sub>w</sub></button>
           <button role="tab" id="tab-avvisi" aria-controls="pan-avvisi" aria-selected="false">Avvisi e assunzioni</button>
         </div>
         <div class="tabpanel" role="tabpanel" id="pan-esclusione" aria-labelledby="tab-esclusione" hidden></div>
         <div class="tabpanel" role="tabpanel" id="pan-profili" aria-labelledby="tab-profili"></div>
         <div class="tabpanel" role="tabpanel" id="pan-tabelle" aria-labelledby="tab-tabelle" hidden></div>
         <div class="tabpanel" role="tabpanel" id="pan-confronto" aria-labelledby="tab-confronto" hidden></div>
+        <div class="tabpanel" role="tabpanel" id="pan-magnitudo" aria-labelledby="tab-magnitudo" hidden></div>
         <div class="tabpanel" role="tabpanel" id="pan-avvisi" aria-labelledby="tab-avvisi" hidden></div>
       </div>
     </section>
@@ -211,20 +223,23 @@
   </div>
 </dialog>
 
-<script src="motore/liquisite.js?v=0.2.3"></script>
-<script src="motore/indici.js?v=0.2.3"></script>
-<script src="motore/cedimenti.js?v=0.2.3"></script>
-<script src="app/progetto.js?v=0.2.3"></script>
-<script src="app/profilo.js?v=0.2.3"></script>
-<script src="dati/fusi-ntc2018.js?v=0.2.3"></script>
-<script src="app/esclusione.js?v=0.2.3"></script>
-<script src="app/importa.js?v=0.2.3"></script>
-<script src="app/esporta.js?v=0.2.3"></script>
-<script src="app/esempio.js?v=0.2.3"></script>
-<script src="app/grafici.js?v=0.2.3"></script>
-<script src="app/ui.js?v=0.2.3"></script>
-<script src="app/workspace.js?v=0.2.3"></script>
-<script src="app/guida-importa.js?v=0.2.3"></script>
-<script src="app/import-workspace.js?v=0.2.3"></script>
+<script src="motore/liquisite.js?v=0.3.0"></script>
+<script src="motore/indici.js?v=0.3.0"></script>
+<script src="motore/cedimenti.js?v=0.3.0"></script>
+<script src="app/progetto.js?v=0.3.0"></script>
+<script src="app/profilo.js?v=0.3.0"></script>
+<script src="dati/fusi-ntc2018.js?v=0.3.0"></script>
+<script src="app/esclusione.js?v=0.3.0"></script>
+<script src="app/importa.js?v=0.3.0"></script>
+<script src="app/esporta.js?v=0.3.0"></script>
+<script src="app/esempio.js?v=0.3.0"></script>
+<script src="moduli/zs9.js?v=0.3.0"></script>
+<script src="dati/zs9-data.js?v=0.3.0"></script>
+<script src="app/magnitudo.js?v=0.3.0"></script>
+<script src="app/grafici.js?v=0.3.0"></script>
+<script src="app/ui.js?v=0.3.0"></script>
+<script src="app/workspace.js?v=0.3.0"></script>
+<script src="app/guida-importa.js?v=0.3.0"></script>
+<script src="app/import-workspace.js?v=0.3.0"></script>
 </body>
 </html>

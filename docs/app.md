@@ -13,15 +13,35 @@ Percorso: **prova → scenario → calcolo → verifica preliminare, profili e t
    3. *controllo e salvataggio*.
 
    Le celle vuote diventano dati mancanti. Bloccano l'importazione, con l'indicazione di riga e colonna: le celle non numeriche, le profondità non crescenti e i numeri ambigui (punto con decimale virgola). La guida spiega sigle e colonne per ogni tipo di prova e offre un modello vuoto.
-3. **Scenario**:
+3. **Progetto**: titolo, sito e, facoltative, le coordinate del sito in gradi decimali WGS84. Servono solo alla proposta di M_w (vedi sotto): non entrano nel calcolo del FS se non attraverso la M_w adottata. L'app segnala coordinate mancanti, non numeriche (per esempio in gradi-primi-secondi), fuori intervallo, invertite o fuori dall'Italia.
+4. **Scenario**:
    - il metodo, compatibile con la prova;
-   - M_w e a_max in superficie [g], forniti dal geologo con la loro fonte;
+   - la magnitudo M_w, proposta dalle zone ZS9 oppure inserita a mano (vedi «Magnitudo M_w»);
+   - a_max in superficie [g], fornita dal geologo con la sua fonte;
    - le opzioni del metodo;
    - il FS di riferimento: con il campo vuoto vale 1,25 (EN 1998-5, §4.1.4); si può scegliere un valore tra 1 e 3. Un valore fuori intervallo o non numerico non viene sostituito: resta segnalato come errore, e stampa ed esportazione sono bloccate finché non viene corretto.
-4. **Stratigrafia**: falda di verifica e strati, con γ, γ_sat, contenuto di fini FC (facoltativo) e descrizione.
-5. **Calcola scenario**. Se un input di calcolo cambia, i risultati diventano «non aggiornati» fino al ricalcolo: lo segnalano un'etichetta, un velo sui grafici e un avviso nelle tabelle. Esportazione CSV e stampa richiedono risultati aggiornati.
+5. **Stratigrafia**: falda di verifica e strati, con γ, γ_sat, contenuto di fini FC (facoltativo) e descrizione.
+6. **Calcola scenario**. Se un input di calcolo cambia, i risultati diventano «non aggiornati» fino al ricalcolo: lo segnalano un'etichetta, un velo sui grafici e un avviso nelle tabelle. Esportazione CSV e stampa richiedono risultati aggiornati.
 
 I campi numerici accettano la virgola o il punto come separatore decimale, non i separatori delle migliaia.
+
+## Magnitudo M_w
+
+Con coordinate valide l'app propone la M_w dalla zonazione sismogenetica ZS9 (modulo `moduli/zs9.js` v1.2.0, lo stesso di GeoHub-SismaSite, copiato senza modifiche):
+
+- **sito interno a una zona**: M_w = M_w,max della zona, dalla Tab. A1.1 delle Linee guida LQ v1.0 (pag. 31), che comprende le zone 923 e 927 (7,06);
+- **sito sul confine comune di più zone**: la M_w,max più alta (scelta prudenziale);
+- **sito esterno**: distanza minima R_i da tutte le 36 zone, M_s,i = 1 + 3·log₁₀R_i, M_w = massima M_i fra le sole zone con M_s,i < M_i. Il criterio è un'interpretazione della regola delle Linee guida LQ (pag. 30), decisa il 12/11/2026. La tabella completa (zona, R_i, M_s,i, M_i, esito), comprese le zone escluse, è nella scheda «Magnitudo M_w» e in stampa;
+- **nessuna zona con M_s,i < M_i**: esito «disaggregazione richiesta». La disaggregazione non è calcolata dall'app: la M_w si inserisce a mano con la fonte.
+
+Nello scenario si sceglie l'origine della M_w:
+
+- **proposta dalle zone ZS9**: la M_w prende il valore proposto. Se cambiano le coordinate, la M_w segue la nuova proposta solo se era uguale alla precedente;
+- **inserimento manuale**: il valore resta quello scritto. I progetti salvati con versioni precedenti si aprono così.
+
+In entrambi i casi la M_w resta modificabile. Se è diversa dalla proposta la **motivazione è obbligatoria**: finché manca, stampa ed esportazione CSV sono bloccate (il calcolo resta possibile). Avvisi: M_w < 5, fuori dalle condizioni delle Linee guida LQ (riferite alla microzonazione; le NTC 2018 non hanno un criterio sulla magnitudo); M_w < 5,5, fuori dal campo di Cetin et al. (2018).
+
+In «Progetto» un campo raccoglie le segnalazioni del geologo sulle distanze e sull'applicabilità del modello; compare in stampa.
 
 ## Risultati
 
@@ -47,6 +67,7 @@ I campi numerici accettano la virgola o il punto come separatore decimale, non i
   - tra scenari della stessa prova, profondità calcolate in uno scenario e non nell'altro (per esempio per una falda diversa), con il nome dello scenario. Tra prove diverse le profondità non coincidono per costruzione e vale l'avviso sulle prove diverse.
 
   Nessun risultato viene scelto automaticamente.
+- **Magnitudo M_w**: coordinate, esito della zonazione ZS9, origine della M_w dello scenario, tabella delle 36 zone per i siti esterni, avvisi di prossimità ai confini, fonte, criterio e limiti.
 - **Avvisi e assunzioni**: avvisi del metodo e dell'app, valori assunti, criterio di scelta del FS e assunzioni di IL, cedimento e LSN.
 
 ## Elaborazione del profilo
@@ -77,7 +98,7 @@ Le profondità non indagate non generano righe: il riepilogo distingue profondit
 ## Stampa ed esportazioni
 
 - **Stampa A4 verticale** (HTML → PDF), con intestazione «GeoHub-LiquiSite – Verifica a liquefazione». Le sezioni sono:
-  1. dati e stratigrafia;
+  1. dati e stratigrafia, con la sezione 1.1 sulla magnitudo M_w: coordinate, esito ZS9, M_w adottata e sua origine, motivazione, segnalazioni del geologo, tabella delle 36 zone per i siti esterni, fonte (Linee guida LQ Tab. A1.1; ZS9, Meletti et al. 2004, doi 10.13127/sh/zs9, CC BY 4.0), criterio, datum non dichiarato del file ZS9 e criticità dichiarate dalle Linee guida (pag. 31–32);
   2. verifica preliminare, con le curve granulometriche;
   3. riepilogo, con FS di riferimento, IL, cedimento, LSN e criterio di verifica;
   4. profili;
@@ -86,7 +107,7 @@ Le profondità non indagate non generano righe: il riepilogo distingue profondit
 
   Con Chrome ed Edge ogni pagina ha un'intestazione (titolo, progetto e scenario) e un piè di pagina (versione dell'app e del motore, firma degli input, numero di pagina). Gli stessi dati, con data e ora del calcolo, chiudono il documento, anche nei browser che non supportano intestazioni e piè di pagina CSS. Non compaiono frasi del tipo «sito sicuro».
 - **CSV** (separatore `;`, decimale `,`, UTF-8 con BOM).
-  - Intestazione: progetto, prova, scenario, metodo, parametri, FS di riferimento, esito della verifica preliminare, cedimento e LSN.
+  - Intestazione: progetto, prova, scenario, metodo, parametri, origine della M_w, FS di riferimento, esito della verifica preliminare, cedimento e LSN.
   - Righe: una per lettura, con dati convertiti, tensioni e grandezze a precisione piena.
   - Dati mancanti o non calcolati: cella vuota, mai zero. I testi che iniziano con `= + - @` sono preceduti da un apostrofo.
 - **PNG** di ogni pannello (titolo, assi, unità, legenda, sfondo bianco).
@@ -98,7 +119,8 @@ Le profondità non indagate non generano righe: il riepilogo distingue profondit
 
 ## Limiti
 
-- **Azione sismica.** a_max e M_w sono inserite dall'utente: l'app non ha un modulo di pericolosità.
+- **Azione sismica.** a_max è inserita dall'utente. M_w è proposta dalle zone ZS9 a partire dalle coordinate del sito, oppure inserita a mano; la disaggregazione della pericolosità sismica non è calcolata.
+- **Zonazione ZS9.** Il file delle zone non dichiara il datum: le coordinate sono usate senza trasformazione (scarto di circa 100 m se il datum originario fosse ED50). Le zone sono molto estese e in alcuni settori la M_w può risultare sovrastimata (Linee guida LQ, pag. 31–32).
 - **Profondità e prove.**
   - Profondità massima di calcolo: 20 m dal piano campagna.
   - Una prova per scenario; il confronto tra prove è solo per profondità.

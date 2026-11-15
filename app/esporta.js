@@ -53,6 +53,7 @@
     riga(['# Scenario', scenario.nome]);
     riga(['# Metodo', P.NOMI_METODI[scenario.metodo]]);
     riga(['# Mw', scenario.Mw, 'amax (g)', scenario.amax, 'falda (m)', scenario.zFalda]);
+    if (opz.magnitudo) riga(['# Origine della Mw', opz.magnitudo]);
     riga(['# FS di riferimento', F.fsRiferimento(scenario)]);
     if (opz.preliminare) riga(['# Verifica preliminare NTC 2018 par. 7.11.3.4.2', opz.preliminare]);
     riga(['# Criterio di verifica', F.criterioFS(scenario)]);

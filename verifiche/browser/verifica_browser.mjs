@@ -193,6 +193,64 @@ console.log('4b. Testi del confronto, del riepilogo e della stampa');
   check('stampa: nome dell\'app coerente nei margini', await page.evaluate(() => document.getElementById('stileMargini').textContent.includes('"GeoHub-LiquiSite 0.')), true);
 }
 
+console.log('4c. Magnitudo Mw dalle zone ZS9: coordinate, proposta, motivazione, stampa');
+{
+  await page.evaluate(() => { window.confirm = () => true; window.print = () => {}; });
+  await page.click('#btnEsempio'); await page.waitForTimeout(200);
+  const coordinate = async (lat, lon) => {
+    await page.click('#btnImpostazioni'); await page.waitForTimeout(100);
+    await page.evaluate(() => { document.getElementById('secProgetto').open = true; });
+    await page.fill('#prLat', lat); await page.fill('#prLon', lon); await page.waitForTimeout(250);
+    const r = await page.evaluate(() => ({ testo: document.getElementById('prZs9').textContent, errore: document.getElementById('prCoordErr').hidden ? '' : document.getElementById('prCoordErr').textContent }));
+    await chiudi(); await page.waitForTimeout(100);
+    return r;
+  };
+  const scen = () => page.evaluate(() => { const S = window.LiquiUI.stato.pr; const s = S.scenari.find(x => x.id === S.scenarioAttivo); return { Mw: s.Mw, origine: s.magnitudo.origine }; });
+  check('esempio: Mw manuale, nessuna proposta', await scen(), { Mw: 6.1, origine: 'manuale' });
+  check('coordinate in gradi-primi-secondi: errore', /gradi decimali/.test((await coordinate('42°21\'', '13,3995')).errore), true);
+  check('lat/lon invertite: segnalate, nessuna Mw', /invertite/.test((await coordinate('13,3995', '42,3498')).testo), true);
+  check('L\'Aquila: zona 923, Mw 7,06', /zona 923.*Mw = 7,06/.test((await coordinate('42,3498', '13,3995')).testo), true);
+  check('scenario manuale: Mw invariata dalle coordinate', await scen(), { Mw: 6.1, origine: 'manuale' });
+  await page.click('[data-open-section="secScenario"]'); await page.waitForTimeout(150);
+  await page.check('input[name="scMwOrig"][value="zs9"]'); await page.waitForTimeout(150);
+  check('scelta «proposta ZS9»: Mw 7,06 applicata', await scen(), { Mw: 7.06, origine: 'zs9' });
+  await page.fill('#scMw', '6,8'); await page.waitForTimeout(150);
+  check('Mw diversa: motivazione obbligatoria segnalata', [await page.getAttribute('#scMwMot', 'aria-invalid'), /motivazione è obbligatoria/.test(await page.textContent('#scMwMsg'))], ['true', true]);
+  await chiudi(); await page.click('#btnQuickCalcola'); await page.waitForTimeout(400);
+  dialoghi.length = 0;
+  await page.click('#btnStampa'); await page.waitForTimeout(200);
+  check('Mw diversa senza motivazione: stampa bloccata', dialoghi.some(m => m.includes('motivazione è obbligatoria')), true);
+  dialoghi.length = 0;
+  const d = page.waitForEvent('download', { timeout: 1500 }).catch(() => null); await page.click('#btnCsv');
+  check('Mw diversa senza motivazione: CSV bloccato', [await d, dialoghi.some(m => m.includes('motivazione è obbligatoria'))], [null, true]);
+  await page.click('[data-open-section="secScenario"]'); await page.waitForTimeout(150);
+  await page.fill('#scMwMot', 'Valore da disaggregazione INGV del nodo più vicino'); await page.waitForTimeout(100);
+  await chiudi();
+  dialoghi.length = 0;
+  await page.click('#btnStampa'); await page.waitForTimeout(500);
+  let stampa = await page.evaluate(() => document.getElementById('stampa').innerText);
+  check('con motivazione: stampa consentita, sezione 1.1 con motivazione', [dialoghi.length, /1\.1 Magnitudo di riferimento/.test(stampa), stampa.includes('Valore da disaggregazione INGV del nodo più vicino')], [0, true, true]);
+  check('stampa: fonte, criterio, datum, criticità', ['Tab. A1.1, pag. 31', 'doi:10.13127/sh/zs9', 'CC BY 4.0', 'interpretazione della regola delle Linee guida LQ, pag. 30', 'circa 100 m', 'pag. 31–32'].every(t => stampa.includes(t)), true);
+  // Pescara: sito esterno, tabella completa in app e in stampa; lo scenario la segue solo se seguiva la proposta
+  await coordinate('42,4618', '14,2161');
+  check('coordinate cambiate: Mw scelta dal geologo invariata', await scen(), { Mw: 6.8, origine: 'zs9' });
+  await page.click('#tab-magnitudo'); await page.waitForTimeout(300);
+  check('scheda Magnitudo: tabella delle 36 zone', await page.locator('#pan-magnitudo table.zs9-tab tbody tr').count(), 36);
+  check('scheda Magnitudo: zone escluse e selezionate', await page.evaluate(() => { const t = document.querySelector('#pan-magnitudo table.zs9-tab').innerText; return /esclusa/.test(t) && document.querySelectorAll('#pan-magnitudo tr.zs9-mw').length; }), 2);
+  await page.click('#tab-profili'); await page.waitForTimeout(200);
+  await page.click('#btnStampa'); await page.waitForTimeout(500);
+  check('stampa (Pescara): tabella delle 36 zone', await page.evaluate(() => [...document.querySelectorAll('#stampa table')].some(t => t.querySelectorAll('tbody tr').length === 36 && /esclusa/.test(t.innerText))), true);
+  // nuovo scenario con coordinate valide: proposta applicata
+  await page.click('[data-open-section="secScenario"]'); await page.waitForTimeout(150);
+  await page.click('#btnNuovoScenario'); await page.waitForTimeout(200);
+  check('nuovo scenario: proposta ZS9 applicata', await scen(), { Mw: 7.06, origine: 'zs9' });
+  await page.fill('#scMw', '4,9'); await page.waitForTimeout(150);
+  check('Mw 4,9: avvisi Linee guida LQ e Cetin 2018', await page.evaluate(() => { const t = document.getElementById('scMwMsg').textContent; return [/Mw < 5:/.test(t), /Mw < 5,5:/.test(t)]; }), [true, true]);
+  await chiudi();
+  // la sezione successiva parte dall'esempio appena aperto, come prima di questa sezione
+  await page.click('#btnEsempio'); await page.waitForTimeout(200);
+}
+
 console.log('5. Modifiche non salvate');
 {
   let chiesto = 0;
