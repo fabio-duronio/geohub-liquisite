@@ -2,6 +2,13 @@
 
 La versione dell'app e quella del motore di calcolo sono distinte: l'app è indicata in alto e nel piè di pagina della stampa insieme al motore.
 
+## App 0.3.1 — non pubblicata
+
+Solo testi dell'interfaccia; calcoli e formato del progetto invariati.
+
+- **Pannello Scenario**: riscritta la nota sotto M_w e a_max. Spiega che a_max è l'accelerazione massima attesa in superficie, in campo libero, nel sito, e non la a_g della mappa di pericolosità (suolo rigido e pianeggiante); con l'approccio semplificato a_max = S·a_g, con S = S_S·S_T (NTC 2018, §3.2.3.2.1; relazione esplicita per a_max nel Cap. 7, per esempio §7.11.3.5.2 [7.11.5] e §7.11.6.2.1 [7.11.8]), altrimenti da risposta sismica locale. Dice che cosa indicare nelle note.
+- **Disaggregazione**: la nota cita la disaggregazione accanto al collegamento alle mappe INGV MPS04-S1 (esse1-gis), già presente. Lo stesso collegamento compare ora nel messaggio «disaggregazione richiesta» (pannello Progetto, pannello Scenario, scheda «Magnitudo M_w»). Nessun calcolo automatico (decisione del 16/11/2026).
+
 ## App 0.3.0 — 2026-11-16
 
 **Magnitudo M_w proposta dalle zone sismogenetiche ZS9.** Motore di calcolo invariato (0.3.0): la M_w entra nel calcolo come prima.

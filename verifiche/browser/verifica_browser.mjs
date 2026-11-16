@@ -209,6 +209,7 @@ console.log('4c. Magnitudo Mw dalle zone ZS9: coordinate, proposta, motivazione,
   check('esempio: Mw manuale, nessuna proposta', await scen(), { Mw: 6.1, origine: 'manuale' });
   check('coordinate in gradi-primi-secondi: errore', /gradi decimali/.test((await coordinate('42°21\'', '13,3995')).errore), true);
   check('lat/lon invertite: segnalate, nessuna Mw', /invertite/.test((await coordinate('13,3995', '42,3498')).testo), true);
+  check('Sardegna: disaggregazione richiesta, con collegamento alle mappe INGV', await (async () => { const r = await coordinate('40,0', '8,5'); return /disaggregazione richiesta/.test(r.testo) && await page.evaluate(() => !!document.querySelector('#prZs9 a[href="https://esse1-gis.mi.ingv.it/"]')); })(), true);
   check('L\'Aquila: zona 923, Mw 7,06', /zona 923.*Mw = 7,06/.test((await coordinate('42,3498', '13,3995')).testo), true);
   check('scenario manuale: Mw invariata dalle coordinate', await scen(), { Mw: 6.1, origine: 'manuale' });
   await page.click('[data-open-section="secScenario"]'); await page.waitForTimeout(150);
