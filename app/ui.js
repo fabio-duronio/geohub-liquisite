@@ -35,6 +35,11 @@
   const provaDi = (s) => S.pr.prove.find(p => p.id === s.provaId) || null;
   const risultatoDi = (s) => (S.pr.risultati || {})[s.id] || null;
 
+  /** Collegamento alle mappe interattive INGV (esse1-gis, modello MPS04-S1): a_g e disaggregazione. */
+  const LINK_INGV = '<a href="https://esse1-gis.mi.ingv.it/" target="_blank" rel="noopener noreferrer">mappe INGV MPS04-S1 ↗</a>';
+  /** Esito «disaggregazione richiesta»: la Mw si inserisce a mano; il dato si consulta sul sito INGV. */
+  const testoDisaggregazione = () => 'Inserisci la M<sub>w</sub> a mano, con la fonte (per esempio disaggregazione INGV, nodo e probabilità di superamento): la disaggregazione si consulta sulle ' + LINK_INGV + '.';
+
   /** Proposta di Mw dalle zone ZS9 per le coordinate del progetto (ricalcolata solo se cambiano). */
   let cacheProposta = { chiave: null, valore: null };
   function proposta() {
@@ -104,7 +109,7 @@
     if (st.stato === 'vuote') h = 'Con le coordinate l\'app propone la M<sub>w</sub> dalle zone sismogenetiche ZS9. Le coordinate non entrano nel calcolo del FS se non attraverso la M<sub>w</sub>.';
     else if (st.stato === 'valide') {
       h = '<b>Proposta ZS9:</b> ' + esc(prop.titolo) + '.';
-      if (prop.esito === 'disaggregazione_richiesta') h += ' ' + esc(MG.TESTI.disaggregazione);
+      if (prop.esito === 'disaggregazione_richiesta') h += ' ' + testoDisaggregazione();
       else if (!prop.disponibile && prop.motivo) h += ' ' + esc(prop.motivo);
       h += ' Dettagli nella scheda «Magnitudo M<sub>w</sub>».';
     }
@@ -213,7 +218,10 @@
       '<div class="field"><label for="scAmax">a<sub>max</sub> in superficie [g]</label><input type="text" inputmode="decimal" step="0.001" min="0" id="scAmax" value="' + esc(sc.amax ?? '') + '"></div></div>' +
       '<div class="field"><label for="scMwMot">Motivazione della M<sub>w</sub> (obbligatoria se diversa dalla proposta ZS9)</label><textarea id="scMwMot" placeholder="es. disaggregazione INGV, nodo …, probabilità di superamento …">' + esc(dm.motivazione) + '</textarea></div>' +
       '<div id="scMwMsg"></div></div>';
-    h += '<div class="hint" style="margin:-4px 0 10px;">Consulta <a href="https://fabio-duronio.github.io/geohub-sismasite/" target="_blank" rel="noopener noreferrer">GeoHub-SismaSite</a> o le <a href="https://esse1-gis.mi.ingv.it/" target="_blank" rel="noopener noreferrer">mappe INGV MPS04-S1 ↗</a>. Inserisci a<sub>max</sub> in superficie: il valore di pericolosità di base non coincide automaticamente con quello di sito. Documenta fonte, probabilità/tempo di ritorno e trattamento degli effetti locali nelle note. Nessuna importazione automatica.</div>';
+    h += '<div class="hint" style="margin:-4px 0 10px;">a<sub>max</sub> è l\'accelerazione massima attesa in superficie, in campo libero, nel sito: non è la a<sub>g</sub> della mappa di pericolosità, riferita a suolo rigido e pianeggiante. ' +
+      'Con l\'approccio semplificato a<sub>max</sub> = S<sub>S</sub>·S<sub>T</sub>·a<sub>g</sub> (NTC 2018, §3.2.3.2.1); altrimenti viene da un\'analisi di risposta sismica locale. ' +
+      '<a href="https://fabio-duronio.github.io/geohub-sismasite/" target="_blank" rel="noopener noreferrer">GeoHub-SismaSite ↗</a> la calcola dalle coordinate; a<sub>g</sub> e disaggregazione si consultano anche sulle ' + LINK_INGV + '. ' +
+      'Il valore si riporta qui a mano: nelle note indica fonte, stato limite, tempo di ritorno, categoria di sottosuolo e topografica.</div>';
     if (sc.metodo === 'cetin2018Spt' || sc.metodo === 'kayen2013Vs') {
       h += '<div class="field"><label for="scVs12">V*<sub>s,12</sub> [m/s]</label><input type="text" inputmode="decimal" step="1" id="scVs12" value="' + esc(sc.opzioni.Vs12 ?? '') + '"><div class="hint">Vs media nei primi 12 m, usata nel coefficiente r<sub>d</sub> del metodo.</div></div>';
     }
@@ -931,7 +939,7 @@
     if (!prop.disponibile) {
       let t = 'Proposta ZS9 non disponibile: ' + esc(prop.motivo || prop.titolo) + '.';
       if (prop.esito === 'coordinate') t += ' Le coordinate del sito si inseriscono in «Progetto».';
-      if (prop.esito === 'disaggregazione_richiesta') t += ' ' + esc(MG.TESTI.disaggregazione);
+      if (prop.esito === 'disaggregazione_richiesta') t += ' ' + testoDisaggregazione();
       return '<span>' + t + '</span>';
     }
     const usa = MG.datiMagnitudo(sc).origine !== 'zs9' || !isNum(sc.Mw) || MG.diversaDallaProposta(sc, prop);
@@ -977,7 +985,7 @@
       (sc ? riga('Scenario «' + esc(sc.nome) + '»', esc(MG.testoOrigine(sc, prop))) : '') +
       riga('Segnalazioni del geologo', esc((p.noteZS9 || '').trim() || '—')) + '</tbody></table></div>';
     if (prop.esito === 'coordinate') h += '<div class="alert alert-info" style="margin-top:10px;">Inserisci le coordinate del sito in «Progetto» per ottenere la proposta.</div>';
-    if (prop.esito === 'disaggregazione_richiesta') h += '<div class="alert alert-warn" style="margin-top:10px;">' + esc(MG.TESTI.disaggregazione) + '</div>';
+    if (prop.esito === 'disaggregazione_richiesta') h += '<div class="alert alert-warn" style="margin-top:10px;">' + testoDisaggregazione() + '</div>';
     if (sc) {
       const st = MG.statoMagnitudo(sc, prop);
       if (st.errori.length) h += '<div class="alert alert-danger" style="margin-top:10px;"><ul>' + st.errori.map(e => '<li>' + esc(e.motivo) + '</li>').join('') + '</ul></div>';
