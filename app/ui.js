@@ -219,7 +219,7 @@
       '<div class="field"><label for="scMwMot">Motivazione della M<sub>w</sub> (obbligatoria se diversa dalla proposta ZS9)</label><textarea id="scMwMot" placeholder="es. disaggregazione INGV, nodo …, probabilità di superamento …">' + esc(dm.motivazione) + '</textarea></div>' +
       '<div id="scMwMsg"></div></div>';
     h += '<div class="hint" style="margin:-4px 0 10px;">a<sub>max</sub> è l\'accelerazione massima attesa in superficie, in campo libero, nel sito: non è la a<sub>g</sub> della mappa di pericolosità, riferita a suolo rigido e pianeggiante. ' +
-      'Con l\'approccio semplificato a<sub>max</sub> = S<sub>S</sub>·S<sub>T</sub>·a<sub>g</sub> (NTC 2018, §3.2.3.2.1); altrimenti viene da un\'analisi di risposta sismica locale. ' +
+      'Con l\'approccio semplificato a<sub>max</sub> = S·a<sub>g</sub>, con S = S<sub>S</sub>·S<sub>T</sub> (NTC 2018, §3.2.3.2.1; relazione esplicita per a<sub>max</sub> nel Cap. 7, per esempio §7.11.3.5.2 e §7.11.6.2.1); altrimenti viene da un\'analisi di risposta sismica locale. ' +
       '<a href="https://fabio-duronio.github.io/geohub-sismasite/" target="_blank" rel="noopener noreferrer">GeoHub-SismaSite ↗</a> la calcola dalle coordinate; a<sub>g</sub> e disaggregazione si consultano anche sulle ' + LINK_INGV + '. ' +
       'Il valore si riporta qui a mano: nelle note indica fonte, stato limite, tempo di ritorno, categoria di sottosuolo e topografica.</div>';
     if (sc.metodo === 'cetin2018Spt' || sc.metodo === 'kayen2013Vs') {
