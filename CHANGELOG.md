@@ -2,7 +2,7 @@
 
 La versione dell'app e quella del motore di calcolo sono distinte: l'app è indicata in alto e nel piè di pagina della stampa insieme al motore.
 
-## App 0.3.1 — non pubblicata
+## App 0.3.1 — 2026-11-16
 
 Solo testi dell'interfaccia; calcoli e formato del progetto invariati.
 
