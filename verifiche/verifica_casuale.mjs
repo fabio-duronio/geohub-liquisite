@@ -108,7 +108,7 @@ for (let k = 0; k < CASI; k++) {
     if (!(il.ILmin >= -1e-9 && il.ILmax <= 100 + 1e-9 && il.ILmin <= il.ILmax + 1e-9)) ilFuori++;
     if (il.completo !== (il.spessori.ignoto < 1e-9) || (il.completo && Math.abs(il.ILmax - il.ILmin) > 1e-9)) ilIncoerenti++;
     // rendere ignota una lettura calcolata non può restringere l'intervallo
-    const punti = F.puntiPerIL(res.righe), i = punti.findIndex(p => p.categoria === 'FS');
+    const punti = F.puntiPerIL(res.righe, pv.tipo === 'SPT' ? sc.strati : null), i = punti.findIndex(p => p.categoria === 'FS');
     if (i >= 0) {
       const p2 = punti.map(p => ({ ...p })); p2[i] = { z: p2[i].z, categoria: 'ignoto' };
       const il2 = IND.indiceIL(p2, sc.zFalda);

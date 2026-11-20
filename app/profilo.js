@@ -208,7 +208,7 @@
     const par = prova.parametri || {};
     const sisma = { amax: scenario.amax, Mw: scenario.Mw };
     const righe = dati.map((d) => calcolaRiga(d, prova, scenario, L, richiesti, par, sisma));
-    const indiceIL = IND ? IND.indiceIL(puntiPerIL(righe), scenario.zFalda) : null;
+    const indiceIL = IND ? IND.indiceIL(puntiPerIL(righe, prova.tipo === 'SPT' ? scenario.strati : null), scenario.zFalda) : null;
     // cedimento post-sismico e LSN: metodo da CPT (Zhang et al. 2002), solo con il metodo CPT
     let cedimenti = null;
     if (CED && scenario.metodo === 'bi2014Cpt') {
@@ -228,14 +228,22 @@
    *  Ic oltre soglia → 'argilloso'; tutto il resto (dati mancanti, non validi, fuori
    *  stratigrafia, non convergenti, oltre il limite dell'app) → 'ignoto'.
    * Le righe senza profondità valida non entrano.
+   * strati (solo prove SPT): ogni punto porta i limiti dello strato che lo contiene e non ne esce
+   * (decisione del 21/11/2026: rappresentatività limitata allo strato, nessuna estensione automatica).
    */
-  function puntiPerIL(righe) {
-    return righe.filter(r => isNum(r.z) && r.z >= 0).map(r => {
-      if (r.stato === 'calcolato' && r.valori && isNum(r.valori.FS) && r.valori.FS >= 0) return { z: r.z, categoria: 'FS', FS: r.valori.FS };
-      if (r.stato === 'non_applicabile' && r.codice === 'NON_SATURO') return { z: r.z, categoria: 'sopraFalda' };
-      if (r.stato === 'non_applicabile' && r.codice === 'IC_OLTRE_SOGLIA') return { z: r.z, categoria: 'argilloso' };
-      return { z: r.z, categoria: 'ignoto' };
-    });
+  function puntiPerIL(righe, strati) {
+    const conLimiti = (p) => {
+      const s = Array.isArray(strati) ? stratoA(strati, p.z) : null;
+      if (s && isNum(s.da) && isNum(s.a) && s.da < s.a) p.limiti = { da: s.da, a: s.a };
+      return p;
+    };
+    return righe.filter(r => isNum(r.z) && r.z >= 0).map(r => conLimiti(categoriaIL(r)));
+  }
+  function categoriaIL(r) {
+    if (r.stato === 'calcolato' && r.valori && isNum(r.valori.FS) && r.valori.FS >= 0) return { z: r.z, categoria: 'FS', FS: r.valori.FS };
+    if (r.stato === 'non_applicabile' && r.codice === 'NON_SATURO') return { z: r.z, categoria: 'sopraFalda' };
+    if (r.stato === 'non_applicabile' && r.codice === 'IC_OLTRE_SOGLIA') return { z: r.z, categoria: 'argilloso' };
+    return { z: r.z, categoria: 'ignoto' };
   }
 
   /** Punti per il cedimento: come per IL, con (qc1N)cs dei punti calcolati. */

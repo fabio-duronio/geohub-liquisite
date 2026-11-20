@@ -7,7 +7,7 @@
 // 2. dati/zs9-data.js (per il browser) contiene lo stesso testo di dati/zs9-data.json.
 // 3. Controllo delle coordinate: intervallo, valori non numerici, ordine lat/lon, fuori Italia.
 // 4. Proposta per le località di controllo (stessi casi delle verifiche di SismaSite).
-// 5. Mw dello scenario: proposta o manuale, motivazione obbligatoria se diversa, avvisi < 5 e < 5,5.
+// 5. Mw dello scenario: proposta o manuale, motivazione sempre obbligatoria, avvisi < 5 e < 5,5.
 // 6. Formato del progetto: coordinate e origine della Mw salvate e riaperte; file precedenti.
 // 7. Le coordinate non entrano nel calcolo: firma degli input e FS invariati a parità di Mw.
 // 8. Testi per la stampa: fonte, criterio, datum, criticità.
@@ -119,11 +119,16 @@ console.log('5. Mw dello scenario');
   const a = sc();
   check('applica proposta', MG.applicaProposta(a, prop), true);
   check('dopo applica: origine zs9 e Mw 7,06', [a.magnitudo.origine, a.Mw], ['zs9', 7.06]);
-  check('uguale alla proposta: nessun errore', MG.statoMagnitudo(a, prop).errori, []);
+  check('uguale alla proposta senza motivazione: errore (sempre obbligatoria)', MG.statoMagnitudo(a, prop).errori.map(e => e.campo), ['magnitudo.motivazione']);
+  check('testo dell\'errore, Mw uguale alla proposta', MG.statoMagnitudo(a, prop).errori[0].motivo, 'Motivazione della Mw mancante: è obbligatoria.');
+  check('motivazione sempre richiesta', MG.statoMagnitudo(a, prop).motivazioneRichiesta, true);
+  a.magnitudo.motivazione = 'proposta ZS9 accettata';
+  check('uguale alla proposta con motivazione: nessun errore', MG.statoMagnitudo(a, prop).errori, []);
+  a.magnitudo.motivazione = '';
   a.Mw = 6.5;
   const e1 = MG.statoMagnitudo(a, prop);
   check('diversa senza motivazione: errore', e1.errori.map(e => e.campo), ['magnitudo.motivazione']);
-  check('testo dell\'errore', e1.errori[0].motivo, 'Mw 6,50 diversa dalla proposta ZS9 (7,06): la motivazione è obbligatoria.');
+  check('testo dell\'errore', e1.errori[0].motivo, 'Motivazione della Mw mancante: è obbligatoria (Mw 6,50 diversa dalla proposta ZS9, 7,06).');
   a.magnitudo.motivazione = '   ';
   check('motivazione di soli spazi: errore', MG.statoMagnitudo(a, prop).errori.length, 1);
   a.magnitudo.motivazione = 'disaggregazione INGV, nodo 26339, PoE 10 % in 50 anni';
@@ -131,14 +136,16 @@ console.log('5. Mw dello scenario');
   check('diversa: segnalata', MG.statoMagnitudo(a, prop).diversa, true);
 
   const b = sc(); b.Mw = 6.5;
-  check('manuale senza coordinate: nessun errore', MG.statoMagnitudo(b, nessuna).errori, []);
+  check('manuale senza coordinate e senza motivazione: errore', MG.statoMagnitudo(b, nessuna).errori.map(e => e.campo), ['magnitudo.motivazione']);
   check('manuale diversa dalla proposta: motivazione obbligatoria', MG.statoMagnitudo(b, prop).errori.map(e => e.campo), ['magnitudo.motivazione']);
   b.Mw = 7.06;
-  check('manuale uguale alla proposta: nessun errore', MG.statoMagnitudo(b, prop).errori, []);
+  check('manuale uguale alla proposta senza motivazione: errore', MG.statoMagnitudo(b, prop).errori.map(e => e.campo), ['magnitudo.motivazione']);
+  b.magnitudo.motivazione = 'valore della Tab. A1.1';
+  check('manuale con motivazione: nessun errore', MG.statoMagnitudo(b, prop).errori, []);
 
   const c = sc(); c.magnitudo.origine = 'zs9'; c.Mw = 6.2;
-  check('origine zs9 senza coordinate: errore', MG.statoMagnitudo(c, nessuna).errori.map(e => e.campo), ['magnitudo.origine']);
-  check('origine zs9 con disaggregazione richiesta: errore', MG.statoMagnitudo(c, disag).errori.map(e => e.campo), ['magnitudo.origine']);
+  check('origine zs9 senza coordinate: errore', MG.statoMagnitudo(c, nessuna).errori.map(e => e.campo), ['magnitudo.origine', 'magnitudo.motivazione']);
+  check('origine zs9 con disaggregazione richiesta: errore', MG.statoMagnitudo(c, disag).errori.map(e => e.campo), ['magnitudo.origine', 'magnitudo.motivazione']);
   check('applica proposta non disponibile: nessuna modifica', [MG.applicaProposta(c, disag), c.Mw], [false, 6.2]);
 
   const av = (mw) => { const s = sc(); s.Mw = mw; return MG.statoMagnitudo(s, nessuna).avvisi.map(x => x.codice); };
@@ -212,6 +219,7 @@ console.log('8. Testi per la stampa');
   const T = MG.TESTI;
   check('fonte: Tab. A1.1 delle Linee guida LQ', /Linee guida LQ v1\.0.*Tab\. A1\.1, pag\. 31/.test(T.fonte), true);
   check('fonte: ZS9 Meletti et al. 2004, doi, CC BY 4.0', /Meletti et al\. \(2004\), INGV, doi:10\.13127\/sh\/zs9 – CC BY 4\.0/.test(T.fonte), true);
+  check('avvertenza: datum non dichiarato e appartenenza geometrica indicativa', /Datum dello shapefile ZS9 non dichiarato/.test(T.avvertenza) && /risultato geometrico indicativo/.test(T.avvertenza), true);
   check('criterio: interpretazione della regola, pag. 30', /interpretazione della regola delle Linee guida LQ, pag\. 30/.test(T.criterio), true);
   check('datum non dichiarato, scarto circa 100 m', /non dichiarato/.test(T.datum) && /circa 100 m/.test(T.datum), true);
   check('criticità: fonte pag. 31–32 e tre voci', [/pag\. 31–32/.test(T.criticitaFonte), T.criticita.length], [true, 3]);

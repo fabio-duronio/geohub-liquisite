@@ -23,6 +23,9 @@
  *    falda di verifica se questa cade tra due punti consecutivi; verso un
  *    vuoto maggiore di `vuotoMax` (default 3 volte il passo mediano) metà del passo mediano;
  *    il primo e l'ultimo punto si estendono di metà del passo verso l'esterno;
+ *  - se il punto porta i limiti dello strato che lo contiene (prove SPT, decisione del 21/11/2026),
+ *    l'intervallo non esce dallo strato: nessuna estensione automatica ad altri strati; le parti
+ *    di altri strati non coperte da un punto restano 'ignoto';
  *  - F è costante nell'intervallo del punto; l'integrale di w è calcolato esattamente:
  *    ∫ w dz = 10·(b − a) − 0,25·(b² − a²).
  *
@@ -44,7 +47,7 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  const VERSIONE_INDICI = '0.1.0';
+  const VERSIONE_INDICI = '0.2.0';
   const Z_IL = 20;
   const CATEGORIE = ['FS', 'sopraFalda', 'argilloso', 'ignoto'];
   /** Numero con virgola decimale, per i testi in italiano. */
@@ -77,7 +80,8 @@
 
   /**
    * Intervalli rappresentati dai punti, senza sovrapposizioni.
-   * punti: [{ z, categoria, FS? }] ordinati e con z distinte.
+   * punti: [{ z, categoria, FS?, limiti? }] ordinati e con z distinte; limiti = { da, a } dello
+   * strato che contiene il punto: l'intervallo non ne esce.
    */
   function intervalliDeiPunti(punti, vuotoMax, mediano, zFalda) {
     const n = punti.length;
@@ -89,13 +93,15 @@
       const prec = i > 0 ? punti[i - 1].z : null, succ = i < n - 1 ? punti[i + 1].z : null;
       const da = prec === null || p.z - prec > vuotoMax ? p.z - meta : confine(prec, p.z);
       const a = succ === null || succ - p.z > vuotoMax ? p.z + meta : confine(p.z, succ);
+      if (p.limiti) return { da: Math.max(da, p.limiti.da), a: Math.min(a, p.limiti.a), z: p.z, categoria: p.categoria, FS: p.FS ?? null };
       return { da, a, z: p.z, categoria: p.categoria, FS: p.FS ?? null };
     });
   }
 
   /**
    * Calcola IL.
-   * punti: [{ z (m), categoria: 'FS'|'sopraFalda'|'argilloso'|'ignoto', FS (se 'FS') }]
+   * punti: [{ z (m), categoria: 'FS'|'sopraFalda'|'argilloso'|'ignoto', FS (se 'FS'),
+   *          limiti: { da, a } facoltativo, strato che contiene il punto (m) }]
    * zFalda: profondità della falda di verifica (m, ≥ 0)
    * opz: { vuotoMax (m) } — default 3 × passo mediano
    * Esito: { stato, ILmin, ILmax, completo, IL, spessori, tratti, curva, assunzioni, errori? }
@@ -108,6 +114,7 @@
       if (!p || !isNum(p.z) || p.z < 0) errori.push({ campo: 'punti[' + i + '].z', codice: 'FUORI_DOMINIO', motivo: 'profondità: numero ≥ 0' });
       else if (!CATEGORIE.includes(p.categoria)) errori.push({ campo: 'punti[' + i + '].categoria', codice: 'VALORE_NON_AMMESSO', motivo: 'categoria non riconosciuta' });
       else if (p.categoria === 'FS' && !(isNum(p.FS) && p.FS >= 0)) errori.push({ campo: 'punti[' + i + '].FS', codice: 'FUORI_DOMINIO', motivo: 'FS: numero ≥ 0' });
+      else if (p.limiti !== undefined && p.limiti !== null && !(isNum(p.limiti.da) && isNum(p.limiti.a) && p.limiti.da <= p.z && p.z <= p.limiti.a && p.limiti.da < p.limiti.a)) errori.push({ campo: 'punti[' + i + '].limiti', codice: 'FUORI_DOMINIO', motivo: 'limiti dello strato: da < a, con il punto compreso' });
     });
     if (opz.vuotoMax !== undefined && !(isNum(opz.vuotoMax) && opz.vuotoMax > 0)) errori.push({ campo: 'opz.vuotoMax', codice: 'FUORI_DOMINIO', motivo: 'numero > 0' });
     if (errori.length) return { stato: 'input_non_valido', errori };
@@ -164,6 +171,7 @@
       { codice: 'IL_INTERVALLI', descrizione: 'Ogni punto rappresenta l\'intervallo fino a metà distanza dai punti adiacenti, oppure fino alla falda di verifica se questa cade tra due punti (metà del passo mediano verso i vuoti oltre ' + (isFinite(vuotoMax) ? decimale(vuotoMax, 2) : '∞') + ' m e agli estremi); F costante nell\'intervallo, integrale di w esatto.' },
       { codice: 'IL_SOPRA_FALDA', descrizione: 'Tra il piano campagna e la falda di verifica contributo nullo all\'indice: terreno non saturo.' }
     ];
+    if (ord.some(p => p.limiti)) assunzioni.push({ codice: 'IL_LIMITE_STRATO', descrizione: 'Prova SPT: ogni prova rappresenta al più lo strato che la contiene, senza estensione automatica ad altri strati (decisione di GeoHub del 21/11/2026). Le parti di strati senza prova restano senza risultato.' });
     if (spessori.argilloso > 0) assunzioni.push({ codice: 'IL_ARGILLOSO', descrizione: 'Tratti esclusi per Ic oltre la soglia adottata (CNR-CentroMS 2024, §3.2.1.2, pag. 32: dati CPT con Ic ≤ 2,6, soglia adattabile tra 2,4 e 2,8): FS non applicabile (N.A.), non calcolato. Per convenzione operativa di calcolo il contributo F(z) di questi tratti all\'indice è assunto pari a zero (' + decimale(spessori.argilloso, 2) + ' m): non equivale a un fattore di sicurezza nullo e non coincide con la condizione FS > 1 della definizione di F(z). L\'esclusione non dimostra l\'assenza di perdita di resistenza ciclica: nei terreni fini sensibili o di transizione serve una verifica specifica (granulometria, limiti di Atterberg, criteri di suscettibilità).' });
     if (!completo) assunzioni.push({ codice: 'IL_INCOMPLETO', descrizione: 'Tratti senza risultato in 0–20 m (' + decimale(spessori.ignoto, 2) + ' m: dati mancanti, non calcolati o profondità non indagate): IL compreso tra IL_min (contributo nullo in quei tratti) e IL_max (contributo massimo del modello in quei tratti). I due valori sono limiti convenzionali del modello, non un intervallo di confidenza né un massimo fisico garantito.' });
     return {

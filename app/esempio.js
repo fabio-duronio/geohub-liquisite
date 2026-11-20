@@ -169,6 +169,8 @@
     const s3 = P.nuovoScenario(a, 'SLV – falda alta 1,0 m', 2);
     Object.assign(s3, { Mw: 6.1, amax: 0.26, zFalda: 1.0, strati: P.copia(STRATI) });
     s3.opzioni = { Vs12: null, IcSoglia: 2.6, CFC: 0, FSrif: P.FS_RIFERIMENTO };
+    // motivazione della Mw obbligatoria (decisione del 21/11/2026): valore illustrativo dell'esempio
+    for (const s of [s1, s2, s3]) s.magnitudo = { origine: 'manuale', motivazione: 'Valore illustrativo dell\'esempio sintetico: sito inventato, nessuna fonte.' };
     pr.scenari = [s1, s2, s3];
     pr.provaAttiva = a.id; pr.scenarioAttivo = s1.id;
     return pr;

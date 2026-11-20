@@ -7,7 +7,7 @@
  *  - il controllo delle coordinate del sito inserite nel progetto (gradi decimali, WGS84);
  *  - la lettura dell'esito del modulo per interfaccia e stampa;
  *  - le regole dell'app sulla Mw dello scenario: proposta ZS9 o inserimento manuale, motivazione
- *    obbligatoria se il valore adottato è diverso dalla proposta, avvisi sotto 5 e sotto 5,5.
+ *    sempre obbligatoria (decisione del 21/11/2026), avvisi sotto 5 e sotto 5,5.
  *
  * Le coordinate non entrano nel calcolo del FS se non attraverso la Mw adottata nello scenario.
  *
@@ -42,6 +42,7 @@
     fonte: 'Mw,max per zona: Linee guida LQ v1.0 (Commissione tecnica per la microzonazione sismica, 2018), Tab. A1.1, pag. 31 – CC BY 4.0. Zone sismogenetiche: ZS9, Meletti et al. (2004), INGV, doi:10.13127/sh/zs9 – CC BY 4.0.',
     criterio: 'Criterio adottato: interpretazione della regola delle Linee guida LQ, pag. 30. Sito interno a una zona: Mw = Mw,max della zona. Sito esterno: distanza minima R_i da tutte le 36 zone, Ms_i = 1 + 3·log10(R_i), Mw = massima M_i fra le sole zone con Ms_i < M_i; se nessuna zona soddisfa la condizione serve la disaggregazione, che LiquiSite non calcola. Sul confine comune di più zone vale la Mw,max più alta (scelta prudenziale). Criteri applicativi di GeoHub (decisione del 12/11/2026), non trascrizione letterale delle Linee guida.',
     datum: 'Datum dello shapefile ZS9 non dichiarato (manca il file .prj): le coordinate delle zone sono usate senza trasformazione. Se il datum originario fosse ED50, lo scarto rispetto alle coordinate WGS84 del sito sarebbe di circa 100 m: trascurabile alla scala delle zone, da considerare per i siti vicini a un confine.',
+    avvertenza: 'Datum dello shapefile ZS9 non dichiarato: l\'appartenenza del sito a una zona, o la sua distanza dalle zone, è un risultato geometrico indicativo, non una determinazione esatta.',
     criticita: [
       'le zone ZS9 sono molto estese e in alcuni settori della penisola la Mw può risultare sovrastimata;',
       'per i siti esterni alle zone (per esempio nelle aree costiere) la disaggregazione può portare a una sottostima;',
@@ -152,8 +153,9 @@
     if (d.origine === 'zs9' && !(prop && prop.disponibile)) {
       errori.push({ campo: 'magnitudo.origine', motivo: 'Proposta ZS9 non disponibile' + (prop && prop.motivo ? ' (' + prop.motivo + ')' : '') + ': inserire coordinate valide del sito oppure scegliere l\'inserimento manuale.' });
     }
-    if (diversa && !d.motivazione.trim()) {
-      errori.push({ campo: 'magnitudo.motivazione', motivo: 'Mw ' + num(scenario.Mw) + ' diversa dalla proposta ZS9 (' + num(prop.mw) + '): la motivazione è obbligatoria.' });
+    // Motivazione sempre obbligatoria (decisione del 21/11/2026), anche se la Mw coincide con la proposta
+    if (!d.motivazione.trim()) {
+      errori.push({ campo: 'magnitudo.motivazione', motivo: 'Motivazione della Mw mancante: è obbligatoria' + (diversa ? ' (Mw ' + num(scenario.Mw) + ' diversa dalla proposta ZS9, ' + num(prop.mw) + ')' : '') + '.' });
     }
     const mw = scenario ? scenario.Mw : null;
     if (isNum(mw) && mw < SOGLIE.lineeGuidaLQ) {
@@ -162,12 +164,12 @@
     if (isNum(mw) && mw < SOGLIE.cetin2018) {
       avvisi.push({ codice: 'MW_SOTTO_5_5', testo: 'Mw < 5,5: fuori dal campo di Cetin et al. (2018), KMw valido per Mw 5,5–8,4 (Eq. 15).' });
     }
-    return { origine: d.origine, proposta: prop && prop.disponibile ? prop.mw : null, diversa, motivazioneRichiesta: diversa, errori, avvisi };
+    return { origine: d.origine, proposta: prop && prop.disponibile ? prop.mw : null, diversa, motivazioneRichiesta: true, errori, avvisi };
   }
 
   /**
    * Applica la proposta allo scenario (origine ZS9, Mw = proposta). Non fa nulla se la proposta non
-   * è disponibile. La motivazione resta: serve solo se il geologo cambia di nuovo il valore.
+   * è disponibile. La motivazione già scritta resta.
    */
   function applicaProposta(scenario, prop) {
     if (!scenario || !prop || !prop.disponibile) return false;

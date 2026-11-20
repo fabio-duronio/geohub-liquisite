@@ -27,7 +27,7 @@ Applicazione web per geologi e ingegneri della famiglia GeoHub. A partire dalle 
 - **Indice del potenziale di liquefazione IL** (Iwasaki et al. 1978), senza classi. Se la verticale non è indagata per intero fino a 20 m, l'indice è dato come intervallo minimo–massimo: sono limiti convenzionali del modello, non un intervallo di confidenza.
 - **Cedimento post-sismico e indice LSN** da CPT, con le equazioni originali di Zhang et al. (2002). Anche qui i tratti non indagati sono dati come intervalli, cioè limiti convenzionali del modello e non massimi fisici garantiti.
 - **Carta di comportamento del terreno** (Robertson & Wride 1998) con i punti della CPT.
-- **Magnitudo M_w proposta dalle zone sismogenetiche ZS9** a partire dalle coordinate del sito (Linee guida LQ, Tab. A1.1 e procedura di pag. 30). Per i siti esterni alle zone c'è la tabella completa delle 36 zone. Il geologo può adottare un altro valore, con motivazione obbligatoria.
+- **Magnitudo M_w proposta dalle zone sismogenetiche ZS9** a partire dalle coordinate del sito (Linee guida LQ, Tab. A1.1 e procedura di pag. 30). Per i siti esterni alle zone c'è la tabella completa delle 36 zone. Il geologo può adottare un altro valore; la motivazione è sempre obbligatoria.
 - **Confronto tra scenari**: fino a 3, con falda, metodo, magnitudo o accelerazione diversi.
 - **Importazione** da foglio elettronico o CSV, con scelta esplicita di separatori, colonne e unità. Gli errori sono segnalati con riga e colonna.
 - **Stampa A4 verticale come allegato alla relazione**:

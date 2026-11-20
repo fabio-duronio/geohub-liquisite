@@ -215,15 +215,17 @@ console.log('4c. Magnitudo Mw dalle zone ZS9: coordinate, proposta, motivazione,
   await page.click('[data-open-section="secScenario"]'); await page.waitForTimeout(150);
   await page.check('input[name="scMwOrig"][value="zs9"]'); await page.waitForTimeout(150);
   check('scelta «proposta ZS9»: Mw 7,06 applicata', await scen(), { Mw: 7.06, origine: 'zs9' });
+  await page.fill('#scMwMot', ''); await page.waitForTimeout(150);
+  check('Mw uguale alla proposta senza motivazione: obbligatoria segnalata', [await page.getAttribute('#scMwMot', 'aria-invalid'), /Motivazione della Mw mancante: è obbligatoria/.test(await page.textContent('#scMwMsg'))], ['true', true]);
   await page.fill('#scMw', '6,8'); await page.waitForTimeout(150);
-  check('Mw diversa: motivazione obbligatoria segnalata', [await page.getAttribute('#scMwMot', 'aria-invalid'), /motivazione è obbligatoria/.test(await page.textContent('#scMwMsg'))], ['true', true]);
+  check('Mw diversa: motivazione obbligatoria segnalata', [await page.getAttribute('#scMwMot', 'aria-invalid'), /Motivazione della Mw mancante: è obbligatoria/.test(await page.textContent('#scMwMsg'))], ['true', true]);
   await chiudi(); await page.click('#btnQuickCalcola'); await page.waitForTimeout(400);
   dialoghi.length = 0;
   await page.click('#btnStampa'); await page.waitForTimeout(200);
-  check('Mw diversa senza motivazione: stampa bloccata', dialoghi.some(m => m.includes('motivazione è obbligatoria')), true);
+  check('Mw diversa senza motivazione: stampa bloccata', dialoghi.some(m => m.includes('Motivazione della Mw mancante')), true);
   dialoghi.length = 0;
   const d = page.waitForEvent('download', { timeout: 1500 }).catch(() => null); await page.click('#btnCsv');
-  check('Mw diversa senza motivazione: CSV bloccato', [await d, dialoghi.some(m => m.includes('motivazione è obbligatoria'))], [null, true]);
+  check('Mw diversa senza motivazione: CSV bloccato', [await d, dialoghi.some(m => m.includes('Motivazione della Mw mancante'))], [null, true]);
   await page.click('[data-open-section="secScenario"]'); await page.waitForTimeout(150);
   await page.fill('#scMwMot', 'Valore da disaggregazione INGV del nodo più vicino'); await page.waitForTimeout(100);
   await chiudi();
@@ -232,6 +234,8 @@ console.log('4c. Magnitudo Mw dalle zone ZS9: coordinate, proposta, motivazione,
   let stampa = await page.evaluate(() => document.getElementById('stampa').innerText);
   check('con motivazione: stampa consentita, sezione 1.1 con motivazione', [dialoghi.length, /1\.1 Magnitudo di riferimento/.test(stampa), stampa.includes('Valore da disaggregazione INGV del nodo più vicino')], [0, true, true]);
   check('stampa: fonte, criterio, datum, criticità', ['Tab. A1.1, pag. 31', 'doi:10.13127/sh/zs9', 'CC BY 4.0', 'interpretazione della regola delle Linee guida LQ, pag. 30', 'circa 100 m', 'pag. 31–32'].every(t => stampa.includes(t)), true);
+  check('stampa: avvertenza su datum non dichiarato e appartenenza geometrica indicativa', /Avvertenza\s*Datum dello shapefile ZS9 non dichiarato: .*risultato geometrico indicativo/.test(stampa), true);
+  check('stampa: LSN dichiarato sperimentale', stampa.includes('LSN (sperimentale, senza classi)'), true);
   // Pescara: sito esterno, tabella completa in app e in stampa; lo scenario la segue solo se seguiva la proposta
   await coordinate('42,4618', '14,2161');
   check('coordinate cambiate: Mw scelta dal geologo invariata', await scen(), { Mw: 6.8, origine: 'zs9' });
