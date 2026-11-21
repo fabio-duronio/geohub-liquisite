@@ -2,6 +2,14 @@
 
 La versione dell'app e quella del motore di calcolo sono distinte: l'app è indicata in alto e nel piè di pagina della stampa insieme al motore.
 
+## App 0.4.1 — 2026-11-21
+
+Correzione di un'etichetta e completamento dell'esempio sintetico. Motore di innesco (0.3.0), modulo IL (0.2.0) e modulo cedimenti (0.1.1) invariati: FS, IL, cedimenti e LSN non cambiano.
+
+- **Sopra falda con Ic oltre soglia**: i punti CPT sopra la falda di verifica con Ic oltre la soglia sono ora indicati «sopra falda» in tabella, intervalli non calcolati, grafici, stampa e CSV, come già nell'indice IL che li classifica per profondità. Prima comparivano come «Ic oltre soglia» (nell'esempio, il tratto 1,2–1,8 m). Il motore controlla Ic prima della saturazione e resta invariato: la nuova etichetta si assegna nel livello applicativo (`app/profilo.js`). Ic resta nel motivo e nella carta di comportamento.
+- **Esempio, verifica preliminare**: dati per tutti gli strati saturi entro 20 m. Limi argillosi 1,2–3,4 m e 12,4–13,2 m con curva granulometrica esterna ai fusi (proposta confermata: criterio 4 soddisfatto); alternanze 7,2–8,6 m con curva che tocca il fuso e scelta motivata del geologo (criterio 4 non soddisfatto); riporto senza analisi. Campioni numerati per profondità (S1-C1 … S1-C6). I dati della verifica preliminare valgono anche per il terzo scenario (falda 1,0 m). Esito dell'esempio: due strati esclusi, verifica necessaria per il sito.
+- **Verifiche**: nuovi controlli in `verifica_profilo.mjs` (sezione 9) e `verifica_preliminare.mjs`, conteggi aggiornati in `docs/validazione.md` (1025 controlli JavaScript); parametri ?v= di `index.html` portati a 0.4.1.
+
 ## App 0.4.0 — 2026-11-21
 
 Decisioni di Fabio del 21/11/2026 per la stabilità. Motore di innesco invariato (0.3.0); modulo IL 0.2.0, modulo cedimenti 0.1.1.

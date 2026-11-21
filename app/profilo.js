@@ -332,6 +332,15 @@
       riga.motivo = esito.motivo || (esito.errori || []).map(e => e.campo + ': ' + e.motivo).join('; ');
       if (esito.errori) riga.errori = esito.errori;
       if (esito.Ic !== undefined) riga.valori = { Ic: esito.Ic, FCusato: esito.FC };
+      // Sopra falda con Ic oltre soglia: il motore controlla Ic prima della saturazione; qui il
+      // punto si etichetta «sopra falda», come l'indice IL che lo classifica per profondità.
+      // Motore invariato; Ic resta nella carta di comportamento (riga.sbt) e nel motivo.
+      if (riga.codice === 'IC_OLTRE_SOGLIA' && riga.tensioni.sv - riga.tensioni.sve < 1e-9) {
+        riga.codice = 'NON_SATURO';
+        riga.motivo = 'pressione interstiziale nulla (σ\'v = σv): il punto non è sotto la falda di verifica. ' +
+          'Ic = ' + esito.Ic.toFixed(2).replace('.', ',') + ' oltre la soglia (comportamento di tipo argilloso): dato descrittivo, nessuna verifica.';
+        delete riga.valori;
+      }
     }
     return riga;
   }

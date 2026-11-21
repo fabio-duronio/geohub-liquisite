@@ -288,5 +288,17 @@ console.log('8. Salvataggio e riapertura del progetto');
   check('riga con numero di valori errato rifiutata', P.apriProgetto(JSON.stringify(g)).ok, false);
 }
 
+console.log('9. Sopra falda con Ic oltre soglia: etichetta «sopra falda», FS assente, IL invariato');
+{
+  const r = F.calcolaScenario(cptu, sCpt, L, { adesso: ADESSO });
+  const sopra = r.righe.filter(x => x.z >= 1.2 && x.z <= sCpt.zFalda);
+  const sotto = r.righe.filter(x => x.z > sCpt.zFalda && x.z < 3.4 && x.codice === 'IC_OLTRE_SOGLIA');
+  check('tratto 1,2 m–falda: tutti NON_SATURO, nessun valore', [sopra.length > 0, sopra.every(x => x.codice === 'NON_SATURO' && x.stato === 'non_applicabile' && !x.valori)], [true, true]);
+  check('motivo con Ic oltre soglia e carta di comportamento conservata', [sopra.every(x => /oltre la soglia/.test(x.motivo)), sopra.every(x => x.sbt && x.sbt.Ic > 2.6)], [true, true]);
+  check('sotto falda il limo argilloso resta IC_OLTRE_SOGLIA', sotto.length > 0, true);
+  check('nessun intervallo «Ic oltre soglia» sopra la falda', r.riepilogo.intervalliNonCalcolati.filter(i => i.codice === 'IC_OLTRE_SOGLIA' && i.da <= sCpt.zFalda).length, 0);
+  check('spessori IL: sopra falda 1,8 m', Math.round(r.indiceIL.spessori.sopraFalda * 100) / 100, 1.8);
+}
+
 console.log('\nRisultato: ' + ok + ' controlli superati, ' + ko + ' non superati.');
 process.exit(ko ? 1 : 0);
