@@ -4,7 +4,7 @@
 
 Modulo: `motore/cedimenti.js`. Solo con il metodo CPT (Boulanger & Idriss 2014).
 
-**Stato (decisione del 21/11/2026).** Il cedimento di Zhang et al. (2002) resta nell'app; manca la replica di un caso pubblicato (Marina District o Treasure Island). L'**LSN è sperimentale** fino a una validazione indipendente: è indicato così nell'app, in stampa e nel CSV.
+**Stato (decisione del 21/11/2026).** Il cedimento di Zhang et al. (2002) resta nell'app; la replica completa delle tabelle dei due casi richiede dati non pubblicati. Il calcolo del cedimento è confrontato con la Fig. 5 dell'articolo (vedi Verifiche). L'**LSN è sperimentale** fino a una validazione indipendente: è indicato così nell'app, in stampa e nel CSV.
 
 ## Fonti
 - Zhang G., Robertson P.K., Brachman R.W.I. (2002). *Estimating liquefaction-induced ground settlements from CPT for level ground*. Can. Geotech. J. 39: 1168–1180. Cedimento S = Σ εv,i·Δz,i (Eq. 1, pag. 1171); εv [%] in funzione di FS e (qc1N)cs, Appendice A, Eq. A1–A14 (pag. 1180), curve della Fig. 3 ricavate da Ishihara e Yoshimine (1992).
@@ -41,4 +41,4 @@ Proprietà delle equazioni pubblicate, verificate: ai raccordi tra i due tratti 
 - `verifiche/verifica_cedimenti.mjs`: equazioni ai valori discreti, convenzioni, casi analitici (strato uniforme, prova interrotta, falda al p.c.), collegamento al profilo, CSV.
 - `verifiche/verifica_cedimenti.py`: seconda implementazione dalle equazioni e integrazione numerica di S e LSN a passo 1 mm su profili casuali.
 - `verifiche/verifica_riferimento.mjs`: confronto solo indicativo con il caso di National Academies (2024), che usa un metodo di cedimento diverso (vedi [Validazione](validazione.md)).
-- Non è ancora disponibile un confronto con un caso pubblicato completo calcolato con Zhang et al. (2002): da replicare Marina District o Treasure Island.
+- `verifiche/verifica_casi_pubblicati.mjs`: profilo di esempio del Marina District, Fig. 5 di Zhang et al. (2002), con (qc1N)cs e FS digitalizzati: cedimento 10,36 cm contro 10,2 cm della figura (indicativo). La replica delle Tabelle 1 e 3 (Marina District, Treasure Island) richiede le CPT originali, che l'articolo non pubblica: non reperite.

@@ -178,7 +178,7 @@
       stato: 'calcolato', versione: VERSIONE_INDICI,
       ILmin, ILmax, completo, IL: completo ? ILmin : null,
       spessori, tratti, curva, passoMediano: mediano, vuotoMax: isFinite(vuotoMax) ? vuotoMax : null, assunzioni,
-      fonte: 'Iwasaki et al. (1978), formulazione riportata nelle Linee guida MS-LQ (2018, pag. 9) e nel volume CNR-CentroMS «Pratiche correnti per le analisi di suscettibilità alla liquefazione negli studi di microzonazione sismica di livello 3» (2024, Eq. 3.73–3.74, pag. 36). Senza classi.'
+      fonte: 'Iwasaki et al. (1978); formula letta in Iwasaki, Tokida e Tatsuoka (1981), Eq. 5, pag. 210, e Tatsuoka et al. (1980), Soils and Foundations 20(4), Eq. 29a, pag. 107; riportata nelle Linee guida MS-LQ (2018, pag. 9) e nel volume CNR-CentroMS «Pratiche correnti per le analisi di suscettibilità alla liquefazione negli studi di microzonazione sismica di livello 3» (2024, Eq. 3.73–3.74, pag. 36). Senza classi.'
     };
   }
 
