@@ -224,6 +224,42 @@ console.log('6. Importazione');
   const pc = P.copia(spt); pc.unita.z = 'cm'; pc.dati = pc.dati.map(r => [r[0] * 100, ...r.slice(1)]);
   const rc = F.calcolaScenario(pc, sSpt, L, { adesso: ADESSO });
   check('z in cm ≡ z in m (SPT)', rc.righe.map(x => x.stato === 'calcolato' ? Number(x.valori.FS.toFixed(10)) : x.stato), rSpt.righe.map(x => x.stato === 'calcolato' ? Number(x.valori.FS.toFixed(10)) : x.stato));
+  // intestazioni con suffisso di unità (z_m, qc_kPa, fs_kPa): colonne riconosciute e unità dedotte
+  const hs = ['z_m', 'qc_kPa', 'fs_kPa', 'u2_kPa'];
+  const ms = I.proponiColonne(hs, 'CPTU');
+  check('suffisso di unità: colonne riconosciute', [ms.z, ms.qc, ms.fs, ms.u2], [0, 1, 2, 3]);
+  check('suffisso di unità: unità dedotte', I.unitaDedotte(hs, ms, 'CPTU'), { z: { col: 0, unita: 'm' }, qc: { col: 1, unita: 'kPa' }, fs: { col: 2, unita: 'kPa' }, u2: { col: 3, unita: 'kPa' } });
+  const hm = ['Z_M', 'QC_MPA', 'FS_KPA', 'U2_kpa'];
+  check('suffisso di unità: maiuscole indifferenti, unità canoniche', Object.values(I.unitaDedotte(hm, I.proponiColonne(hm, 'CPTU'), 'CPTU')).map(x => x.unita), ['m', 'MPa', 'kPa', 'kPa']);
+  check('suffisso con unità non ammessa per la grandezza: z_kPa non riconosciuta', I.proponiColonne(['z_kPa', 'qc', 'fs', 'u2'], 'CPTU').z, null);
+  check('suffisso con unità non ammessa per la grandezza: qc_m non riconosciuta', I.proponiColonne(['z', 'qc_m', 'fs', 'u2'], 'CPTU').qc, null);
+  check('«z_» resta «z» senza unità (comportamento invariato); «_m» senza nome non riconosciuta', [I.proponiColonne(['z_', 'qc'], 'CPTE').z, Object.keys(I.unitaDedotte(['z_', 'qc'], I.proponiColonne(['z_', 'qc'], 'CPTE'), 'CPTE')), I.proponiColonne(['_m', 'qc'], 'CPTE').z], [0, [], null]);
+  const hn = ['z_m', 'n_spt', 'FC_%'], mn = I.proponiColonne(hn, 'SPT');
+  check('«n_spt»: nome con underscore, nessuna unità dedotta; FC_% dedotta', [mn.z, mn.N, mn.FC, Object.keys(I.unitaDedotte(hn, mn, 'SPT'))], [0, 1, 2, ['z', 'FC']]);
+  // unità tra parentesi («qc [kPa]»): lette come quelle con suffisso
+  const hb = ['Prof [m]', 'qc [MPa]', 'fs [kPa]', 'u2 [kPa]'], mb = I.proponiColonne(hb, 'CPTU');
+  check('parentesi quadre: colonne e unità', [mb.qc, Object.values(I.unitaDedotte(hb, mb, 'CPTU')).map(x => x.unita)], [1, ['m', 'MPa', 'kPa', 'kPa']]);
+  const hq = ['z (cm)', 'QC [ kPa ]', 'fs (KPA)'], mq = I.proponiColonne(hq, 'CPTE');
+  check('parentesi tonde, spazi e maiuscole indifferenti', [mq.z, mq.qc, mq.fs, Object.values(I.unitaDedotte(hq, mq, 'CPTE')).map(x => x.unita)], [0, 1, 2, ['cm', 'kPa', 'kPa']]);
+  check('unità nota ma non ammessa tra parentesi: «qc [m]» e «z [kPa]» non riconosciute', [I.proponiColonne(['z', 'qc [m]', 'fs'], 'CPTE').qc, I.proponiColonne(['z [kPa]', 'qc', 'fs'], 'CPTE').z], [null, null]);
+  const hk = ['z [m]', 'qc [kg/cm2]', 'fs'], mk = I.proponiColonne(hk, 'CPTE');
+  check('testo tra parentesi che non è un\'unità («qc [kg/cm2]»): colonna riconosciuta, nessuna unità dedotta', [mk.qc, Object.keys(I.unitaDedotte(hk, mk, 'CPTE'))], [1, ['z']]);
+  const hv = ['z [m]', 'Vs [m/s]'], mv = I.proponiColonne(hv, 'VS');
+  check('Vs [m/s]', [mv.Vs, I.unitaDedotte(hv, mv, 'VS').Vs.unita], [1, 'm/s']);
+  // con l'unità letta dall'intestazione il controllo di plausibilità non scatta; con quella predefinita sì
+  const hp = ['z [m]', 'qc [kPa]', 'fs [kPa]'], mp = I.proponiColonne(hp, 'CPTE');
+  const tabp = [hp, ['1,0', '4000', '40'], ['2,0', '4500', '45'], ['3,0', '5000', '50']];
+  const unitaLette = { z: 'm', qc: 'MPa', fs: 'kPa' };
+  for (const [g, d] of Object.entries(I.unitaDedotte(hp, mp, 'CPTE'))) unitaLette[g] = d.unita;
+  const rl = I.costruisciDati(tabp, { tipo: 'CPTE', mappa: mp, unita: unitaLette, decimale: ',', saltaIntestazione: true });
+  check('qc [kPa]: unità kPa letta, valori invariati, nessun avviso', [rl.ok, rl.unita.qc, rl.dati[0][1], rl.avvisi.length], [true, 'kPa', 4000, 0]);
+  const rd = I.costruisciDati(tabp, { tipo: 'CPTE', mappa: mp, unita: { z: 'm', qc: 'MPa', fs: 'kPa' }, decimale: ',', saltaIntestazione: true });
+  check('stessi dati con l\'unità predefinita MPa: avviso di plausibilità su qc', rd.avvisi.map(a => a.colonna), ['qc']);
+  const hc = ['prof_cm', 'cone_resistance_MPa', 'sleeve_friction_kPa'], mc = I.proponiColonne(hc, 'CPTE');
+  check('sinonimi con underscore e suffisso (prof_cm, cone_resistance_MPa)', [mc.z, mc.qc, mc.fs, I.unitaDedotte(hc, mc, 'CPTE').z.unita], [0, 1, 2, 'cm']);
+  check('senza intestazione: nessuna unità dedotta', I.unitaDedotte(null, I.proponiColonne(null, 'CPTU'), 'CPTU'), {});
+  const rs = I.costruisciDati([['1,0', '1500', '20'], ['2,0', '1800', '25']], { tipo: 'CPTE', mappa: { z: 0, qc: 1, fs: 2 }, unita: { z: 'm', qc: 'kPa', fs: 'kPa' }, decimale: ',', saltaIntestazione: false });
+  check('qc_kPa: valori letti senza conversione, unità registrata', [rs.ok, rs.dati[0][1], rs.unita.qc], [true, 1500, 'kPa']);
 }
 
 // ---------------------------------------------------------------------------

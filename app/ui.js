@@ -1069,10 +1069,10 @@
   let chiaveBozza = 'nuova';
   $('dlgImporta').addEventListener('close', () => {
     if (!$('imTesto').value.trim()) return;
-    bozzeImportazione.set(chiaveBozza, { progetto: S.pr, tipo: $('imTipo').value, nome: $('imNome').value, testo: $('imTesto').value, sep: $('imSep').value, dec: $('imDec').value, int: $('imInt').value, mappa: P.copia(IM.mappa), unita: P.copia(IM.unita), toccato: IM.toccato });
+    bozzeImportazione.set(chiaveBozza, { progetto: S.pr, tipo: $('imTipo').value, nome: $('imNome').value, testo: $('imTesto').value, sep: $('imSep').value, dec: $('imDec').value, int: $('imInt').value, mappa: P.copia(IM.mappa), unita: P.copia(IM.unita), unitaDedotte: P.copia(IM.unitaDedotte || {}), toccato: IM.toccato });
   });
   function apriImporta(modo) {
-    IM.modo = modo; IM.toccato = false;
+    IM.modo = modo; IM.toccato = false; IM.unitaDedotte = {};
     const pv = prova();
     chiaveBozza = modo === 'nuova' ? 'nuova' : pv.id;
     const bozza = bozzeImportazione.get(chiaveBozza);
@@ -1094,7 +1094,7 @@
     if (riprendi) {
       $('imTipo').value=bozza.tipo; $('imNome').value=bozza.nome; $('imTesto').value=bozza.testo;
       $('imSep').value=bozza.sep; $('imDec').value=bozza.dec; $('imInt').value=bozza.int;
-      IM.tipo=bozza.tipo; IM.mappa=P.copia(bozza.mappa); IM.unita=P.copia(bozza.unita); IM.toccato=bozza.toccato;
+      IM.tipo=bozza.tipo; IM.mappa=P.copia(bozza.mappa); IM.unita=P.copia(bozza.unita); IM.unitaDedotte=P.copia(bozza.unitaDedotte || {}); IM.toccato=bozza.toccato;
       leggiImporta(false);
     }
     if ($('dlgSettings').open) $('dlgSettings').close();
@@ -1111,6 +1111,12 @@
     const intestazione = conInt && div.righe.length ? div.righe[0] : null;
     if (riproponi || !IM.mappa || IM.tipo !== tipo) { IM.mappa = I.proponiColonne(intestazione, tipo); IM.tipo = tipo; }
     if (!IM.unita || riproponi === 'tipo') IM.unita = P.unitaPredefinite(tipo);
+    // Unità dedotte dal suffisso dell'intestazione («qc_kPa»): applicate quando cambia la colonna o l'unità
+    // dedotta, così una scelta manuale resta; se il suffisso scompare si torna all'unità predefinita.
+    const ded = I.unitaDedotte(intestazione, IM.mappa, tipo), prec = (riproponi === 'tipo' ? null : IM.unitaDedotte) || {};
+    for (const g of Object.keys(prec)) if (!ded[g]) IM.unita[g] = P.UNITA[g].interna;
+    for (const g of Object.keys(ded)) if (!prec[g] || prec[g].col !== ded[g].col || prec[g].unita !== ded[g].unita) IM.unita[g] = ded[g].unita;
+    IM.unitaDedotte = ded;
     const nCol = div.righe.reduce((m, r) => Math.max(m, r.length), 0);
     const nomiCol = Array.from({ length: nCol }, (_, j) => (intestazione && intestazione[j]) ? intestazione[j] : 'colonna ' + (j + 1));
     const grandezze = P.TIPI_PROVA[tipo].colonne.concat(P.TIPI_PROVA[tipo].facoltative);
@@ -1119,7 +1125,8 @@
       const unita = Object.keys(P.UNITA[g].fattori);
       return '<div class="field"><label for="imM_' + g + '">' + esc(P.ETICHETTE_COLONNE[g]) + (obbl ? ' *' : ' (facoltativa)') + '</label>' +
         '<select id="imM_' + g + '" data-g="' + g + '"><option value="">— non presente —</option>' + nomiCol.map((n, j) => '<option value="' + j + '"' + (IM.mappa[g] === j ? ' selected' : '') + '>' + esc(n) + '</option>').join('') + '</select>' +
-        '<select data-u="' + g + '" aria-label="unità di ' + esc(P.ETICHETTE_COLONNE[g]) + '" style="margin-top:4px;"' + (unita.length < 2 ? ' disabled' : '') + '>' + unita.map(u => '<option' + ((IM.unita[g] || P.UNITA[g].interna) === u ? ' selected' : '') + '>' + esc(u) + '</option>').join('') + '</select></div>';
+        '<select data-u="' + g + '" aria-label="unità di ' + esc(P.ETICHETTE_COLONNE[g]) + '" style="margin-top:4px;"' + (unita.length < 2 ? ' disabled' : '') + '>' + unita.map(u => '<option' + ((IM.unita[g] || P.UNITA[g].interna) === u ? ' selected' : '') + '>' + esc(u) + '</option>').join('') + '</select>' +
+        (IM.unitaDedotte[g] && IM.unita[g] === IM.unitaDedotte[g].unita ? '<div class="hint">unità letta dall\'intestazione «' + esc(nomiCol[IM.unitaDedotte[g].col]) + '»</div>' : '') + '</div>';
     }).join('');
     $('imMappa').querySelectorAll('select[data-g]').forEach(el => el.addEventListener('change', () => { IM.mappa[el.dataset.g] = el.value === '' ? null : Number(el.value); IM.toccato = true; leggiImporta(false); }));
     $('imMappa').querySelectorAll('select[data-u]').forEach(el => el.addEventListener('change', () => { IM.unita[el.dataset.u] = el.value; leggiImporta(false); }));
