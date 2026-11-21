@@ -15,7 +15,8 @@
  *   13,2–20,0 sabbia da media a densa          (qc1Ncs circa 130–150); CPTU spinta fino a 20 m
  * Le densità sono scelte coerenti con le descrizioni: nessun FS oltre la scala del grafico.
  * Sondaggio S1 accanto alla CPTU: SPT nei livelli granulari, coerenti con la CPTU, FC da analisi
- * di laboratorio, tre curve granulometriche per la verifica preliminare (§7.11.3.4.2).
+ * di laboratorio, cinque curve granulometriche per la verifica preliminare (§7.11.3.4.2),
+ * una per ogni strato saturo entro 20 m (il riporto non ha analisi).
  */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory(require('./progetto.js'));
@@ -124,13 +125,24 @@
     return {
       faldaMediaStagionale: 2.4, pcSubOrizzontale: true, fondazioniSuperficiali: true,
       strati: [
+        { da: 0, a: 1.2, sabbiaPulita: false, campione: '', curva: null, decisione4: null, motivazione4: '' },
+        { da: 1.2, a: 3.4, sabbiaPulita: false, campione: 'S1-C1, 2,5–3,0 m',
+          curva: [[0.0005, 10], [0.001, 18], [0.002, 34], [0.006, 60], [0.02, 85], [0.04, 96], [0.063, 99], [0.075, 100]],
+          decisione4: 'soddisfatto', motivazione4: '' },
         { da: 3.4, a: 7.2, sabbiaPulita: false, campione: 'S1-C2, 5,0–5,5 m',
           curva: [[0.006, 3], [0.01, 6], [0.03, 12], [0.075, 27], [0.1, 38], [0.2, 70], [0.4, 92], [1, 99], [2, 100]],
           decisione4: 'non soddisfatto', motivazione4: '' },
+        { da: 7.2, a: 8.6, sabbiaPulita: false, campione: 'S1-C3, 7,6–8,1 m',
+          curva: [[0.001, 7], [0.002, 11], [0.006, 19], [0.02, 36], [0.063, 58], [0.075, 63], [0.125, 80], [0.25, 94], [0.5, 99], [1, 100]],
+          decisione4: 'non soddisfatto',
+          motivazione4: 'La curva tocca il fuso nel tratto sabbioso e lo strato alterna livelli di sabbia limosa: esclusione non dimostrata, la verifica si esegue.' },
         { da: 8.6, a: 12.4, sabbiaPulita: true, campione: 'S1-C4, 10,0–10,5 m',
           curva: [[0.063, 3], [0.075, 5], [0.125, 12], [0.25, 50], [0.5, 86], [1, 97], [2, 99], [4, 100]],
           decisione4: 'non soddisfatto', motivazione4: '' },
-        { da: 13.2, a: 20, sabbiaPulita: true, campione: 'S1-C5, 16,5–17,0 m',
+        { da: 12.4, a: 13.2, sabbiaPulita: false, campione: 'S1-C5, 12,6–13,0 m',
+          curva: [[0.0005, 10], [0.001, 18], [0.002, 35], [0.006, 62], [0.01, 74], [0.02, 87], [0.03, 94], [0.04, 97], [0.063, 99.5], [0.075, 100]],
+          decisione4: 'soddisfatto', motivazione4: '' },
+        { da: 13.2, a: 20, sabbiaPulita: true, campione: 'S1-C6, 16,5–17,0 m',
           curva: [[0.063, 3], [0.075, 4], [0.125, 9], [0.25, 32], [0.5, 71], [1, 92], [2, 98], [4, 100]],
           decisione4: 'non soddisfatto', motivazione4: '' }
       ]
@@ -169,6 +181,7 @@
     const s3 = P.nuovoScenario(a, 'SLV – falda alta 1,0 m', 2);
     Object.assign(s3, { Mw: 6.1, amax: 0.26, zFalda: 1.0, strati: P.copia(STRATI) });
     s3.opzioni = { Vs12: null, IcSoglia: 2.6, CFC: 0, FSrif: P.FS_RIFERIMENTO };
+    s3.esclusione = esclusioneEsempio();
     // motivazione della Mw obbligatoria (decisione del 21/11/2026): valore illustrativo dell'esempio
     for (const s of [s1, s2, s3]) s.magnitudo = { origine: 'manuale', motivazione: 'Valore illustrativo dell\'esempio sintetico: sito inventato, nessuna fonte.' };
     pr.scenari = [s1, s2, s3];
