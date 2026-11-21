@@ -273,6 +273,14 @@
     }
     riga.tensioni = { sv: t.sv, u: t.u, sve: t.sve };
 
+    // Punto al piano campagna (z = 0): σv = σ'v = 0, quindi sopra la falda di verifica. Il motore
+    // richiede tensioni > 0 e lo segnalerebbe come errore di input: qui è un punto sopra falda
+    // («non applicabile», NON_SATURO), senza errore e senza FS. Motore invariato.
+    if (t.sv === 0) {
+      return { ...riga, stato: 'non_applicabile', codice: 'NON_SATURO',
+        motivo: 'punto al piano campagna (z = 0): tensioni nulle e pressione interstiziale nulla, il punto non è sotto la falda di verifica. Nessuna verifica.' };
+    }
+
     // Contenuto di fini: dato della prova, altrimenti stratigrafia, altrimenti regola del metodo
     const strato = stratoA(scenario.strati, d.z);
     if (isNum(d.FC)) { riga.FC = d.FC; riga.origineFC = 'misurato (dato della prova)'; }

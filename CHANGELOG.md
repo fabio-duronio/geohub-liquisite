@@ -2,6 +2,13 @@
 
 La versione dell'app e quella del motore di calcolo sono distinte: l'app è indicata in alto e nel piè di pagina della stampa insieme al motore.
 
+## Non rilasciato
+
+Correzione emersa dalla prova d'uso su casi reali (CPT dell'Emilia 2012). Motore di innesco (0.3.0), modulo IL (0.2.0) e modulo cedimenti (0.1.1) invariati; numero di versione dell'app da assegnare al rilascio.
+
+- **Punto a profondità 0**: una riga con z = 0 (piano campagna) compariva come «input non valido», perché il motore richiede tensioni maggiori di zero. È un punto sopra la falda di verifica: ora è «non applicabile» con codice NON_SATURO, come gli altri punti sopra falda, senza errore e senza FS. La correzione è nel livello applicativo (`app/profilo.js`); le altre righe, FS, IL, cedimenti e LSN non cambiano. Una profondità negativa resta un errore di input.
+- **Verifiche**: nuova sezione 10 in `verifica_profilo.mjs` (6 controlli; 1031 controlli JavaScript in totale).
+
 ## App 0.4.1 — 2026-11-21
 
 Correzione di un'etichetta e completamento dell'esempio sintetico. Motore di innesco (0.3.0), modulo IL (0.2.0) e modulo cedimenti (0.1.1) invariati: FS, IL, cedimenti e LSN non cambiano.

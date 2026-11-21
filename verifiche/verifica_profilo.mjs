@@ -300,5 +300,21 @@ console.log('9. Sopra falda con Ic oltre soglia: etichetta «sopra falda», FS a
   check('spessori IL: sopra falda 1,8 m', Math.round(r.indiceIL.spessori.sopraFalda * 100) / 100, 1.8);
 }
 
+console.log('10. Punto a z = 0: sopra falda («non applicabile», NON_SATURO), non errore di input');
+{
+  const pz = P.copia(cptu); pz.dati = [[0, 2.5, 70, 0]].concat(pz.dati);
+  const r = F.calcolaScenario(pz, sCpt, L, { adesso: ADESSO });
+  const r0 = r.righe[0];
+  check('riga a z = 0: non applicabile, NON_SATURO, nessun valore', [r0.z, r0.stato, r0.codice, r0.valori === undefined], [0, 'non_applicabile', 'NON_SATURO', true]);
+  check('nessuna riga di input non valido nella prova', r.righe.filter(x => x.stato === 'input_non_valido').length, 0);
+  check('lo scenario resta calcolato (nessun errore bloccante)', r.stato !== 'input_non_valido', true);
+  const base = F.calcolaScenario(cptu, sCpt, L, { adesso: ADESSO });
+  const confronta = (x) => JSON.stringify(x.righe.map(q => [q.z, q.stato, q.codice, q.valori ? q.valori.FS : null]));
+  check('le altre righe sono identiche alla prova senza il punto a z = 0', confronta({ righe: r.righe.slice(1) }), confronta(base));
+  check('FS minimo invariato', r.riepilogo.FSmin, base.riepilogo.FSmin);
+  const pneg = P.copia(cptu); pneg.dati = [[-0.1, 2.5, 70, 0]].concat(pneg.dati);
+  check('profondità negativa: resta input non valido', F.calcolaScenario(pneg, sCpt, L, { adesso: ADESSO }).righe[0].codice, 'Z_NON_VALIDA');
+}
+
 console.log('\nRisultato: ' + ok + ' controlli superati, ' + ko + ' non superati.');
 process.exit(ko ? 1 : 0);
