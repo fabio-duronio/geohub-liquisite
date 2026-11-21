@@ -1127,6 +1127,11 @@
     IM.lettura = ris;
     $('imErrori').innerHTML = ris.ok ? '' : '<div class="alert alert-danger"><span class="alert-title">Da correggere prima di applicare</span><ul>' +
       ris.errori.slice(0, 12).map(e => '<li>' + (e.riga ? 'riga ' + e.riga + ', ' : '') + esc(e.colonna) + ': ' + esc(e.motivo) + '</li>').join('') + (ris.errori.length > 12 ? '<li>… altri ' + (ris.errori.length - 12) + '</li>' : '') + '</ul></div>';
+    // Plausibilità delle unità: avvisi non bloccanti, mostrati dove si scelgono le unità e dove si salva.
+    const htmlAvvisi = (ris.avvisi && ris.avvisi.length) ? '<div class="alert alert-warn" role="status"><span class="alert-title">Controlla le unità: alcuni valori sembrano fuori scala</span><ul>' +
+      ris.avvisi.map(a => '<li><b>' + esc(P.ETICHETTE_COLONNE[a.colonna] || a.colonna) + '</b>: ' + esc(a.motivo) + '</li>').join('') +
+      '</ul><span class="hint">Soglie operative dell’app per riconoscere errori di unità, non limiti normativi. L’app non converte nulla da sola: se i dati sono corretti, puoi salvare comunque.</span></div>' : '';
+    $('imAvvisi').innerHTML = htmlAvvisi; $('imAvvisiUnita').innerHTML = htmlAvvisi;
     if (ris.colonne) {
       $('imAnteprima').innerHTML = '<thead><tr>' + ris.colonne.map(c => '<th>' + esc(P.ETICHETTE_COLONNE[c]) + '<span class="u">[' + esc(ris.unita[c]) + ']</span></th>').join('') + '</tr></thead><tbody>' +
         ris.dati.slice(0, 10).map(r => '<tr>' + r.map(v => '<td>' + (v === null ? '–' : esc(String(v).replace('.', ','))) + '</td>').join('') + '</tr>').join('') + '</tbody>';

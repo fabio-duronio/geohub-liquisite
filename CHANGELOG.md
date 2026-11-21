@@ -4,10 +4,11 @@ La versione dell'app e quella del motore di calcolo sono distinte: l'app è indi
 
 ## Non rilasciato
 
-Correzione emersa dalla prova d'uso su casi reali (CPT dell'Emilia 2012). Motore di innesco (0.3.0), modulo IL (0.2.0) e modulo cedimenti (0.1.1) invariati; numero di versione dell'app da assegnare al rilascio.
+Correzioni emerse dalla prova d'uso su casi reali (CPT dell'Emilia 2012): punto a profondità 0 e controllo di plausibilità delle unità all'importazione. Motore di innesco (0.3.0), modulo IL (0.2.0) e modulo cedimenti (0.1.1) invariati; numero di versione dell'app da assegnare al rilascio.
 
 - **Punto a profondità 0**: una riga con z = 0 (piano campagna) compariva come «input non valido», perché il motore richiede tensioni maggiori di zero. È un punto sopra la falda di verifica: ora è «non applicabile» con codice NON_SATURO, come gli altri punti sopra falda, senza errore e senza FS. La correzione è nel livello applicativo (`app/profilo.js`); le altre righe, FS, IL, cedimenti e LSN non cambiano. Una profondità negativa resta un errore di input.
-- **Verifiche**: nuova sezione 10 in `verifica_profilo.mjs` (6 controlli; 1031 controlli JavaScript in totale).
+- **Avvisi sulle unità**: dopo la lettura, qc, fs, u2, profondità, N, Vs e FC sono confrontati (valore tipico, in unità interna) con soglie operative dell'app; il rapporto fs/qc mediano segnala unità di qc e fs scambiate fra loro. Avviso giallo al passaggio 2 (accanto alla scelta delle unità) e al passaggio 3. Non blocca il salvataggio, non converte nulla, non entra nel file del progetto. Le soglie non sono limiti normativi (`PLAUSIBILITA` in `app/importa.js`, descritte in `docs/app.md`).
+- **Verifiche**: nuova sezione 10 in `verifica_profilo.mjs` (6 controlli) e nuovo `verifica_unita.mjs` (23 controlli, anche l'assenza di avvisi sull'esempio); 1054 controlli JavaScript in totale.
 
 ## App 0.4.1 — 2026-11-21
 
