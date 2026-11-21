@@ -216,7 +216,7 @@
       '<div class="mw-proposta hint" id="scMwProp"></div>' +
       '<div class="field-row"><div class="field"><label for="scMw">M<sub>w</sub> adottata</label><input type="text" inputmode="decimal" step="0.01" id="scMw" value="' + esc(sc.Mw ?? '') + '"></div>' +
       '<div class="field"><label for="scAmax">a<sub>max</sub> in superficie [g]</label><input type="text" inputmode="decimal" step="0.001" min="0" id="scAmax" value="' + esc(sc.amax ?? '') + '"></div></div>' +
-      '<div class="field"><label for="scMwMot">Motivazione della M<sub>w</sub> (obbligatoria se diversa dalla proposta ZS9)</label><textarea id="scMwMot" placeholder="es. disaggregazione INGV, nodo …, probabilità di superamento …">' + esc(dm.motivazione) + '</textarea></div>' +
+      '<div class="field"><label for="scMwMot">Motivazione della M<sub>w</sub> (obbligatoria)</label><textarea id="scMwMot" placeholder="es. disaggregazione INGV, nodo …, probabilità di superamento …">' + esc(dm.motivazione) + '</textarea></div>' +
       '<div id="scMwMsg"></div></div>';
     h += '<div class="hint" style="margin:-4px 0 10px;">a<sub>max</sub> è l\'accelerazione massima attesa in superficie, in campo libero, nel sito: non è la a<sub>g</sub> della mappa di pericolosità, riferita a suolo rigido e pianeggiante. ' +
       'Con l\'approccio semplificato a<sub>max</sub> = S·a<sub>g</sub>, con S = S<sub>S</sub>·S<sub>T</sub> (NTC 2018, §3.2.3.2.1; relazione esplicita per a<sub>max</sub> nel Cap. 7, per esempio §7.11.3.5.2 e §7.11.6.2.1); altrimenti viene da un\'analisi di risposta sismica locale. ' +
@@ -389,10 +389,10 @@
     if (!c || !aggiornato) return '';
     if (c.stato !== 'calcolato') return '<div class="blocco-il"><b>Cedimento post-sismico: non calcolabile</b></div>';
     return '<div class="blocco-il"><div><span class="eyebrow">CEDIMENTO POST-SISMICO DA CPT · ZHANG ET AL. 2002 · 0–20 m</span>' +
-      '<div class="il-valore num">' + esc(testoCedimento(c)) + '</div><div class="num">LSN ' + esc(testoLSN(c)) + ' · 0–10 m: ' + esc(testoLSN(c, true)) + '</div></div>' +
+      '<div class="il-valore num">' + esc(testoCedimento(c)) + '</div><div class="num">LSN (sperimentale) ' + esc(testoLSN(c)) + ' · 0–10 m: ' + esc(testoLSN(c, true)) + '</div></div>' +
       '<span>Stima della deformazione volumetrica di riconsolidazione su piano campagna sub-orizzontale, senza spostamenti laterali; gli autori la indicano per progetti a rischio basso o medio e come stima preliminare per gli altri. ' +
       (c.completo ? '' : 'Copertura incompleta: ' + fmt(c.spessori.ignoto, 2) + ' m senza risultato, con contributo nullo nel valore inferiore e deformazione della curva limite (' + fmt(c.epsLimite, 2) + ' %) nel superiore: limiti convenzionali del modello, non un intervallo di confidenza né un massimo fisico garantito. ') +
-      c.avvisi.map(a => esc(a.messaggio)).join(' ') + ' LSN senza classi: il giudizio resta del progettista.</span></div>';
+      c.avvisi.map(a => esc(a.messaggio)).join(' ') + ' LSN sperimentale, fino a una validazione indipendente, e senza classi: il giudizio resta del progettista.</span></div>';
   }
 
   function testoIL(ind) {
@@ -983,7 +983,8 @@
       riga('Coordinate del sito', esc(testoCoordinate())) +
       riga('Esito', esc(prop.titolo) + (!prop.disponibile && prop.motivo ? ': ' + esc(prop.motivo) : '')) +
       (sc ? riga('Scenario «' + esc(sc.nome) + '»', esc(MG.testoOrigine(sc, prop))) : '') +
-      riga('Segnalazioni del geologo', esc((p.noteZS9 || '').trim() || '—')) + '</tbody></table></div>';
+      riga('Segnalazioni del geologo', esc((p.noteZS9 || '').trim() || '—')) +
+      (r ? riga('Avvertenza', esc(MG.TESTI.avvertenza)) : '') + '</tbody></table></div>';
     if (prop.esito === 'coordinate') h += '<div class="alert alert-info" style="margin-top:10px;">Inserisci le coordinate del sito in «Progetto» per ottenere la proposta.</div>';
     if (prop.esito === 'disaggregazione_richiesta') h += '<div class="alert alert-warn" style="margin-top:10px;">' + testoDisaggregazione() + '</div>';
     if (sc) {
@@ -1005,7 +1006,8 @@
       riga('Esito ZS9', esc(prop.titolo) + (!prop.disponibile && prop.motivo ? ': ' + esc(prop.motivo) : '')) +
       riga('M<sub>w</sub> adottata', fmt(sc.Mw) + ' – ' + esc(MG.ETICHETTE_ORIGINE[dm.origine]) + (st.diversa ? ' (diversa dalla proposta ZS9, ' + fmt(prop.mw) + ')' : '')) +
       riga('Motivazione del geologo', esc(dm.motivazione.trim() || '—')) +
-      riga('Segnalazioni del geologo', esc((p.noteZS9 || '').trim() || '—')) + '</tbody></table>';
+      riga('Segnalazioni del geologo', esc((p.noteZS9 || '').trim() || '—')) +
+      (r ? riga('Avvertenza', esc(MG.TESTI.avvertenza)) : '') + '</tbody></table>';
     if (r && r.tabella) h += '<p class="st-nota">Sito esterno alle zone: distanza minima R<sub>i</sub> da ciascuna delle 36 zone, M<sub>s,i</sub> = 1 + 3·log<sub>10</sub>R<sub>i</sub> e confronto con M<sub>i</sub> = M<sub>w,max</sub> della zona (Tab. A1.1), comprese le zone escluse.</p>' + tabellaZS9(r, 'st-tab num');
     if (r && r.avvisi.length) h += '<ul class="st-lista">' + r.avvisi.map(a => '<li>' + esc(a.testo) + '</li>').join('') + '</ul>';
     return h + noteMetodoZS9('st-nota');
@@ -1308,7 +1310,7 @@
       riga('FS minimo calcolato', q.fsMin ? fmt(q.fsMin.FS) + ' a z = ' + fmt(q.fsMin.z) + ' m' : '–') +
       riga('FS di riferimento', fmt(F.fsRiferimento(sc)) + ' · punti calcolati con FS < 1: ' + nFS(r, 1) + '; con FS < ' + fmt(F.fsRiferimento(sc)) + ': ' + nFS(r, F.fsRiferimento(sc))) +
       (r.cedimenti && r.cedimenti.stato === 'calcolato' ? riga('Cedimento post-sismico da CPT (Zhang et al. 2002, 0–20 m)', esc(testoCedimento(r.cedimenti)) + (r.cedimenti.completo ? '' : ' — copertura incompleta: contributo nullo nel valore inferiore, deformazione della curva limite ' + fmt(r.cedimenti.epsLimite, 2) + ' % nel superiore (limiti convenzionali del modello, non un intervallo di confidenza)')) +
-        riga('LSN (senza classi)', '0–20 m: ' + esc(testoLSN(r.cedimenti)) + ' · 0–10 m: ' + esc(testoLSN(r.cedimenti, true))) : '') +
+        riga('LSN (sperimentale, senza classi)', '0–20 m: ' + esc(testoLSN(r.cedimenti)) + ' · 0–10 m: ' + esc(testoLSN(r.cedimenti, true))) : '') +
       riga('Indice IL (Iwasaki, 0–20 m, senza classi)', r.indiceIL ? esc(testoIL(r.indiceIL)) + (r.indiceIL.stato === 'calcolato' && !r.indiceIL.completo ? ' — copertura incompleta: ' + fmt(r.indiceIL.spessori.ignoto, 2) + ' m senza risultato, con contributo nullo nel valore inferiore e contributo massimo del modello nel superiore (limiti convenzionali del modello, non un intervallo di confidenza)' : '') : '–') +
       riga('Intervalli non calcolati', q.intervalliNonCalcolati.length ? q.intervalliNonCalcolati.map(i => fmt(i.da) + '–' + fmt(i.a) + ' m: ' + esc(i.codice && F.MOTIVI_BREVI[i.codice] ? F.MOTIVI_BREVI[i.codice] : F.ETICHETTE_STATI[i.stato])).join('; ') : 'nessuno') +
       '</tbody></table><p class="st-nota"><b>Criterio di verifica e scelta del coefficiente di sicurezza.</b> ' + esc(F.criterioFS(sc)) + '</p><p class="st-nota">Il FS minimo non descrive da solo la risposta del sito. ' + esc(q.notaFS) + ' ' + esc(q.notaPL) + '</p>';

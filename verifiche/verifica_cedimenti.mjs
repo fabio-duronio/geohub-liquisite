@@ -106,7 +106,7 @@ console.log('4. Collegamento al profilo e all\'esempio');
   check('falda più alta: S_min non minore', rAlta.cedimenti.Smin >= c.Smin - 1e-12, true);
   check('SPT: nessun cedimento (metodo da CPT)', F.calcolaScenario(pr.prove[1], s2, L).cedimenti, null);
   const csv = X.csvRisultati(pr, pr.prove[0], s1, r, {});
-  check('CSV: righe di intestazione di cedimento e LSN', csv.includes('# Cedimento post-sismico 0-20 m') && csv.includes('# LSN (senza classi)'), true);
+  check('CSV: righe di intestazione di cedimento e LSN', csv.includes('# Cedimento post-sismico 0-20 m') && csv.includes('# LSN (sperimentale, senza classi)'), true);
   check('CSV: colonna εv', csv.split('\r\n').find(x => x.startsWith('z [m]')).includes('εv post-liquefazione [%]'), true);
   check('assunzioni dichiarate (curve, combinazione, esclusi, ambito, LSN, incompleto)',
     ['ZHANG_CURVE', 'ZHANG_COMBINAZIONE', 'ZHANG_ESCLUSI', 'ZHANG_AMBITO', 'LSN_DEFINIZIONE'].every(k => c.assunzioni.some(a => a.codice === k)) && cc.assunzioni.some(a => a.codice === 'CEDIMENTI_INCOMPLETO') && !c.assunzioni.some(a => a.codice === 'CEDIMENTI_INCOMPLETO'), true);

@@ -2,6 +2,18 @@
 
 La versione dell'app e quella del motore di calcolo sono distinte: l'app è indicata in alto e nel piè di pagina della stampa insieme al motore.
 
+## App 0.4.0 — 2026-11-21
+
+Decisioni di Fabio del 21/11/2026 per la stabilità. Motore di innesco invariato (0.3.0); modulo IL 0.2.0, modulo cedimenti 0.1.1.
+
+- **Indice IL con prove SPT**: la rappresentatività di ogni prova è limitata allo strato che la contiene; nessuna estensione automatica ad altri strati. Le parti di strati senza prova restano senza risultato (IL come intervallo IL_min–IL_max). Assunzione dichiarata nei risultati. Le CPT non cambiano.
+- **Motivazione della M_w sempre obbligatoria**, anche se coincide con la proposta ZS9: finché manca, stampa e CSV sono bloccati. I progetti salvati senza motivazione si aprono, ma vanno completati prima di stampare. L'esempio sintetico ha una motivazione illustrativa.
+- **Stampa, sezione 1.1** (e scheda «Magnitudo M_w»): avvertenza su datum ZS9 non dichiarato e appartenenza geometrica indicativa.
+- **LSN sperimentale** fino a una validazione indipendente: indicato nell'app, in stampa, nel CSV e nelle assunzioni. Il cedimento di Zhang et al. (2002) non cambia.
+- **Documenti**: classi di Youd (2001) e delle Linee guida LQ escluse dalla 1.0; attività aperte: originale di Iwasaki e caso pubblicato con IL, replica di Marina District o Treasure Island per Zhang.
+- **Fonti**: formula dell'IL verificata su Iwasaki et al. (1981) e Tatsuoka et al. (1980); l'originale del 1978 non è reperibile. Nuovi confronti indicativi su figure digitalizzate: IL (Iwasaki 1981, Fig. 2 e 3, Tab. 1) e cedimento (Zhang 2002, Fig. 5).
+- **Verifiche**: 995 controlli JavaScript, 3 confronti Python, 54 nel browser.
+
 ## App 0.3.1 — 2026-11-16
 
 Solo testi dell'interfaccia; calcoli e formato del progetto invariati.

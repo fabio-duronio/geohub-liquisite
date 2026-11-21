@@ -65,7 +65,7 @@
     const ced = risultato.cedimenti;
     if (ced && ced.stato === 'calcolato') {
       riga(['# Cedimento post-sismico 0-20 m (Zhang et al. 2002)', 'S_min (cm)', ced.Smin * 100, 'S_max (cm)', ced.Smax * 100, 'completo', ced.completo ? 'si' : 'no']);
-      riga(['# LSN (senza classi)', 'LSN_min 0-20 m', ced.LSNmin, 'LSN_max 0-20 m', ced.LSNmax, 'LSN_min 0-10 m', ced.LSN10min, 'LSN_max 0-10 m', ced.LSN10max]);
+      riga(['# LSN (sperimentale, senza classi)', 'LSN_min 0-20 m', ced.LSNmin, 'LSN_max 0-20 m', ced.LSNmax, 'LSN_min 0-10 m', ced.LSN10min, 'LSN_max 0-10 m', ced.LSN10max]);
     }
     riga(['# Dati della prova convertiti nelle unità interne; celle vuote = dato mancante o non calcolato']);
     const chiavi = ['z'].concat(colIn.map(c => 'in:' + c), ['t:sv', 't:u', 't:sve', 'FC', 'origineFC'], M.intermedie, M.finali, scenario.metodo === 'bi2014Cpt' ? ['epsV'] : []);

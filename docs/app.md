@@ -39,7 +39,7 @@ Nello scenario si sceglie l'origine della M_w:
 - **proposta dalle zone ZS9**: la M_w prende il valore proposto. Se cambiano le coordinate, la M_w segue la nuova proposta solo se era uguale alla precedente;
 - **inserimento manuale**: il valore resta quello scritto. I progetti salvati con versioni precedenti si aprono così.
 
-In entrambi i casi la M_w resta modificabile. Se è diversa dalla proposta la **motivazione è obbligatoria**: finché manca, stampa ed esportazione CSV sono bloccate (il calcolo resta possibile). Avvisi: M_w < 5, fuori dalle condizioni delle Linee guida LQ (riferite alla microzonazione; le NTC 2018 non hanno un criterio sulla magnitudo); M_w < 5,5, fuori dal campo di Cetin et al. (2018).
+In entrambi i casi la M_w resta modificabile. La **motivazione è sempre obbligatoria**, anche quando la M_w coincide con la proposta (decisione del 21/11/2026): finché manca, stampa ed esportazione CSV sono bloccate (il calcolo resta possibile). La stampa riporta l'avvertenza: datum del file ZS9 non dichiarato, appartenenza alla zona geometrica e indicativa. Avvisi: M_w < 5, fuori dalle condizioni delle Linee guida LQ (riferite alla microzonazione; le NTC 2018 non hanno un criterio sulla magnitudo); M_w < 5,5, fuori dal campo di Cetin et al. (2018).
 
 In «Progetto» un campo raccoglie le segnalazioni del geologo sulle distanze e sull'applicabilità del modello; compare in stampa.
 

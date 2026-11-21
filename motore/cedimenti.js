@@ -36,7 +36,7 @@
 })(typeof self !== 'undefined' ? self : this, function (IND) {
   'use strict';
 
-  const VERSIONE_CEDIMENTI = '0.1.0';
+  const VERSIONE_CEDIMENTI = '0.1.1';
   const Z_MAX = 20, Z_LSN_BREVE = 10;
   const Q_MIN = 33, Q_MAX = 200;
   const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
@@ -138,7 +138,8 @@
       { codice: 'ZHANG_COMBINAZIONE', descrizione: 'Le curve sono state ricavate con (qc1N)cs e FS di Robertson e Wride (1998); qui si applicano con (qc1N)cs e FS di Boulanger e Idriss (2014), come nello studio di Tonkin & Taylor (2015, App. A).' },
       { codice: 'ZHANG_ESCLUSI', descrizione: 'Tratti con Ic oltre la soglia dello scenario e tratti sopra falda: εv = 0, secondo le ipotesi del modello.' },
       { codice: 'ZHANG_AMBITO', descrizione: 'Piano campagna sub-orizzontale, lontano da scarpate libere: deformazione volumetrica = deformazione verticale. Gli autori indicano il metodo per progetti a rischio basso o medio e come stima preliminare per gli altri; nessuno spostamento laterale è calcolato.' },
-      { codice: 'LSN_DEFINIZIONE', descrizione: 'LSN = 1000 · ∫ εv / z dz (Tonkin & Taylor 2015, App. A, §A4.3.5), con εv come decimale (MBIE-NZGS, Modulo 3), integrale esatto in ogni tratto; 0–20 m e, per confronto, 0–10 m. Senza classi: il giudizio resta del progettista.' }
+      { codice: 'LSN_DEFINIZIONE', descrizione: 'LSN = 1000 · ∫ εv / z dz (Tonkin & Taylor 2015, App. A, §A4.3.5), con εv come decimale (MBIE-NZGS, Modulo 3), integrale esatto in ogni tratto; 0–20 m e, per confronto, 0–10 m. Senza classi: il giudizio resta del progettista.' },
+      { codice: 'LSN_SPERIMENTALE', descrizione: 'LSN sperimentale: resta tale fino a una validazione indipendente (decisione di GeoHub del 21/11/2026). Il cedimento post-sismico non è sperimentale.' }
     ];
     if (!completo) assunzioni.push({ codice: 'CEDIMENTI_INCOMPLETO', descrizione: 'Tratti senza risultato in 0–20 m (' + il.spessori.ignoto.toFixed(2).replace('.', ',') + ' m): cedimento e LSN compresi tra il minimo (contributo nullo) e il massimo (deformazione della curva limite di Zhang et al. 2002, ' + EPS_LIMITE.toFixed(2).replace('.', ',') + ' %). I due valori sono limiti convenzionali del modello, non un intervallo di confidenza né un massimo fisico garantito: con (qc1N)cs < 33 la deformazione può essere maggiore.' });
     return {

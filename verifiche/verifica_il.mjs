@@ -155,9 +155,30 @@ console.log('9. Collegamento con il profilo (esempio sintetico)');
   check('prova interrotta: IL_min non maggiore dell\'indice completo', indC.ILmin <= ind.ILmin + 1e-9, true);
   const rs = F.calcolaScenario(spt, ss, L, { adesso: '2026-11-13T00:00:00Z' });
   check('SPT: indice calcolato', rs.indiceIL.stato, 'calcolato');
+  const pS = F.puntiPerIL(rs.righe, ss.strati);
+  check('SPT: ogni punto porta i limiti del suo strato', pS.every(p => { const s = F.stratoA(ss.strati, p.z); return !s || (p.limiti && p.limiti.da === s.da && p.limiti.a === s.a); }), true);
+  check('SPT: nessun tratto di punto fuori dal suo strato', rs.indiceIL.tratti.filter(t => t.zPunto !== null).every(t => { const s = F.stratoA(ss.strati, t.zPunto); return t.da >= s.da - 1e-9 && t.a <= s.a + 1e-9; }), true);
+  check('SPT: assunzione IL_LIMITE_STRATO dichiarata', rs.indiceIL.assunzioni.some(x => x.codice === 'IL_LIMITE_STRATO'), true);
+  check('CPT: nessun limite di strato (profilo continuo)', [F.puntiPerIL(r.righe, null).some(p => p.limiti), ind.assunzioni.some(x => x.codice === 'IL_LIMITE_STRATO')], [false, false]);
   const s2 = JSON.parse(JSON.stringify(sc)); s2.zFalda = 3;
   const r2 = F.calcolaScenario(cptu, s2, L, { adesso: '2026-11-13T00:00:00Z' });
   check('falda più profonda: IL_min non maggiore', r2.indiceIL.ILmin <= ind.ILmin + 1e-9, true);
+}
+
+console.log('10. Limiti di strato (prove SPT, decisione del 21/11/2026)');
+{
+  // due prove in strati diversi, distanti 4 m: senza limiti ciascuna si estende fino a metà distanza
+  const senza = I.indiceIL([{ z: 4, categoria: 'FS', FS: 0.5 }, { z: 8, categoria: 'FS', FS: 0.5 }], 0, { vuotoMax: 10 });
+  check('senza limiti: 2–10 m coperti', senza.spessori.FS, 8, 1e-9);
+  const con = I.indiceIL([{ z: 4, categoria: 'FS', FS: 0.5, limiti: { da: 3, a: 5 } }, { z: 8, categoria: 'FS', FS: 0.5, limiti: { da: 7, a: 9 } }], 0, { vuotoMax: 10 });
+  check('con limiti: coperti solo 3–5 e 7–9 m', con.spessori.FS, 4, 1e-9);
+  check('con limiti: IL_min = 0,5·(∫ w 3–5 + ∫ w 7–9)', con.ILmin, 0.5 * (I.integralePeso(3, 5) + I.integralePeso(7, 9)), 1e-9);
+  check('con limiti: il resto di 0–20 m è senza risultato', con.spessori.ignoto, 16, 1e-9);
+  check('con limiti: indice incompleto', con.completo, false);
+  const largo = I.indiceIL([{ z: 4, categoria: 'FS', FS: 0.5, limiti: { da: 0, a: 20 } }, { z: 8, categoria: 'FS', FS: 0.5, limiti: { da: 0, a: 20 } }], 0, { vuotoMax: 10 });
+  check('limiti più larghi dell\'intervallo: nessun effetto', largo.spessori.FS, senza.spessori.FS, 1e-12);
+  check('limiti che non contengono il punto: input non valido', I.indiceIL([{ z: 4, categoria: 'FS', FS: 0.5, limiti: { da: 5, a: 6 } }], 0).stato, 'input_non_valido');
+  check('limiti con da ≥ a: input non valido', I.indiceIL([{ z: 4, categoria: 'FS', FS: 0.5, limiti: { da: 4, a: 4 } }], 0).stato, 'input_non_valido');
 }
 
 console.log('\nRisultato: ' + ok + ' controlli superati, ' + ko + ' non superati.');
