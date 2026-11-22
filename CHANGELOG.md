@@ -2,6 +2,17 @@
 
 La versione dell'app e quella del motore di calcolo sono distinte: l'app è indicata in alto e nel piè di pagina della stampa insieme al motore.
 
+## App 1.0.0 — 2026-11-22
+
+Prima versione stabile. Comprende tutto quanto rilasciato fino alla 0.4.2; nessuna funzione nuova. Chiude i punti rimasti incerti con le decisioni di Fabio del 22/11/2026. Motore di innesco invariato (0.3.0): FS, IL e cedimento non cambiano. Formato del file di progetto invariato: i progetti salvati con le versioni precedenti si aprono.
+
+- **Indice LSN tolto**: non è più calcolato né mostrato (riepilogo, tavola, tabelle, stampa, CSV). La definizione originale (van Ballegooy et al. 2014) non è stata letta. Modulo cedimenti 0.2.0: resta il cedimento post-sismico di Zhang et al. (2002). La tavola «Cedimenti e LSN» si chiama ora «Cedimenti»; `docs/cedimenti-lsn.md` diventa `docs/cedimenti.md`.
+- **Indice IL, fonte**: si cita Iwasaki, Tokida e Tatsuoka (1981), Eq. 5, pag. 210, letta per intero, con la formula identica in Tatsuoka et al. (1980), Eq. 29a. L'indice è stato proposto dagli stessi autori nel 1978. Modulo IL 0.2.1 (solo il testo della fonte).
+- **Cedimento di Zhang et al. (2002)**: chiuso. Equazioni implementate come pubblicate; convenzioni (interpolazione in FS, (qc1N)cs ricondotto a 33–200, tratti non indagati come intervallo) decise e dichiarate.
+- **Limiti dei metodi** descritti in `docs/app.md` (Limiti): incertezza di r_d oltre circa 10 m e sensibilità dell'IL alla soglia di Ic, entrambe già segnalate dagli avvisi dell'app; motivazione dell'assenza di classi per l'IL.
+- **Documentazione**: prova d'uso del 22/11/2026 in `docs/validazione.md` (10 CPT dell'Emilia 2012, Geyin & Maurer 2021); README senza LSN.
+- **Verifiche**: 1067 controlli JavaScript, 3 confronti Python, 54 controlli nel browser.
+
 ## App 0.4.2 — 2026-11-22
 
 Correzioni emerse dalla prova d'uso su casi reali (CPT dell'Emilia 2012): punto a profondità 0, controllo di plausibilità delle unità e riconoscimento delle unità nelle intestazioni all'importazione. Motore di innesco (0.3.0), modulo IL (0.2.0) e modulo cedimenti (0.1.1) invariati: FS, IL, cedimenti e LSN non cambiano. La 0.4.1 (PR #17) non è stata pubblicata come rilascio a sé: è compresa nella 0.4.2. Parametri ?v= di `index.html` portati a 0.4.2.

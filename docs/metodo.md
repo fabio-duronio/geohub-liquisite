@@ -88,8 +88,8 @@ Profondità in m dal piano campagna; tensioni in kPa (γ_w = 9,81 kN/m³, pressi
 
 ## Altri moduli
 
-- [Indice IL](indice-il.md) (Iwasaki et al. 1978): `motore/indici.js`.
-- [Cedimento post-sismico e LSN](cedimenti-lsn.md) (Zhang et al. 2002): `motore/cedimenti.js`.
+- [Indice IL](indice-il.md) (Iwasaki, Tokida e Tatsuoka 1981): `motore/indici.js`.
+- [Cedimento post-sismico](cedimenti.md) (Zhang et al. 2002): `motore/cedimenti.js`.
 - Carta di comportamento del terreno: zone 2–7 da I_c secondo Robertson & Wride (1998), Tab. 1, pag. 450; le zone 1, 8 e 9 non sono rappresentate perché I_c non vi si applica. È uno strumento di lettura e non entra nel calcolo.
 
 La validazione è descritta in [Validazione](validazione.md).

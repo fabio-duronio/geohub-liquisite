@@ -24,8 +24,8 @@ Applicazione web per geologi e ingegneri della famiglia GeoHub. A partire dalle 
 
   Sono riportate anche le grandezze intermedie (CSR, CRR, r_d, K_σ, MSF, resistenze normalizzate) e, dove il metodo la prevede, la probabilità di liquefazione P_L.
 - **FS di riferimento** scelto dal progettista: predefinito 1,25 (EN 1998-5, §4.1.4), mostrato nei grafici e nel riepilogo. Le NTC non fissano un valore minimo.
-- **Indice del potenziale di liquefazione IL** (Iwasaki et al. 1978), senza classi. Se la verticale non è indagata per intero fino a 20 m, l'indice è dato come intervallo minimo–massimo: sono limiti convenzionali del modello, non un intervallo di confidenza.
-- **Cedimento post-sismico e indice LSN** da CPT, con le equazioni originali di Zhang et al. (2002). Anche qui i tratti non indagati sono dati come intervalli, cioè limiti convenzionali del modello e non massimi fisici garantiti.
+- **Indice del potenziale di liquefazione IL** (Iwasaki, Tokida e Tatsuoka 1981, Eq. 5), senza classi. Se la verticale non è indagata per intero fino a 20 m, l'indice è dato come intervallo minimo–massimo: sono limiti convenzionali del modello, non un intervallo di confidenza.
+- **Cedimento post-sismico** da CPT, con le equazioni originali di Zhang et al. (2002). Anche qui i tratti non indagati sono dati come intervalli, cioè limiti convenzionali del modello e non massimi fisici garantiti.
 - **Carta di comportamento del terreno** (Robertson & Wride 1998) con i punti della CPT.
 - **Magnitudo M_w proposta dalle zone sismogenetiche ZS9** a partire dalle coordinate del sito (Linee guida LQ, Tab. A1.1 e procedura di pag. 30). Per i siti esterni alle zone c'è la tabella completa delle 36 zone. Il geologo può adottare un altro valore; la motivazione è sempre obbligatoria.
 - **Confronto tra scenari**: fino a 3, con falda, metodo, magnitudo o accelerazione diversi.
@@ -58,7 +58,7 @@ I tratti non indagati o non calcolati non sono mai considerati sicuri.
 - non calcola la disaggregazione della pericolosità sismica;
 - non impone un fattore di sicurezza minimo;
 - non usa classi o zone della microzonazione sismica;
-- non calcola gli spostamenti laterali;
+- non calcola gli spostamenti laterali né l'indice LSN;
 - non converte le prove DPSH o le CPT a punta meccanica in dati equivalenti.
 
 Le scelte di progetto e l'impiego dei risultati restano a carico del professionista. Dettagli in [Uso e limiti](docs/app.md#limiti).
@@ -66,7 +66,7 @@ Le scelte di progetto e l'impiego dei risultati restano a carico del professioni
 ## Documentazione
 
 - [Metodo di calcolo](docs/metodo.md): equazioni, fonti, refusi delle fonti, criteri di esclusione
-- [Indice IL](docs/indice-il.md) e [Cedimenti e LSN](docs/cedimenti-lsn.md)
+- [Indice IL](docs/indice-il.md) e [Cedimenti](docs/cedimenti.md)
 - [Uso e limiti dell'applicazione](docs/app.md)
 - [Validazione](docs/validazione.md): verifiche automatiche, seconda implementazione indipendente, confronto con un calcolo pubblicato
 - [Sviluppo](docs/sviluppo.md): struttura del repository, avvio in locale, formato del progetto

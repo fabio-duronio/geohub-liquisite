@@ -71,7 +71,7 @@
   const FS_RIFERIMENTO = 1.25;
 
   /** Versione dell'applicazione (distinta da quella del motore di calcolo). */
-  const VERSIONE_APP = '0.4.2';
+  const VERSIONE_APP = '1.0.0';
 
   let contatore = 0;
   function nuovoId(prefisso) {

@@ -190,7 +190,7 @@ console.log('4b. Testi del confronto, del riepilogo e della stampa');
   await page.evaluate(() => { window.print = () => {}; }); await page.click('#btnStampa'); await page.waitForTimeout(500);
   const stampa = await page.evaluate(() => document.getElementById('stampa').innerText);
   check('stampa: nessun codice interno negli intervalli', /NON_SATURO|IC_OLTRE_SOGLIA/.test(stampa), false);
-  check('stampa: nome dell\'app coerente nei margini', await page.evaluate(() => document.getElementById('stileMargini').textContent.includes('"GeoHub-LiquiSite 0.')), true);
+  check('stampa: nome dell\'app coerente nei margini', await page.evaluate(() => /"GeoHub-LiquiSite \d+\.\d+\.\d+/.test(document.getElementById('stileMargini').textContent)), true);
 }
 
 console.log('4c. Magnitudo Mw dalle zone ZS9: coordinate, proposta, motivazione, stampa');
@@ -235,7 +235,7 @@ console.log('4c. Magnitudo Mw dalle zone ZS9: coordinate, proposta, motivazione,
   check('con motivazione: stampa consentita, sezione 1.1 con motivazione', [dialoghi.length, /1\.1 Magnitudo di riferimento/.test(stampa), stampa.includes('Valore da disaggregazione INGV del nodo più vicino')], [0, true, true]);
   check('stampa: fonte, criterio, datum, criticità', ['Tab. A1.1, pag. 31', 'doi:10.13127/sh/zs9', 'CC BY 4.0', 'interpretazione della regola delle Linee guida LQ, pag. 30', 'circa 100 m', 'pag. 31–32'].every(t => stampa.includes(t)), true);
   check('stampa: avvertenza su datum non dichiarato e appartenenza geometrica indicativa', /Avvertenza\s*Datum dello shapefile ZS9 non dichiarato: .*risultato geometrico indicativo/.test(stampa), true);
-  check('stampa: LSN dichiarato sperimentale', stampa.includes('LSN (sperimentale, senza classi)'), true);
+  check('stampa: nessun LSN (escluso dalla 1.0)', /LSN/.test(stampa), false);
   // Pescara: sito esterno, tabella completa in app e in stampa; lo scenario la segue solo se seguiva la proposta
   await coordinate('42,4618', '14,2161');
   check('coordinate cambiate: Mw scelta dal geologo invariata', await scen(), { Mw: 6.8, origine: 'zs9' });

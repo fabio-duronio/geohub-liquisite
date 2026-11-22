@@ -133,7 +133,7 @@ for (let k = 0; k < CASI; k++) {
   const ced = res.cedimenti;
   if (ced && ced.stato === 'calcolato') {
     nCed++;
-    if (!(ced.Smin >= 0 && ced.Smin <= ced.Smax + 1e-12 && ced.LSNmin >= 0 && ced.LSNmin <= ced.LSNmax + 1e-9 && ced.LSN10min <= ced.LSNmin + 1e-9 && ced.Smax <= 20 * 0.0581 + 1e-9)) cedIncoerenti++;
+    if (!(ced.Smin >= 0 && ced.Smin <= ced.Smax + 1e-12 && ced.Smax <= 20 * 0.0581 + 1e-9)) cedIncoerenti++;
     if (ced.completo !== res.indiceIL.completo) { cedIncoerenti++; if (verbose) console.log('completo', ced.completo, res.indiceIL.completo); }
   } else if (sc.metodo === 'bi2014Cpt') cedIncoerenti++;
   else if (ced) cedIncoerenti++;
@@ -159,7 +159,7 @@ check('IL: «completo» solo senza tratti ignoti e con IL_min = IL_max', ilIncoe
 check('IL: una lettura resa ignota allarga o conserva l\'intervallo', contenimento, 0);
 check('verifica preliminare: nessuna esclusione senza criterio soddisfatto e confermato', esclusioniIndebite, 0);
 check('cedimenti calcolati in alcuni casi CPT', nCed > 0, true);
-check('cedimento e LSN: 0 ≤ min ≤ max, S ≤ 20 m · εlim, LSN 0–10 ≤ LSN 0–20', cedIncoerenti, 0);
+check('cedimento: 0 ≤ min ≤ max, S ≤ 20 m · εlim', cedIncoerenti, 0);
 check('CSV: una riga per punto', csvRighe, 0);
 check('CSV: nessun NaN, undefined, Infinity', csvTesti, 0);
 check('salvataggio e riapertura: stessa firma degli input', firmaRiapertura, 0);

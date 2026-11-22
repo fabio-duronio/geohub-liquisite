@@ -209,10 +209,10 @@
     const sisma = { amax: scenario.amax, Mw: scenario.Mw };
     const righe = dati.map((d) => calcolaRiga(d, prova, scenario, L, richiesti, par, sisma));
     const indiceIL = IND ? IND.indiceIL(puntiPerIL(righe, prova.tipo === 'SPT' ? scenario.strati : null), scenario.zFalda) : null;
-    // cedimento post-sismico e LSN: metodo da CPT (Zhang et al. 2002), solo con il metodo CPT
+    // cedimento post-sismico: metodo da CPT (Zhang et al. 2002), solo con il metodo CPT
     let cedimenti = null;
     if (CED && scenario.metodo === 'bi2014Cpt') {
-      cedimenti = CED.cedimentoLSN(puntiPerCedimenti(righe), scenario.zFalda);
+      cedimenti = CED.cedimento(puntiPerCedimenti(righe), scenario.zFalda);
       if (cedimenti.stato === 'calcolato') {
         const perZ = new Map();
         for (const t of cedimenti.tratti) if (t.categoria === 'FS') perZ.set(t.zPunto, t.epsMin);

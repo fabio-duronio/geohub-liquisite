@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
- * verifica_cedimenti.mjs — deformazione volumetrica (Zhang et al. 2002), cedimento e LSN:
+ * verifica_cedimenti.mjs — deformazione volumetrica (Zhang et al. 2002) e cedimento:
  * equazioni dell'Appendice A, convenzioni di interpolazione e di campo, casi analitici,
  * collegamento al profilo, CSV. La seconda implementazione è in verifica_cedimenti.py.
  * Uso: node verifiche/verifica_cedimenti.mjs [--verbose]
@@ -59,29 +59,25 @@ console.log('2. Convenzioni approvate');
   check('ingressi non validi rifiutati', eccezioni, 6);
 }
 
-console.log('3. Casi analitici di cedimento e LSN');
+console.log('3. Casi analitici di cedimento');
 {
   // strato uniforme 2–5 m: un punto ogni 0,1 m da 2,05 a 4,95, falda 2 m; oltre 5 m argilloso fino a 20 m
   const punti = [];
   for (let z = 2.05; z < 5; z += 0.1) punti.push({ z: Math.round(z * 100) / 100, categoria: 'FS', FS: 0.8, qc1Ncs: 90 });
   for (let z = 5.05; z < 20; z += 0.1) punti.push({ z: Math.round(z * 100) / 100, categoria: 'argilloso' });
-  const r = C.cedimentoLSN(punti, 2);
+  const r = C.cedimento(punti, 2);
   const e = eps(0.8, 90);
   check('completo', r.completo, true);
   check('S = εv · 3 m', vicino(r.Smin, e / 100 * 3, 1e-9), true);
-  check('LSN = 1000 · εv · ln(5/2)', vicino(r.LSNmin, 1000 * e / 100 * Math.log(5 / 2), 1e-9), true);
-  check('LSN 0–10 m = LSN (nulla oltre 5 m)', vicino(r.LSN10min, r.LSNmin), true);
   // stesso profilo interrotto a 12 m: 12–20 m ignoto
   const corto = punti.filter(p => p.z < 12);
-  const rc = C.cedimentoLSN(corto, 2);
+  const rc = C.cedimento(corto, 2);
   check('prova interrotta: intervallo', rc.completo, false);
   check('S_min invariato, S_max + deformazione limite su 8 m', [vicino(rc.Smin, r.Smin), vicino(rc.Smax - rc.Smin, C.EPS_LIMITE / 100 * (20 - 11.95 - 0.05), 1e-6)], [true, true]);
-  check('LSN_max − LSN_min = 1000 · εlim · ln(20/12)', vicino(rc.LSNmax - rc.LSNmin, 1000 * C.EPS_LIMITE / 100 * Math.log(20 / 12), 1e-6), true);
-  check('LSN 0–10 m non risente del tratto ignoto oltre 12 m', vicino(rc.LSN10max, rc.LSN10min), true);
-  // falda al piano campagna e nessun dato in superficie: massimo non limitato e segnalato
-  const rs = C.cedimentoLSN([{ z: 3, categoria: 'FS', FS: 1, qc1Ncs: 80 }], 0);
-  check('falda 0 e superficie ignota: LSN_max non limitato', [isFinite(rs.LSNmax), rs.avvisi.some(a => a.codice === 'LSN_NON_LIMITATO')], [false, true]);
-  check('punto FS senza (qc1N)cs rifiutato', C.cedimentoLSN([{ z: 3, categoria: 'FS', FS: 1 }], 1).stato, 'input_non_valido');
+  // falda al piano campagna e nessun dato in superficie: S_max finito (εlim su 0–2,95 m), nessun LSN
+  const rs = C.cedimento([{ z: 3, categoria: 'FS', FS: 1, qc1Ncs: 80 }], 0);
+  check('falda 0 e superficie ignota: S_max finito, nessuna grandezza LSN', [isFinite(rs.Smax), Object.keys(rs).some(k => /LSN/.test(k))], [true, false]);
+  check('punto FS senza (qc1N)cs rifiutato', C.cedimento([{ z: 3, categoria: 'FS', FS: 1 }], 1).stato, 'input_non_valido');
 }
 
 console.log('4. Collegamento al profilo e all\'esempio');
@@ -91,13 +87,13 @@ console.log('4. Collegamento al profilo e all\'esempio');
   const r = F.calcolaScenario(pr.prove[0], s1, L, { adesso: '2026-11-13T00:00:00Z' });
   const c = r.cedimenti;
   check('cedimenti calcolati per la CPTU', c.stato, 'calcolato');
-  check('prova fino a 20 m: cedimento e LSN completi', [c.completo, c.Smin === c.Smax, c.LSNmin === c.LSNmax], [true, true, true]);
+  check('prova fino a 20 m: cedimento completo', [c.completo, c.Smin === c.Smax], [true, true]);
+  check('LSN non calcolato dalla 1.0 (decisione del 22/11/2026)', [Object.keys(c).some(k => /LSN/.test(k)), C.VERSIONE_CEDIMENTI], [false, '0.2.0']);
   const corta = JSON.parse(JSON.stringify(pr.prove[0])); corta.dati = corta.dati.filter(d => d[0] <= 18.4 + 1e-9);
   const cc = F.calcolaScenario(corta, s1, L, { adesso: '2026-11-13T00:00:00Z' }).cedimenti;
   check('prova interrotta a 18,4 m: intervallo', [cc.completo, cc.Smin < cc.Smax], [false, true]);
   check('prova interrotta: S_min ≤ S completo ≤ S_max', cc.Smin <= c.Smin + 1e-12 && c.Smin <= cc.Smax + 1e-12, true);
-  check('S_min ≤ S_max e LSN_min ≤ LSN_max', c.Smin <= c.Smax && c.LSNmin <= c.LSNmax, true);
-  check('LSN 0–10 m ≤ LSN 0–20 m', c.LSN10min <= c.LSNmin + 1e-9 && c.LSN10max <= c.LSNmax + 1e-9, true);
+  check('S_min ≤ S_max', c.Smin <= c.Smax, true);
   const calc = r.righe.filter(x => x.stato === 'calcolato');
   check('εv su ogni riga calcolata', calc.every(x => typeof x.valori.epsV === 'number'), true);
   check('εv della riga = εv(FS, qc1Ncs)', calc.every(x => vicino(x.valori.epsV, eps(x.valori.FS, x.valori.qc1Ncs))), true);
@@ -106,10 +102,10 @@ console.log('4. Collegamento al profilo e all\'esempio');
   check('falda più alta: S_min non minore', rAlta.cedimenti.Smin >= c.Smin - 1e-12, true);
   check('SPT: nessun cedimento (metodo da CPT)', F.calcolaScenario(pr.prove[1], s2, L).cedimenti, null);
   const csv = X.csvRisultati(pr, pr.prove[0], s1, r, {});
-  check('CSV: righe di intestazione di cedimento e LSN', csv.includes('# Cedimento post-sismico 0-20 m') && csv.includes('# LSN (sperimentale, senza classi)'), true);
+  check('CSV: riga di intestazione del cedimento, nessun LSN', [csv.includes('# Cedimento post-sismico 0-20 m'), /LSN/.test(csv)], [true, false]);
   check('CSV: colonna εv', csv.split('\r\n').find(x => x.startsWith('z [m]')).includes('εv post-liquefazione [%]'), true);
-  check('assunzioni dichiarate (curve, combinazione, esclusi, ambito, LSN, incompleto)',
-    ['ZHANG_CURVE', 'ZHANG_COMBINAZIONE', 'ZHANG_ESCLUSI', 'ZHANG_AMBITO', 'LSN_DEFINIZIONE'].every(k => c.assunzioni.some(a => a.codice === k)) && cc.assunzioni.some(a => a.codice === 'CEDIMENTI_INCOMPLETO') && !c.assunzioni.some(a => a.codice === 'CEDIMENTI_INCOMPLETO'), true);
+  check('assunzioni dichiarate (curve, combinazione, esclusi, ambito, integrazione, incompleto)',
+    ['ZHANG_CURVE', 'ZHANG_COMBINAZIONE', 'ZHANG_ESCLUSI', 'ZHANG_AMBITO', 'ZHANG_INTEGRAZIONE'].every(k => c.assunzioni.some(a => a.codice === k)) && cc.assunzioni.some(a => a.codice === 'CEDIMENTI_INCOMPLETO') && !c.assunzioni.some(a => a.codice === 'CEDIMENTI_INCOMPLETO'), true);
 }
 
 console.log('\nRisultato: ' + ok + ' controlli superati, ' + ko + ' non superati.');

@@ -380,19 +380,14 @@
     if (!c || c.stato !== 'calcolato') return 'non disponibile';
     return 'S ' + (c.completo ? '= ' + fmt(c.Smin * 100, 1) : 'tra ' + fmt(c.Smin * 100, 1) + ' e ' + fmt(c.Smax * 100, 1)) + ' cm';
   }
-  const fmtLSN = (v) => isFinite(v) ? fmt(v, 1) : 'non limitato';
-  function testoLSN(c, breve) {
-    const a = breve ? c.LSN10min : c.LSNmin, b = breve ? c.LSN10max : c.LSNmax;
-    return Math.abs(b - a) < 1e-9 ? fmtLSN(a) : 'tra ' + fmtLSN(a) + ' e ' + fmtLSN(b);
-  }
   function bloccoCedimenti(c, aggiornato) {
     if (!c || !aggiornato) return '';
     if (c.stato !== 'calcolato') return '<div class="blocco-il"><b>Cedimento post-sismico: non calcolabile</b></div>';
     return '<div class="blocco-il"><div><span class="eyebrow">CEDIMENTO POST-SISMICO DA CPT · ZHANG ET AL. 2002 · 0–20 m</span>' +
-      '<div class="il-valore num">' + esc(testoCedimento(c)) + '</div><div class="num">LSN (sperimentale) ' + esc(testoLSN(c)) + ' · 0–10 m: ' + esc(testoLSN(c, true)) + '</div></div>' +
+      '<div class="il-valore num">' + esc(testoCedimento(c)) + '</div></div>' +
       '<span>Stima della deformazione volumetrica di riconsolidazione su piano campagna sub-orizzontale, senza spostamenti laterali; gli autori la indicano per progetti a rischio basso o medio e come stima preliminare per gli altri. ' +
       (c.completo ? '' : 'Copertura incompleta: ' + fmt(c.spessori.ignoto, 2) + ' m senza risultato, con contributo nullo nel valore inferiore e deformazione della curva limite (' + fmt(c.epsLimite, 2) + ' %) nel superiore: limiti convenzionali del modello, non un intervallo di confidenza né un massimo fisico garantito. ') +
-      c.avvisi.map(a => esc(a.messaggio)).join(' ') + ' LSN sperimentale, fino a una validazione indipendente, e senza classi: il giudizio resta del progettista.</span></div>';
+      c.avvisi.map(a => esc(a.messaggio)).join(' ') + '</span></div>';
   }
 
   function testoIL(ind) {
@@ -548,7 +543,7 @@
       const dir = [{ nome: 'cedimento cumulato (tratti senza risultato: contributo nullo)', colore: COL.blu, tratteggio: false, segmenti: [lo], punti: lo }];
       if (!ced.completo) dir.push({ nome: 'limite superiore convenzionale (tratti senza risultato: curva limite)', colore: COL.grigio, tratteggio: true, segmenti: [hi], punti: hi });
       p.push({ id: 'sced', titolo: 'Cedimento cumulato', etichettaX: 'S [cm]', serieDirette: dir, xMin: 0, def: false, cifre: 1,
-        nota: 'Dal piano campagna verso il basso. ' + testoCedimento(ced) + ' · LSN ' + testoLSN(ced) + '.' });
+        nota: 'Dal piano campagna verso il basso. ' + testoCedimento(ced) + '.' });
     }
     p.push({ id: 'tens', titolo: 'Tensioni', etichettaX: 'σ [kPa]', serie: [s('sv', 'σv', COL.ink, 'tensioni'), s('sve', 'σ\'v', COL.blu, 'tensioni', true), s('u', 'u0', COL.grigio, 'tensioni')], def: false, cifre: 1, xMin: 0 });
     if (sc.metodo === 'cetin2018Spt') p.push({ id: 'coef', titolo: 'rd, Kσ, KMw', etichettaX: '[–]', serie: [s('rd', 'rd', COL.ink), s('Ksigma', 'Kσ', COL.blu, 'valori', true), s('KMw', 'KMw', COL.grigio)], def: false, cifre: 3 });
@@ -568,7 +563,7 @@
     const continuo = F.METODI[sc.metodo].continuo;
     const presets = { verifica: ['Ic','qc1N','N','N160','Vs','csrcrr','FS'], dati: ['qc','fs','u2','N','Vs','Ic'], tensioni: ['tens','coef'], probabilita: ['FS','PL','IL'], cedimenti: ['FS','epsv','sced'] };
     let h = '<div class="sheet-tools"><div class="subtabs" role="group" aria-label="Tavola">' +
-      [['verifica','Verifica'],['dati','Dati e interpretazione'],['tensioni','Tensioni e coefficienti'],['probabilita','FS, PL e IL'],['cedimenti','Cedimenti e LSN']].filter(([k]) => (k !== 'probabilita' || cat.some(c=>c.id==='PL' || c.id==='IL')) && (k !== 'cedimenti' || cat.some(c => c.id === 'epsv'))).map(([k,label]) =>
+      [['verifica','Verifica'],['dati','Dati e interpretazione'],['tensioni','Tensioni e coefficienti'],['probabilita','FS, PL e IL'],['cedimenti','Cedimenti']].filter(([k]) => (k !== 'probabilita' || cat.some(c=>c.id==='PL' || c.id==='IL')) && (k !== 'cedimenti' || cat.some(c => c.id === 'epsv'))).map(([k,label]) =>
       '<button data-preset="'+k+'" aria-pressed="'+(S.pannelli.preset===k)+'">'+label+'</button>').join('') +
       '</div><details class="panel-picker"><summary>Personalizza pannelli</summary><div class="chart-toolbar">' + cat.map(c =>
       '<label><input type="checkbox" data-pannello="' + c.id + '"' + (S.pannelli.id.has(c.id) ? ' checked' : '') + '> ' + esc(c.titolo) + '</label>').join('') + '</div></details></div>';
@@ -581,7 +576,7 @@
       '<span><span class="sw" style="color:#aab8c8;"></span>limiti degli strati</span>' +
       '<span><span class="sw dash" style="color:#5f6b7a;"></span>riferimento</span>' +
       (continuo ? '<span>Le interruzioni non indicano sicurezza: consultare stati e avvisi.</span>' : '<span><span class="sw dot" style="color:#1e4e8c;"></span>SPT: punti discreti, non uniti.</span>') + '</div>';
-    h += '<p class="scope-note">' + (sc.metodo === 'bi2014Cpt' ? 'Cedimento post-sismico da CPT (Zhang et al. 2002) e LSN nella tavola «Cedimenti e LSN»; spostamenti laterali non calcolati.' : 'Cedimenti post-sismici: calcolati solo con prove CPT; spostamenti laterali non calcolati.') + ' La probabilità PL, ove disponibile, è puntuale e non è l’indice IL.</p>';
+    h += '<p class="scope-note">' + (sc.metodo === 'bi2014Cpt' ? 'Cedimento post-sismico da CPT (Zhang et al. 2002) nella tavola «Cedimenti»; spostamenti laterali non calcolati.' : 'Cedimenti post-sismici: calcolati solo con prove CPT; spostamenti laterali non calcolati.') + ' La probabilità PL, ove disponibile, è puntuale e non è l’indice IL.</p>';
     h += '<div class="sel-detail" id="dettaglioSel">Seleziona un punto su un grafico o una riga in tabella.</div>';
     if (sc.metodo === 'bi2014Cpt') h += '<div class="sbt-card"><div class="sbt-chart"><canvas id="cv-sbt" role="img" aria-label="Carta di comportamento CPT"></canvas></div>' +
       '<div class="sbt-side"><div class="section-title">Carta di comportamento</div>' + tabellaZoneSBT(r) + '<p class="hint">Strumento di lettura della prova, non entra nel calcolo. Zone 2–7 delimitate da Ic (Robertson e Wride 1998, Tab. 1, da Robertson 1990); Ic non si applica alle zone 1, 8 e 9, che non sono rappresentate. Q con l\'esponente n della procedura del metodo.</p>' +
@@ -1043,8 +1038,8 @@
       (pv.tipo === 'CPTE' ? '' : '') + '</ul>';
     h += '<div class="section-title">Basi del metodo</div><ul><li>' + esc(q.notaFS) + '</li><li>' + esc(q.notaPL) + '</li>' +
       '<li><b>Criterio di verifica.</b> ' + esc(F.criterioFS(sc)) + '</li>' +
-      '<li>' + (r.cedimenti && r.cedimenti.stato === 'calcolato' ? 'Cedimento post-sismico e LSN: ' + esc(testoCedimento(r.cedimenti)) + '; LSN ' + esc(testoLSN(r.cedimenti)) + '. Spostamenti laterali: non calcolati.' : 'Cedimenti post-sismici: calcolati solo con prove CPT. Spostamenti laterali: non calcolati.') + '</li></ul>';
-    if (r.cedimenti && r.cedimenti.stato === 'calcolato') h += '<div class="section-title">Cedimento e LSN: assunzioni</div><ul>' + r.cedimenti.assunzioni.concat(r.cedimenti.avvisi.map(a => ({ descrizione: a.messaggio }))).map(a => '<li>' + esc(a.descrizione) + '</li>').join('') + '<li>' + esc(r.cedimenti.fonte) + '</li></ul>';
+      '<li>' + (r.cedimenti && r.cedimenti.stato === 'calcolato' ? 'Cedimento post-sismico: ' + esc(testoCedimento(r.cedimenti)) + '. Spostamenti laterali: non calcolati.' : 'Cedimenti post-sismici: calcolati solo con prove CPT. Spostamenti laterali: non calcolati.') + '</li></ul>';
+    if (r.cedimenti && r.cedimenti.stato === 'calcolato') h += '<div class="section-title">Cedimento: assunzioni</div><ul>' + r.cedimenti.assunzioni.concat(r.cedimenti.avvisi.map(a => ({ descrizione: a.messaggio }))).map(a => '<li>' + esc(a.descrizione) + '</li>').join('') + '<li>' + esc(r.cedimenti.fonte) + '</li></ul>';
     const ind = r.indiceIL;
     if (ind) {
       h += '<div class="section-title">Indice IL (Iwasaki)</div>';
@@ -1321,8 +1316,7 @@
       riga('Punti calcolati', esc((q.conteggi.calcolato || 0) + ' su ' + q.punti)) +
       riga('FS minimo calcolato', q.fsMin ? fmt(q.fsMin.FS) + ' a z = ' + fmt(q.fsMin.z) + ' m' : '–') +
       riga('FS di riferimento', fmt(F.fsRiferimento(sc)) + ' · punti calcolati con FS < 1: ' + nFS(r, 1) + '; con FS < ' + fmt(F.fsRiferimento(sc)) + ': ' + nFS(r, F.fsRiferimento(sc))) +
-      (r.cedimenti && r.cedimenti.stato === 'calcolato' ? riga('Cedimento post-sismico da CPT (Zhang et al. 2002, 0–20 m)', esc(testoCedimento(r.cedimenti)) + (r.cedimenti.completo ? '' : ' — copertura incompleta: contributo nullo nel valore inferiore, deformazione della curva limite ' + fmt(r.cedimenti.epsLimite, 2) + ' % nel superiore (limiti convenzionali del modello, non un intervallo di confidenza)')) +
-        riga('LSN (sperimentale, senza classi)', '0–20 m: ' + esc(testoLSN(r.cedimenti)) + ' · 0–10 m: ' + esc(testoLSN(r.cedimenti, true))) : '') +
+      (r.cedimenti && r.cedimenti.stato === 'calcolato' ? riga('Cedimento post-sismico da CPT (Zhang et al. 2002, 0–20 m)', esc(testoCedimento(r.cedimenti)) + (r.cedimenti.completo ? '' : ' — copertura incompleta: contributo nullo nel valore inferiore, deformazione della curva limite ' + fmt(r.cedimenti.epsLimite, 2) + ' % nel superiore (limiti convenzionali del modello, non un intervallo di confidenza)')) : '') +
       riga('Indice IL (Iwasaki, 0–20 m, senza classi)', r.indiceIL ? esc(testoIL(r.indiceIL)) + (r.indiceIL.stato === 'calcolato' && !r.indiceIL.completo ? ' — copertura incompleta: ' + fmt(r.indiceIL.spessori.ignoto, 2) + ' m senza risultato, con contributo nullo nel valore inferiore e contributo massimo del modello nel superiore (limiti convenzionali del modello, non un intervallo di confidenza)' : '') : '–') +
       riga('Intervalli non calcolati', q.intervalliNonCalcolati.length ? q.intervalliNonCalcolati.map(i => fmt(i.da) + '–' + fmt(i.a) + ' m: ' + esc(i.codice && F.MOTIVI_BREVI[i.codice] ? F.MOTIVI_BREVI[i.codice] : F.ETICHETTE_STATI[i.stato])).join('; ') : 'nessuno') +
       '</tbody></table><p class="st-nota"><b>Criterio di verifica e scelta del coefficiente di sicurezza.</b> ' + esc(F.criterioFS(sc)) + '</p><p class="st-nota">Il FS minimo non descrive da solo la risposta del sito. ' + esc(q.notaFS) + ' ' + esc(q.notaPL) + '</p>';
@@ -1343,7 +1337,7 @@
       MG.statoMagnitudo(sc, proposta()).avvisi.map(a => '<li><b>Magnitudo.</b> ' + esc(a.testo) + '</li>').join('') +
       '<li>Profondità oltre ' + fmt(q.profonditaIndagata ? q.profonditaIndagata.a : 0) + ' m non indagate; un intervallo non calcolato non è un intervallo sicuro.</li>' +
       (r.indiceIL && r.indiceIL.stato === 'calcolato' ? r.indiceIL.assunzioni.map(a => '<li><b>Indice IL.</b> ' + esc(a.descrizione) + '</li>').join('') + '<li><b>Indice IL.</b> ' + esc(r.indiceIL.fonte) + '</li>' : '') +
-      (r.cedimenti && r.cedimenti.stato === 'calcolato' ? r.cedimenti.assunzioni.concat(r.cedimenti.avvisi.map(a => ({ descrizione: a.messaggio }))).map(a => '<li><b>Cedimento e LSN.</b> ' + esc(a.descrizione) + '</li>').join('') + '<li>Cedimento e LSN: ' + esc(r.cedimenti.fonte) + '</li>' : '<li>Cedimenti post-sismici: calcolati solo con prove CPT.</li>') +
+      (r.cedimenti && r.cedimenti.stato === 'calcolato' ? r.cedimenti.assunzioni.concat(r.cedimenti.avvisi.map(a => ({ descrizione: a.messaggio }))).map(a => '<li><b>Cedimento.</b> ' + esc(a.descrizione) + '</li>').join('') + '<li>Cedimento: ' + esc(r.cedimenti.fonte) + '</li>' : '<li>Cedimenti post-sismici: calcolati solo con prove CPT.</li>') +
       '<li>Spostamenti laterali: non calcolati.</li></ul>';
     h += '<div class="st-piede"><span>GeoHub-LiquiSite ' + esc(P.VERSIONE_APP) + ' · motore ' + esc(r.versioneMotore) + ' · calcolato il ' + esc(new Date(r.calcolatoIl).toLocaleString('it-IT')) + ' · firma input ' + esc(r.firma) + '</span><span>Basato su LiquiSite di Fabio Duronio, geologo</span></div>';
     $('stampa').innerHTML = h;
