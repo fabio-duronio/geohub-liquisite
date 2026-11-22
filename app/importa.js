@@ -73,18 +73,63 @@
     FC: ['fc', 'fini', 'fines', 'fines content']
   };
 
+  const norm = (s) => String(s).toLowerCase().replace(/\[.*?\]|\(.*?\)/g, '').replace(/[_]/g, ' ').trim();
+
+  // Unità note all'app (minuscole): distingue «qc [kPa]» da un testo qualsiasi tra parentesi.
+  const UNITA_NOTE = new Set(Object.values(P.UNITA).flatMap(u => Object.keys(u.fattori).map(k => k.toLowerCase())));
+  const unitaDi = (g, testo) => Object.keys(P.UNITA[g].fattori).find(u => u.toLowerCase() === testo);
+
+  /**
+   * Verifica se l'intestazione h indica la grandezza g. Riconosce il nome (SINONIMI) e l'unità, scritta
+   * dopo «_» («z_m», «qc_kPa», «fs_kPa») o tra parentesi in coda («qc [kPa]», «fs (kPa)»); maiuscole
+   * indifferenti. Un'unità nota ma non ammessa per g (P.UNITA) esclude la colonna: «z_kPa» e «qc [m]»
+   * non sono riconosciute. Un testo tra parentesi che non è un'unità nota (per esempio «[kg/cm2]») non
+   * dà unità: resta quella predefinita. Restituisce null oppure { unita }, con unita = null se
+   * l'intestazione non porta un'unità.
+   */
+  function riconosci(h, g) {
+    const t = String(h).toLowerCase().trim();
+    if (SINONIMI[g].includes(norm(t))) {
+      const par = t.match(/[\[(]\s*([^\])]*?)\s*[\])]\s*$/);
+      if (!par || !UNITA_NOTE.has(par[1])) return { unita: null };
+      const u = unitaDi(g, par[1]);
+      return u === undefined ? null : { unita: u };
+    }
+    const s = t.replace(/\[.*?\]|\(.*?\)/g, '').trim();
+    const k = s.lastIndexOf('_');
+    if (k <= 0 || k === s.length - 1) return null;
+    if (!SINONIMI[g].includes(s.slice(0, k).replace(/_/g, ' ').trim())) return null;
+    const u = unitaDi(g, s.slice(k + 1).trim());
+    return u === undefined ? null : { unita: u };
+  }
+
   /** Proposta di associazione colonna → grandezza in base all'intestazione (da confermare). */
   function proponiColonne(intestazione, tipo) {
     const voluti = P.TIPI_PROVA[tipo].colonne.concat(P.TIPI_PROVA[tipo].facoltative);
     const mappa = {};
-    const norm = (s) => String(s).toLowerCase().replace(/\[.*?\]|\(.*?\)/g, '').replace(/[_]/g, ' ').trim();
     for (const g of voluti) {
-      const j = (intestazione || []).findIndex(h => SINONIMI[g].includes(norm(h)));
+      const j = (intestazione || []).findIndex(h => riconosci(h, g) !== null);
       mappa[g] = j >= 0 ? j : null;
     }
     // senza intestazione: ordine standard delle colonne
     if (!intestazione) P.TIPI_PROVA[tipo].colonne.forEach((g, j) => { mappa[g] = j; });
     return mappa;
+  }
+
+  /**
+   * Unità dedotte dalle intestazioni delle colonne associate: { grandezza: { col, unita } }.
+   * Solo per le grandezze la cui colonna porta un'unità («qc_kPa», «qc [kPa]»); le altre mantengono l'unità scelta.
+   */
+  function unitaDedotte(intestazione, mappa, tipo) {
+    const out = {};
+    if (!intestazione) return out;
+    for (const g of P.TIPI_PROVA[tipo].colonne.concat(P.TIPI_PROVA[tipo].facoltative)) {
+      const j = mappa[g];
+      if (j === null || j === undefined || intestazione[j] === undefined) continue;
+      const r = riconosci(intestazione[j], g);
+      if (r && r.unita) out[g] = { col: j, unita: r.unita };
+    }
+    return out;
   }
 
   /**
@@ -232,5 +277,5 @@
     return avvisi;
   }
 
-  return { dividi, numero, haIntestazione, proponiColonne, costruisciDati, controllaPlausibilita, PLAUSIBILITA };
+  return { dividi, numero, haIntestazione, proponiColonne, unitaDedotte, costruisciDati, controllaPlausibilita, PLAUSIBILITA };
 });
