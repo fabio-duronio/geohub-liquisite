@@ -125,8 +125,112 @@
     }
     const unita = {};
     for (const g of colonne) unita[g] = (opz.unita && opz.unita[g]) || P.UNITA[g].interna;
-    return { ok: errori.length === 0, errori, colonne, dati, unita };
+    const avvisi = controllaPlausibilita({ colonne, dati, unita });
+    return { ok: errori.length === 0, errori, avvisi, colonne, dati, unita };
   }
 
-  return { dividi, numero, haIntestazione, proponiColonne, costruisciDati };
+  /**
+   * Soglie operative dell'app per riconoscere unità dichiarate in modo sbagliato (non sono limiti
+   * normativi né di validità dei metodi). Si applicano ai valori convertiti nell'unità interna
+   * (m, MPa, kPa, m/s, %) e confrontano un valore tipico della colonna (mediana) o il massimo:
+   * un singolo valore anomalo non fa scattare l'avviso, un'intera colonna fuori scala sì.
+   */
+  const PLAUSIBILITA = Object.freeze({
+    z: { maxM: 100, minMaxM: 1 },                 // profondità massima della prova
+    qc: { medianaMin: 0.05, medianaMax: 100 },    // MPa
+    fs: { medianaMin: 0.5, medianaMax: 1000 },    // kPa
+    u2: { maxAssMin: 1, medianaAssMax: 5000, zMinPerControllo: 5 }, // kPa
+    rf: { min: 0.05, max: 15 },                   // rapporto fs/qc, %
+    N: { max: 100 },                              // colpi/30 cm
+    Vs: { medianaMin: 30, medianaMax: 3000 },     // m/s
+    FC: { max: 100 }                              // %
+  });
+
+  const NMIN_STATISTICA = 3; // sotto 3 valori utili nessun avviso: troppo pochi per giudicare la scala
+
+  const mediana = (v) => { const s = v.slice().sort((a, b) => a - b), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+  const fmt = (x) => String(Number(x.toPrecision(3))).replace('.', ',');
+
+  /**
+   * Controllo di plausibilità delle unità dichiarate: restituisce avvisi { colonna, motivo }.
+   * Non blocca l'importazione e non converte nulla: l'unità resta quella scelta dal geologo.
+   * Un caso fuori scala può essere reale (prova atipica): l'avviso invita a ricontrollare.
+   * prova: { colonne, dati, unita } con i dati nelle unità dichiarate.
+   */
+  function controllaPlausibilita(prova) {
+    const avvisi = [];
+    if (!prova || !prova.dati || prova.dati.length === 0) return avvisi;
+    const righe = P.datiInterni(prova);
+    const col = (g) => righe.map(r => r[g]).filter(v => typeof v === 'number' && Number.isFinite(v));
+    const dich = (g) => prova.unita[g] || P.UNITA[g].interna;
+    const avv = (g, motivo) => avvisi.push({ colonna: g, motivo });
+    const has = (g) => prova.colonne.includes(g);
+    const T = PLAUSIBILITA;
+
+    let zMax = null;
+    if (has('z')) {
+      const z = col('z');
+      if (z.length >= NMIN_STATISTICA) {
+        zMax = Math.max(...z);
+        if (zMax > T.z.maxM) avv('z', 'profondità massima ' + fmt(zMax) + ' m (unità dichiarata: ' + dich('z') + '): oltre ' + T.z.maxM + ' m è improbabile per questa prova. Se i valori sono in cm, cambia l’unità in cm.');
+        else if (zMax < T.z.minMaxM) avv('z', 'profondità massima ' + fmt(zMax) + ' m (unità dichiarata: ' + dich('z') + '): meno di ' + T.z.minMaxM + ' m è improbabile. Se i valori sono in m, cambia l’unità in m.');
+      }
+    }
+
+    let qcOk = false, fsOk = false;
+    if (has('qc')) {
+      const q = col('qc').filter(v => v > 0);
+      if (q.length >= NMIN_STATISTICA) {
+        const m = mediana(q);
+        if (m > T.qc.medianaMax) avv('qc', 'qc mediana ' + fmt(m) + ' MPa (unità dichiarata: ' + dich('qc') + '): oltre ' + T.qc.medianaMax + ' MPa è improbabile. Se i valori sono in kPa, cambia l’unità in kPa.');
+        else if (m < T.qc.medianaMin) avv('qc', 'qc mediana ' + fmt(m) + ' MPa (unità dichiarata: ' + dich('qc') + '): sotto ' + fmt(T.qc.medianaMin) + ' MPa è improbabile. Se i valori sono in MPa, cambia l’unità in MPa.');
+        else qcOk = true;
+      }
+    }
+    if (has('fs')) {
+      const f = col('fs').filter(v => v > 0);
+      if (f.length >= NMIN_STATISTICA) {
+        const m = mediana(f);
+        if (m > T.fs.medianaMax) avv('fs', 'fs mediana ' + fmt(m) + ' kPa (unità dichiarata: ' + dich('fs') + '): oltre ' + T.fs.medianaMax + ' kPa è improbabile. Controlla che l’unità sia kPa e non Pa o kg/cm².');
+        else if (m < T.fs.medianaMin) avv('fs', 'fs mediana ' + fmt(m) + ' kPa (unità dichiarata: ' + dich('fs') + '): sotto ' + fmt(T.fs.medianaMin) + ' kPa è improbabile. Se i valori sono in MPa, cambia l’unità in MPa.');
+        else fsOk = true;
+      }
+    }
+    // Scala relativa: fs/qc (rapporto d'attrito) di un valore tipico, solo se le due scale sono singolarmente plausibili.
+    if (qcOk && fsOk) {
+      const rf = righe.filter(r => r.qc > 0 && r.fs !== null && Number.isFinite(r.fs) && r.fs >= 0).map(r => 100 * r.fs / (r.qc * 1000));
+      if (rf.length >= NMIN_STATISTICA) {
+        const m = mediana(rf);
+        if (m < T.rf.min || m > T.rf.max) avv('fs', 'rapporto fs/qc mediano ' + fmt(m) + ' % (qc in ' + dich('qc') + ', fs in ' + dich('fs') + '): sono tipici valori di circa 0,2–8 %. Controlla le unità di qc e fs una rispetto all’altra.');
+      }
+    }
+    if (has('u2')) {
+      const u = col('u2').map(Math.abs);
+      if (u.length >= NMIN_STATISTICA) {
+        const m = mediana(u), mx = Math.max(...u);
+        if (m > T.u2.medianaAssMax) avv('u2', 'u2 mediana ' + fmt(m) + ' kPa (unità dichiarata: ' + dich('u2') + '): oltre ' + T.u2.medianaAssMax + ' kPa è improbabile. Controlla che l’unità sia kPa e non Pa.');
+        else if (mx < T.u2.maxAssMin && zMax !== null && zMax > T.u2.zMinPerControllo) avv('u2', 'u2 massima ' + fmt(mx) + ' kPa a fronte di ' + fmt(zMax) + ' m di profondità (unità dichiarata: ' + dich('u2') + '): è molto bassa. Se i valori sono in MPa, cambia l’unità in MPa.');
+      }
+    }
+    if (has('N')) {
+      const n = col('N');
+      if (n.length && Math.max(...n) > T.N.max) avv('N', 'N massimo ' + fmt(Math.max(...n)) + ' colpi/30 cm: oltre ' + T.N.max + ' è improbabile per una SPT. Controlla che non siano colpi DPSH, N60 o colpi su altro intervallo.');
+    }
+    if (has('Vs')) {
+      const v = col('Vs');
+      if (v.length >= NMIN_STATISTICA) {
+        const m = mediana(v);
+        if (m < T.Vs.medianaMin) avv('Vs', 'Vs mediana ' + fmt(m) + ' m/s: sotto ' + T.Vs.medianaMin + ' m/s è improbabile. Se i valori sono in km/s, convertili in m/s nel file (l’app accetta solo m/s).');
+        else if (m > T.Vs.medianaMax) avv('Vs', 'Vs mediana ' + fmt(m) + ' m/s: oltre ' + T.Vs.medianaMax + ' m/s è improbabile. Controlla l’unità.');
+      }
+    }
+    if (has('FC')) {
+      const f = col('FC');
+      if (f.length && Math.max(...f) > T.FC.max) avv('FC', 'FC massimo ' + fmt(Math.max(...f)) + ' %: una percentuale in massa non può superare ' + T.FC.max + '.');
+      else if (f.length >= NMIN_STATISTICA && Math.max(...f) <= 1 && Math.max(...f) > 0) avv('FC', 'FC massimo ' + fmt(Math.max(...f)) + ' %: se i valori sono frazioni (0–1), moltiplicali per 100 nel file (l’app accetta solo percentuali).');
+    }
+    return avvisi;
+  }
+
+  return { dividi, numero, haIntestazione, proponiColonne, costruisciDati, controllaPlausibilita, PLAUSIBILITA };
 });

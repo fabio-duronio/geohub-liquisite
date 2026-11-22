@@ -71,6 +71,7 @@ Le verifiche numeriche non hanno dipendenze; il controllo nel browser richiede P
 | `verifica_casuale.mjs` | prove casuali ripetibili (opzioni `--casi`, `--seme`) | 20 |
 | `verifica_restituzione.mjs` | coerenza di Ic tra grafici, tabelle e CSV | 6 |
 | `verifica_usabilita.mjs` | decimali, intestazioni senza dati, incolla da foglio elettronico | 12 |
+| `verifica_unita.mjs` | controllo di plausibilità delle unità all'importazione: avvisi non bloccanti su qc, fs, u2, profondità, N, Vs, FC e sul rapporto fs/qc; nessun falso positivo sull'esempio | 23 |
 | `verifica_versioni.mjs` | parametro `?v=` dei file in `index.html` uguale alla versione dell'app (Chart.js: la propria), per evitare copie vecchie in cache | 23 |
 | `verifica_sicurezza.mjs` | apertura di progetti alterati (tipi, valori enumerati, proprietà ereditate, ID, risultati), 1500 alterazioni casuali, FS di riferimento senza ripiego | 73 |
 | `verifica_zs9.mjs` | modulo ZS9 copiato da SismaSite, con gli stessi casi: località di controllo, casi limite, casi A–G della specifica del 15/11/2026 | 57 |
@@ -78,7 +79,7 @@ Le verifiche numeriche non hanno dipendenze; il controllo nel browser richiede P
 | `verifica_zs9.py` | seconda implementazione della procedura ZS9 (shapely, GeographicLib) su 13 località e 150 punti casuali; script di SismaSite invariato | – |
 | `browser/verifica_browser.mjs` | nel browser: file alterati e valori iniettati in memoria senza esecuzione di codice; testo libero in tutte le schede, nel confronto e in stampa; FS di riferimento non valido con stampa e CSV bloccati; conferma per modifiche non salvate; intestazione e piè di pagina di stampa; nessuna richiesta esterna né violazione della CSP; testi del confronto, del riepilogo e della stampa; magnitudo M_w: coordinate, proposta, motivazione sempre obbligatoria con stampa e CSV bloccati, avvertenza sul datum e LSN sperimentale in stampa, tabella delle 36 zone in app e in stampa | 54 |
 
-In totale sono 1031 controlli JavaScript, i tre confronti Python e 54 controlli nel browser. `verifica_zs9.py` richiede le librerie Python pyproj, shapely e numpy (installate dal workflow delle verifiche). I payload dei test di sicurezza sono innocui: al massimo impostano una variabile di prova.
+In totale sono 1054 controlli JavaScript, i tre confronti Python e 54 controlli nel browser. `verifica_zs9.py` richiede le librerie Python pyproj, shapely e numpy (installate dal workflow delle verifiche). I payload dei test di sicurezza sono innocui: al massimo impostano una variabile di prova.
 
 ## Limiti della validazione
 
