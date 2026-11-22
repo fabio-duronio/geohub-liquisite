@@ -2,9 +2,9 @@
 
 La versione dell'app e quella del motore di calcolo sono distinte: l'app è indicata in alto e nel piè di pagina della stampa insieme al motore.
 
-## Non rilasciato
+## App 0.4.2 — 2026-11-22
 
-Correzioni emerse dalla prova d'uso su casi reali (CPT dell'Emilia 2012): punto a profondità 0, controllo di plausibilità delle unità e riconoscimento delle unità nelle intestazioni all'importazione. Motore di innesco (0.3.0), modulo IL (0.2.0) e modulo cedimenti (0.1.1) invariati; numero di versione dell'app da assegnare al rilascio.
+Correzioni emerse dalla prova d'uso su casi reali (CPT dell'Emilia 2012): punto a profondità 0, controllo di plausibilità delle unità e riconoscimento delle unità nelle intestazioni all'importazione. Motore di innesco (0.3.0), modulo IL (0.2.0) e modulo cedimenti (0.1.1) invariati: FS, IL, cedimenti e LSN non cambiano. La 0.4.1 (PR #17) non è stata pubblicata come rilascio a sé: è compresa nella 0.4.2. Parametri ?v= di `index.html` portati a 0.4.2.
 
 - **Punto a profondità 0**: una riga con z = 0 (piano campagna) compariva come «input non valido», perché il motore richiede tensioni maggiori di zero. È un punto sopra la falda di verifica: ora è «non applicabile» con codice NON_SATURO, come gli altri punti sopra falda, senza errore e senza FS. La correzione è nel livello applicativo (`app/profilo.js`); le altre righe, FS, IL, cedimenti e LSN non cambiano. Una profondità negativa resta un errore di input.
 - **Avvisi sulle unità**: dopo la lettura, qc, fs, u2, profondità, N, Vs e FC sono confrontati (valore tipico, in unità interna) con soglie operative dell'app; il rapporto fs/qc mediano segnala unità di qc e fs scambiate fra loro. Avviso giallo al passaggio 2 (accanto alla scelta delle unità) e al passaggio 3. Non blocca il salvataggio, non converte nulla, non entra nel file del progetto. Le soglie non sono limiti normativi (`PLAUSIBILITA` in `app/importa.js`, descritte in `docs/app.md`).
