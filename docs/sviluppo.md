@@ -14,7 +14,7 @@ css/liquisite.css   foglio di stile (identità comune GeoHub)
 motore/             calcoli, senza dipendenze dall'interfaccia
   liquisite.js        metodi di innesco, tensioni, criteri di esclusione 1–4
   indici.js           indice IL (Iwasaki)
-  cedimenti.js        deformazione volumetrica (Zhang et al. 2002), cedimento, LSN
+  cedimenti.js        deformazione volumetrica (Zhang et al. 2002), cedimento
 app/                interfaccia: nessuna formula di liquefazione
   progetto.js         formato del progetto, unità, firma degli input, validazione dei file
   profilo.js          collegamento prova → tensioni → motore; riepilogo; serie dei grafici
@@ -123,7 +123,7 @@ La CSP è una difesa aggiuntiva: la protezione principale resta la validazione d
 - **Conversioni.** Nessuna conversione universale DPSH → SPT; le CPT a punta meccanica non sono supportate.
 - **Testi dell'interfaccia.**
   - Nessuna frase del tipo «sito sicuro» o «terreno non liquefacibile»: l'esclusione si scrive «verifica omessa ai sensi del §7.11.3.4.2».
-  - Nessuna classe di microzonazione per IL e LSN.
+  - Nessuna classe di microzonazione per l'IL.
 - **Stampa.** È A4 verticale, pensata come allegato alla relazione.
 - **Dati dei file.** Sono sempre non attendibili: nuovi campi del progetto vanno aggiunti a `validaProgetto` con il loro tipo, e ogni valore inserito nell'HTML passa da `esc()`.
 - **Dipendenze.** Niente risorse esterne: nuovi componenti vanno in `vendor/` con la licenza.

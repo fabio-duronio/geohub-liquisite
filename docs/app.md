@@ -59,7 +59,7 @@ In «Progetto» un campo raccoglie le segnalazioni del geologo sulle distanze e 
   - *Dati e interpretazione*.
   - *Tensioni e coefficienti*.
   - *FS, PL e IL*.
-  - *Cedimenti e LSN*: FS, deformazione volumetrica, cedimento cumulato.
+  - *Cedimenti*: FS, deformazione volumetrica, cedimento cumulato.
 
   Per le CPT c'è anche la carta di comportamento del terreno (Q–F, zone 2–7 da Ic secondo Robertson & Wride 1998). Le tavole si possono personalizzare. Un clic su un punto seleziona la stessa profondità in tutti i pannelli e nella tabella.
 - **Tabelle**: tutte le grandezze, riga per riga, con stato, motivo e lettura del FS rispetto a 1 e al FS di riferimento.
@@ -70,7 +70,7 @@ In «Progetto» un campo raccoglie le segnalazioni del geologo sulle distanze e 
 
   Nessun risultato viene scelto automaticamente.
 - **Magnitudo M_w**: coordinate, esito della zonazione ZS9, origine della M_w dello scenario, tabella delle 36 zone per i siti esterni, avvisi di prossimità ai confini, fonte, criterio e limiti.
-- **Avvisi e assunzioni**: avvisi del metodo e dell'app, valori assunti, criterio di scelta del FS e assunzioni di IL, cedimento e LSN.
+- **Avvisi e assunzioni**: avvisi del metodo e dell'app, valori assunti, criterio di scelta del FS e assunzioni di IL e cedimento.
 
 ## Elaborazione del profilo
 
@@ -102,14 +102,14 @@ Le profondità non indagate non generano righe: il riepilogo distingue profondit
 - **Stampa A4 verticale** (HTML → PDF), con intestazione «GeoHub-LiquiSite – Verifica a liquefazione». Le sezioni sono:
   1. dati e stratigrafia, con la sezione 1.1 sulla magnitudo M_w: coordinate, esito ZS9, M_w adottata e sua origine, motivazione, segnalazioni del geologo, tabella delle 36 zone per i siti esterni, fonte (Linee guida LQ Tab. A1.1; ZS9, Meletti et al. 2004, doi 10.13127/sh/zs9, CC BY 4.0), criterio, datum non dichiarato del file ZS9 e criticità dichiarate dalle Linee guida (pag. 31–32);
   2. verifica preliminare, con le curve granulometriche;
-  3. riepilogo, con FS di riferimento, IL, cedimento, LSN e criterio di verifica;
+  3. riepilogo, con FS di riferimento, IL, cedimento e criterio di verifica;
   4. profili;
   5. carta di comportamento (CPT);
   6. avvisi, assunzioni e limiti.
 
   Con Chrome ed Edge ogni pagina ha un'intestazione (titolo, progetto e scenario) e un piè di pagina (versione dell'app e del motore, firma degli input, numero di pagina). Gli stessi dati, con data e ora del calcolo, chiudono il documento, anche nei browser che non supportano intestazioni e piè di pagina CSS. Non compaiono frasi del tipo «sito sicuro».
 - **CSV** (separatore `;`, decimale `,`, UTF-8 con BOM).
-  - Intestazione: progetto, prova, scenario, metodo, parametri, origine della M_w, FS di riferimento, esito della verifica preliminare, cedimento e LSN.
+  - Intestazione: progetto, prova, scenario, metodo, parametri, origine della M_w, FS di riferimento, esito della verifica preliminare, IL e cedimento.
   - Righe: una per lettura, con dati convertiti, tensioni e grandezze a precisione piena.
   - Dati mancanti o non calcolati: cella vuota, mai zero. I testi che iniziano con `= + - @` sono preceduti da un apostrofo.
 - **PNG** di ogni pannello (titolo, assi, unità, legenda, sfondo bianco).
@@ -129,6 +129,10 @@ Le profondità non indagate non generano righe: il riepilogo distingue profondit
 - **Prove non supportate nel calcolo**:
   - CPT a punta meccanica: i metodi sono calibrati su punta elettrica e piezocono;
   - prove DPSH: non esiste una conversione in SPT di validità generale.
-- **Cedimento e LSN.** Solo con il metodo CPT, per piano campagna sub-orizzontale; nessuno spostamento laterale.
-- **Indici.** IL e LSN sono riportati senza classi: il giudizio resta del progettista.
+- **Cedimento.** Solo con il metodo CPT, per piano campagna sub-orizzontale; nessuno spostamento laterale. L'indice LSN non è calcolato.
+- **Indice IL.** Riportato senza classi: le classi delle Linee guida LQ si applicano all'IL medio delle verticali di una zona (pag. 9, Tab. 2 e nota 2), non a una singola verticale; il giudizio resta del progettista.
+- **Limiti dei metodi, segnalati dagli avvisi** (non sono errori dell'app):
+  - oltre circa 10 m di profondità l'incertezza di r_d diventa grande e la banca dati di Boulanger & Idriss (2014) arriva a circa 10–12 m (pag. 9): i FS minimi in quel tratto vanno letti con questa cautela, eventualmente con un'analisi di risposta sismica locale;
+  - la soglia di Ic (2,6 predefinita; 2,4–2,8 per l'analisi di sensibilità, B&I 2014, pag. 99) decide quali punti si verificano: l'IL può cambiare in modo sensibile con la soglia. Nella prova d'uso del 22/11/2026 (vedi [Validazione](validazione.md)) l'IL è variato di circa il 40–60 % tra 2,4 e 2,8;
+  - con il metodo CPT il contenuto di fini è stimato da Ic se non è indicato per lo strato.
 - **Dati e rete.** I dati delle prove e i calcoli restano nel browser: nessun dato del progetto viene inviato a server. La libreria dei grafici (Chart.js) e i caratteri (IBM Plex) sono inclusi nell'app, che non contatta servizi esterni. Una politica di sicurezza dei contenuti (CSP) ammette solo risorse della pagina stessa.

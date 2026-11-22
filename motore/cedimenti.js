@@ -1,5 +1,5 @@
 /*
- * GeoHub-LiquiSite — cedimento post-sismico da CPT e indice LSN
+ * GeoHub-LiquiSite — cedimento post-sismico da CPT
  * Copyright (C) 2026 Fabio Duronio — AGPL-3.0 con i termini aggiuntivi del file NOTICE.
  *
  * Fonti lette per intero:
@@ -11,7 +11,10 @@
  *    Nell'Eq. A14 il campo stampato «33 ≤ (qc1N)cs ≤ 20» è un refuso per 200 (stesso campo
  *    delle Eq. A10–A13 e della Fig. 3).
  *  - Tonkin & Taylor (2015), Appendix A «Assessment of Liquefaction Vulnerability in
- *    Christchurch», §A4.3.5: LSN = 1000 · ∫ εv / z dz, εv dalle curve di Zhang et al. (2002).
+ *    Christchurch»: applicazione delle curve di Zhang con (qc1N)cs e FS di Boulanger e Idriss (2014).
+ *
+ * L'indice LSN non è calcolato dalla versione 1.0 (decisione del 22/11/2026): la definizione
+ * originale (van Ballegooy et al. 2014) non è stata letta.
  *
  * Convenzioni adottate, dichiarate nei risultati:
  *  - εv tra due curve di FS: interpolazione lineare in FS; FS ≤ 0,5: curva limite; FS ≥ 2,0: 0;
@@ -19,12 +22,10 @@
  *  - (qc1N)cs fuori da 33–200: ricondotto al limite più vicino, con avviso; sotto 33 la scelta
  *    può sottostimare εv rispetto all'estrapolazione della curva limite (non cautelativo);
  *  - tratti con Ic oltre la soglia e tratti sopra falda: εv = 0, secondo le ipotesi del modello;
- *  - tratti non indagati o senza risultato: S e LSN come intervalli, con contributo nullo
+ *  - tratti non indagati o senza risultato: S come intervallo, con contributo nullo
  *    (minimo) e deformazione della curva limite (massimo): limiti convenzionali del modello, non un
  *    intervallo di confidenza né un massimo fisico; nessun tratto ignoto è considerato sicuro;
- *  - integrazione 0–20 m; LSN anche su 0–10 m per confronto con gli studi di origine;
- *  - nell'LSN εv entra come decimale (εv[%] / 100), come indicato nella guida MBIE-NZGS
- *    «Earthquake geotechnical engineering practice», Modulo 3, nota 7 alla definizione di LSN.
+ *  - integrazione 0–20 m.
  * Le curve sono state ricavate con (qc1N)cs e FS di Robertson e Wride (1998); qui si usano
  * (qc1N)cs e FS del metodo dello scenario (Boulanger e Idriss 2014), come nello studio
  * dell'Appendice A: combinazione dichiarata nei risultati.
@@ -36,8 +37,8 @@
 })(typeof self !== 'undefined' ? self : this, function (IND) {
   'use strict';
 
-  const VERSIONE_CEDIMENTI = '0.1.1';
-  const Z_MAX = 20, Z_LSN_BREVE = 10;
+  const VERSIONE_CEDIMENTI = '0.2.0';
+  const Z_MAX = 20;
   const Q_MIN = 33, Q_MAX = 200;
   const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
 
@@ -87,17 +88,15 @@
   /** Deformazione limite [%]: curva limite al limite inferiore del campo, (qc1N)cs = 33. */
   const EPS_LIMITE = epsCurva(0, Q_MIN);
 
-  /** ∫ₐᵇ dz / z per 0 ≤ a < b (Infinity se a = 0). */
-  const intInv = (a, b) => (a <= 0 ? Infinity : Math.log(b / a));
 
   /**
-   * Cedimento S e LSN.
+   * Cedimento post-sismico S.
    * punti: [{ z, categoria: 'FS'|'sopraFalda'|'argilloso'|'ignoto', FS?, qc1Ncs? }] (come per IL,
    *        con (qc1N)cs per i punti 'FS'). zFalda: falda di verifica [m].
-   * Esito: { stato, Smin, Smax [m], LSNmin, LSNmax, LSN10min, LSN10max, completo, punti, tratti,
+   * Esito: { stato, Smin, Smax [m], completo, punti, tratti,
    *          conteggi, assunzioni, avvisi, fonte }.
    */
-  function cedimentoLSN(punti, zFalda, opz = {}) {
+  function cedimento(punti, zFalda, opz = {}) {
     if (!Array.isArray(punti)) return { stato: 'input_non_valido', errori: [{ campo: 'punti', codice: 'MANCANTE', motivo: 'atteso un elenco di punti' }] };
     const errQ = punti.findIndex(p => p && p.categoria === 'FS' && !(isNum(p.qc1Ncs) && p.qc1Ncs > 0));
     if (errQ >= 0) return { stato: 'input_non_valido', errori: [{ campo: 'punti[' + errQ + '].qc1Ncs', codice: 'FUORI_DOMINIO', motivo: '(qc1N)cs: numero > 0 per i punti con FS' }] };
@@ -105,7 +104,7 @@
     if (il.stato !== 'calcolato') return il;
     const perZ = new Map(punti.filter(p => p.categoria === 'FS').map(p => [p.z, p]));
 
-    let Smin = 0, Smax = 0, Lmin = 0, Lmax = 0, L10min = 0, L10max = 0;
+    let Smin = 0, Smax = 0;
     const conteggi = { sotto33: 0, sopra200: 0 };
     const visti = new Set();
     const tratti = [];
@@ -121,36 +120,27 @@
       } else if (t.categoria === 'ignoto') { eMin = 0; eMax = EPS_LIMITE; }
       const dz = a - da;
       Smin += eMin / 100 * dz; Smax += eMax / 100 * dz;
-      const I = intInv(da, a);
-      const contrib = (e) => e === 0 ? 0 : 1000 * (e / 100) * I;
-      Lmin += contrib(eMin); Lmax += contrib(eMax);
-      const a10 = Math.min(a, Z_LSN_BREVE);
-      if (a10 > da) { const I10 = intInv(da, a10); L10min += eMin === 0 ? 0 : 1000 * eMin / 100 * I10; L10max += eMax === 0 ? 0 : 1000 * eMax / 100 * I10; }
       tratti.push({ da, a, categoria: t.categoria, zPunto: t.zPunto, FS: t.FS, epsMin: eMin, epsMax: eMax, qUsato: d ? d.qUsato : null, Smin, Smax });
     }
     const completo = il.completo;
     const avvisi = [];
     if (conteggi.sotto33) avvisi.push({ codice: 'ZHANG_Q_SOTTO_33', messaggio: conteggi.sotto33 + ' punti con (qc1N)cs < 33 ricondotti a 33: εv può essere sottostimata rispetto all\'estrapolazione della curva limite (stima non cautelativa).' });
     if (conteggi.sopra200) avvisi.push({ codice: 'ZHANG_Q_SOPRA_200', messaggio: conteggi.sopra200 + ' punti con (qc1N)cs > 200 ricondotti a 200, limite superiore delle equazioni.' });
-    if (!isFinite(Lmax)) avvisi.push({ codice: 'LSN_NON_LIMITATO', messaggio: 'LSN massimo non limitato: falda al piano campagna e tratto superficiale senza risultato (il peso 1/z diverge per z → 0).' });
     const assunzioni = [
       { codice: 'ZHANG_CURVE', descrizione: 'εv da Zhang et al. (2002), Eq. A1–A14 (curve di Ishihara e Yoshimine 1992), con interpolazione lineare in FS tra le curve; FS ≤ 0,5: curva limite; FS ≥ 2,0: εv = 0; (qc1N)cs fuori da 33–200 ricondotto al limite più vicino.' },
       { codice: 'ZHANG_COMBINAZIONE', descrizione: 'Le curve sono state ricavate con (qc1N)cs e FS di Robertson e Wride (1998); qui si applicano con (qc1N)cs e FS di Boulanger e Idriss (2014), come nello studio di Tonkin & Taylor (2015, App. A).' },
       { codice: 'ZHANG_ESCLUSI', descrizione: 'Tratti con Ic oltre la soglia dello scenario e tratti sopra falda: εv = 0, secondo le ipotesi del modello.' },
       { codice: 'ZHANG_AMBITO', descrizione: 'Piano campagna sub-orizzontale, lontano da scarpate libere: deformazione volumetrica = deformazione verticale. Gli autori indicano il metodo per progetti a rischio basso o medio e come stima preliminare per gli altri; nessuno spostamento laterale è calcolato.' },
-      { codice: 'LSN_DEFINIZIONE', descrizione: 'LSN = 1000 · ∫ εv / z dz (Tonkin & Taylor 2015, App. A, §A4.3.5), con εv come decimale (MBIE-NZGS, Modulo 3), integrale esatto in ogni tratto; 0–20 m e, per confronto, 0–10 m. Senza classi: il giudizio resta del progettista.' },
-      { codice: 'LSN_SPERIMENTALE', descrizione: 'LSN sperimentale: resta tale fino a una validazione indipendente (decisione di GeoHub del 21/11/2026). Il cedimento post-sismico non è sperimentale.' }
+      { codice: 'ZHANG_INTEGRAZIONE', descrizione: 'Cedimento S = Σ εv · Δz (Zhang et al. 2002, Eq. 1) su 0–20 m, con la partizione della verticale dell\'indice IL.' }
     ];
-    if (!completo) assunzioni.push({ codice: 'CEDIMENTI_INCOMPLETO', descrizione: 'Tratti senza risultato in 0–20 m (' + il.spessori.ignoto.toFixed(2).replace('.', ',') + ' m): cedimento e LSN compresi tra il minimo (contributo nullo) e il massimo (deformazione della curva limite di Zhang et al. 2002, ' + EPS_LIMITE.toFixed(2).replace('.', ',') + ' %). I due valori sono limiti convenzionali del modello, non un intervallo di confidenza né un massimo fisico garantito: con (qc1N)cs < 33 la deformazione può essere maggiore.' });
+    if (!completo) assunzioni.push({ codice: 'CEDIMENTI_INCOMPLETO', descrizione: 'Tratti senza risultato in 0–20 m (' + il.spessori.ignoto.toFixed(2).replace('.', ',') + ' m): cedimento compreso tra il minimo (contributo nullo) e il massimo (deformazione della curva limite di Zhang et al. 2002, ' + EPS_LIMITE.toFixed(2).replace('.', ',') + ' %). I due valori sono limiti convenzionali del modello, non un intervallo di confidenza né un massimo fisico garantito: con (qc1N)cs < 33 la deformazione può essere maggiore.' });
     return {
       stato: 'calcolato', versione: VERSIONE_CEDIMENTI, completo,
       Smin, Smax, S: completo ? Smin : null,
-      LSNmin: Lmin, LSNmax: Lmax, LSN: completo ? Lmin : null,
-      LSN10min: L10min, LSN10max: L10max,
       epsLimite: EPS_LIMITE, tratti, conteggi, spessori: il.spessori, avvisi, assunzioni,
-      fonte: 'Zhang, Robertson e Brachman (2002), Can. Geotech. J. 39: 1168–1180, Eq. 1 e App. A; LSN: Tonkin & Taylor (2015), App. A, §A4.3.5.'
+      fonte: 'Zhang, Robertson e Brachman (2002), Can. Geotech. J. 39: 1168–1180, Eq. 1 e App. A.'
     };
   }
 
-  return { VERSIONE_CEDIMENTI, CURVE, EPS_LIMITE, Q_MIN, Q_MAX, deformazioneVolumetrica, cedimentoLSN };
+  return { VERSIONE_CEDIMENTI, CURVE, EPS_LIMITE, Q_MIN, Q_MAX, deformazioneVolumetrica, cedimento };
 });

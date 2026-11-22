@@ -4,10 +4,12 @@
  *
  * Modulo separato dal motore di innesco (motore/liquisite.js): usa solo i FS già calcolati.
  *
- * FORMULA di Iwasaki et al. (1978), come riportata nelle fonti consultate integralmente:
- * Linee guida MS per le liquefazioni LQ v1.0 (2018), pag. 9, nota 3; volume CNR-CentroMS
- * (2024), Eq. 3.73–3.74, pag. 36–37, che attribuisce esplicitamente l'indice a Iwasaki et al.
- * (1978):
+ * FONTE della formula, letta per intero: Iwasaki T., Tokida K., Tatsuoka F. (1981), Soil
+ * liquefaction potential evaluation with use of the simplified procedure, 1st Int. Conf. on Recent
+ * Advances in Geotechnical Earthquake Engineering and Soil Dynamics, St. Louis, Eq. (5), pag. 210;
+ * identica in Tatsuoka et al. (1980), Soils and Foundations 20(4), Eq. (29a), pag. 107. L'indice è
+ * stato proposto dagli stessi autori nel 1978 (pubblicazione non reperita). Riportata anche nelle
+ * Linee guida MS-LQ (2018), pag. 9, nota 3, e nel volume CNR-CentroMS (2024), Eq. 3.73–3.74:
  *
  *   IL = ∫₀²⁰ F(z) · w(z) dz      w(z) = 10 − 0,5·z      F = 1 − FS se FS ≤ 1, altrimenti 0
  *
@@ -47,7 +49,7 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  const VERSIONE_INDICI = '0.2.0';
+  const VERSIONE_INDICI = '0.2.1';
   const Z_IL = 20;
   const CATEGORIE = ['FS', 'sopraFalda', 'argilloso', 'ignoto'];
   /** Numero con virgola decimale, per i testi in italiano. */
@@ -178,7 +180,7 @@
       stato: 'calcolato', versione: VERSIONE_INDICI,
       ILmin, ILmax, completo, IL: completo ? ILmin : null,
       spessori, tratti, curva, passoMediano: mediano, vuotoMax: isFinite(vuotoMax) ? vuotoMax : null, assunzioni,
-      fonte: 'Iwasaki et al. (1978); formula letta in Iwasaki, Tokida e Tatsuoka (1981), Eq. 5, pag. 210, e Tatsuoka et al. (1980), Soils and Foundations 20(4), Eq. 29a, pag. 107; riportata nelle Linee guida MS-LQ (2018, pag. 9) e nel volume CNR-CentroMS «Pratiche correnti per le analisi di suscettibilità alla liquefazione negli studi di microzonazione sismica di livello 3» (2024, Eq. 3.73–3.74, pag. 36). Senza classi.'
+      fonte: 'Iwasaki, Tokida e Tatsuoka (1981), Eq. 5, pag. 210 (indice proposto dagli stessi autori nel 1978); formula identica in Tatsuoka et al. (1980), Soils and Foundations 20(4), Eq. 29a, pag. 107; riportata nelle Linee guida MS-LQ (2018, pag. 9) e nel volume CNR-CentroMS «Pratiche correnti per le analisi di suscettibilità alla liquefazione negli studi di microzonazione sismica di livello 3» (2024, Eq. 3.73–3.74, pag. 36). Senza classi.'
     };
   }
 
