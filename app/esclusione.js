@@ -35,9 +35,20 @@
     };
   }
 
-  /** Voce per strato (abbinata per profondità da–a); vuota se assente. */
+  /**
+   * Voce della verifica preliminare di uno strato: prima per id stabile (stratoId), così il cambio
+   * delle quote non la separa; altrimenti, solo tra le voci senza stratoId (file precedenti non ancora
+   * allineati, dati costruiti a mano), per quote da–a come nella versione 1.0.0. Una voce con stratoId
+   * di uno strato eliminato non si riaggancia a uno strato nuovo con le stesse quote.
+   */
+  function voceStrato(voci, s) {
+    const perId = s && typeof s.id === 'string' && s.id ? voci.find(x => x && x.stratoId === s.id) : null;
+    return perId || voci.find(x => x && !x.stratoId && Math.abs(x.da - s.da) < EPS && Math.abs(x.a - s.a) < EPS) || null;
+  }
+
+  /** Dati della verifica preliminare di uno strato; vuoti se assenti. */
   function datiStrato(dati, s) {
-    const v = dati.strati.find(x => x && Math.abs(x.da - s.da) < EPS && Math.abs(x.a - s.a) < EPS);
+    const v = voceStrato(dati.strati, s);
     return {
       sabbiaPulita: v && typeof v.sabbiaPulita === 'boolean' ? v.sabbiaPulita : null,
       curva: v && Array.isArray(v.curva) ? v.curva : null,
@@ -47,14 +58,15 @@
     };
   }
 
-  /** Crea o aggiorna la voce di uno strato nello scenario (usata dall'interfaccia). */
+  /** Crea o aggiorna la voce di uno strato nello scenario (usata dall'interfaccia). Le quote della voce seguono lo strato. */
   function aggiornaStrato(scenario, s, modifiche) {
     if (!scenario.esclusione || typeof scenario.esclusione !== 'object') scenario.esclusione = {};
     const e = scenario.esclusione;
     if (!Array.isArray(e.strati)) e.strati = [];
-    let v = e.strati.find(x => x && Math.abs(x.da - s.da) < EPS && Math.abs(x.a - s.a) < EPS);
-    if (!v) { v = { da: s.da, a: s.a }; e.strati.push(v); }
-    Object.assign(v, modifiche);
+    let v = voceStrato(e.strati, s);
+    if (!v) { v = s.id ? { stratoId: s.id, da: s.da, a: s.a } : { da: s.da, a: s.a }; e.strati.push(v); }
+    Object.assign(v, modifiche, { da: s.da, a: s.a });
+    if (s.id && !v.stratoId) v.stratoId = s.id; // voce trovata per quote: da ora collegata per id
     return v;
   }
 

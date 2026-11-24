@@ -328,7 +328,7 @@
   $('btnAggiungiStrato').addEventListener('click', () => {
     const sc = scenario(); if (!sc) return;
     const ult = sc.strati[sc.strati.length - 1];
-    sc.strati.push({ da: ult ? ult.a : 0, a: null, gamma: ult ? ult.gamma : 18, gammaSat: ult ? ult.gammaSat : 19, FC: null, descrizione: '' });
+    sc.strati.push({ id: P.nuovoId('strato'), da: ult ? ult.a : 0, a: null, gamma: ult ? ult.gamma : 18, gammaSat: ult ? ult.gammaSat : 19, FC: null, descrizione: '' });
     renderStrati(); inputCambiato();
   });
 

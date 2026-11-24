@@ -119,6 +119,7 @@ Le profondità non indagate non generano righe: il riepilogo distingue profondit
   - Il file contiene solo gli input: dopo l'apertura i risultati si ricalcolano con «Calcola».
   - Un file con dati non validi non viene aperto: l'app elenca gli errori e lascia invariato il progetto corrente. Come nell'importazione, le profondità di ogni prova devono essere presenti e crescenti.
   - Prima di sostituire un progetto con modifiche non salvate (Nuovo, Demo sintetica, Apri) l'app chiede conferma.
+  - Ogni strato ha un identificativo stabile: i dati della verifica preliminare (curva granulometrica, campione, giudizio del geologo) seguono lo strato anche se se ne cambiano le quote. I file salvati prima della versione con gli identificativi si aprono: i dati della verifica preliminare si collegano agli strati per quote, come prima, una sola volta all'apertura. L'identificativo non entra nel calcolo né nella firma degli input.
   - Le bozze di importazione restano in memoria solo durante la sessione.
 - **Bozza automatica del progetto** (memoria locale del browser, `localStorage`).
   - Con modifiche non salvate in un file, gli input del progetto (mai i risultati) si copiano nella memoria locale del browser mezzo secondo dopo l'ultima modifica e alla chiusura della pagina. Nulla viene inviato in rete.
