@@ -2,6 +2,12 @@
 
 La versione dell'app e quella del motore di calcolo sono distinte: l'app è indicata in alto e nel piè di pagina della stampa insieme al motore.
 
+## Non rilasciata — correzioni dall'audit pre-rilascio (onda 1)
+
+Correzioni di robustezza (classe A del mandato del 24/11/2026): nessuna formula cambia. Motore di innesco (0.3.0), modulo IL (0.2.1) e modulo cedimenti (0.2.0) invariati: FS, IL e cedimento non cambiano. Verifica dei rilievi in `docs/audit-liquisite-1.0.0.md`.
+
+- **Stampa** (rilievi B6.1–B6.3): stampando dal browser (Ctrl+P / Cmd+P o menu) il rapporto si prepara ogni volta (`beforeprint`); prima la pagina era bianca. Con risultati assenti, non aggiornati o con dati da correggere (FS di riferimento, motivazione della Mw) si stampa un foglio «STAMPA NON VALIDA» con il motivo, mai il rapporto. Il rapporto si svuota dopo ogni stampa (`afterprint`), a ogni modifica degli input e a ogni ricalcolo: prima restava in pagina quello dell'ultima stampa e Ctrl+P poteva stampare risultati vecchi. Le tavole dei profili sono sempre le stesse per metodo (verifica, PL, IL e, con CPT, cedimenti), qualunque pannello sia aperto a video; il pulsante «Stampa / PDF» non cambia più scheda. Nuovo controllo nel browser `verifiche/browser/verifica_stampa.mjs` (23 controlli); `verifiche/esegui.mjs --browser` esegue tutti i file `verifiche/browser/verifica_*.mjs`; `npm run test:browser` (usato dal workflow) li esegue tutti con `--solo-browser`.
+
 ## App 1.0.0 — 2026-11-22
 
 Prima versione stabile. Comprende tutto quanto rilasciato fino alla 0.4.2; nessuna funzione nuova. Chiude i punti rimasti incerti con le decisioni di Fabio del 22/11/2026. Motore di innesco invariato (0.3.0): FS, IL e cedimento non cambiano. Formato del file di progetto invariato: i progetti salvati con le versioni precedenti si aprono.

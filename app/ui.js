@@ -24,6 +24,7 @@
     confronto: [],   // id degli scenari nel confronto
     grafici: [],
     esclSel: null,   // strato selezionato nella verifica preliminare
+    stampaPreparata: false, // rapporto appena preparato dal pulsante «Stampa / PDF»
     salvato: null    // input del progetto all'ultima apertura o salvataggio (per le modifiche non salvate)
   };
 
@@ -339,6 +340,7 @@
   $('btnCalcola').addEventListener('click', () => {
     const sc = scenario(); if (!sc) return;
     calcola(sc);
+    svuotaStampa();
     renderRisultati();
     renderStato();
   });
@@ -359,6 +361,7 @@
 
   /** Chiamata a ogni modifica di un input di calcolo. */
   function inputCambiato() {
+    svuotaStampa();
     renderStato();
     renderRiepilogo();
     aggiornaVeli();
@@ -552,6 +555,32 @@
     return p;
   }
 
+  /**
+   * Configurazione del grafico di un pannello e nota (valori fuori scala, significato).
+   * Usata a video e in stampa: la stampa non dipende dai pannelli aperti a video.
+   */
+  function cfgPannello(c, sc, r) {
+    const continuo = F.METODI[sc.metodo].continuo;
+    const zMax = Math.max(Math.ceil((r.riepilogo.profonditaIndagata ? r.riepilogo.profonditaIndagata.a : 10) + 0.5), ...sc.strati.map(s => isNum(s.a) ? s.a : 0));
+    const strati = [...new Set(sc.strati.flatMap(s => [s.da, s.a]).filter(z => isNum(z) && z > 0))];
+    const serie = c.serieDirette ? c.serieDirette.map(x => ({ ...x, soloPunti: false })) : c.serie.map(x => {
+      const sr = F.serie(r, x.chiave, x.sorgente);
+      return { nome: x.nome, colore: x.colore, tratteggio: x.tratteggio, stilePunto: x.tratteggio ? 'rect' : 'circle', soloPunti: !continuo && x.sorgente !== 'tensioni', segmenti: sr.segmenti, punti: sr.punti };
+    });
+    const cfg = {
+      titolo: c.titolo, etichettaX: c.etichettaX, yMax: zMax, falda: sc.zFalda, strati, riferimentiX: c.rif || [],
+      xMin: c.xMin, xMax: c.xMax, cifre: c.cifre, serie, tipoPannello: c.id, sogliaIc: sc.opzioni.IcSoglia ?? 2.6, fsRif: F.fsRiferimento(sc) ?? undefined
+    };
+    // note: valori fuori scala (non modificati) e significato
+    const note = [];
+    if (isNum(c.xMax)) {
+      const fuori = serie.reduce((n, s) => n + s.punti.filter(p => p.x > c.xMax).length, 0);
+      if (fuori) note.push(fuori + ' valori oltre ' + fmt(c.xMax, c.xMax < 2 ? 1 : 0) + ' non visibili (fuori scala, vedi tabella)');
+    }
+    if (c.nota) note.push(c.nota);
+    return { cfg, nota: note.join(' · ') };
+  }
+
   function renderProfili() {
     const box = $('pan-profili');
     const pv = prova(), sc = scenario(), r = sc && risultatoDi(sc);
@@ -583,30 +612,14 @@
       '<button class="btn-link" type="button" data-png="sbt">Scarica PNG</button></div></div>';
     box.innerHTML = h;
 
-    const zMax = Math.max(Math.ceil((r.riepilogo.profonditaIndagata ? r.riepilogo.profonditaIndagata.a : 10) + 0.5), ...sc.strati.map(s => isNum(s.a) ? s.a : 0));
-    const strati = [...new Set(sc.strati.flatMap(s => [s.da, s.a]).filter(z => isNum(z) && z > 0))];
     for (const c of cat.filter(c => S.pannelli.id.has(c.id))) {
-      const serie = c.serieDirette ? c.serieDirette.map(x => ({ ...x, soloPunti: false })) : c.serie.map(x => {
-        const sr = F.serie(r, x.chiave, x.sorgente);
-        return { nome: x.nome, colore: x.colore, tratteggio: x.tratteggio, stilePunto: x.tratteggio ? 'rect' : 'circle', soloPunti: !continuo && x.sorgente !== 'tensioni', segmenti: sr.segmenti, punti: sr.punti };
-      });
-      const cfg = {
-        titolo: c.titolo, etichettaX: c.etichettaX, yMax: zMax, falda: sc.zFalda, strati, riferimentiX: c.rif || [],
-        xMin: c.xMin, xMax: c.xMax, cifre: c.cifre, serie, tipoPannello: c.id, sogliaIc: sc.opzioni.IcSoglia ?? 2.6, fsRif: F.fsRiferimento(sc) ?? undefined
-      };
+      const { cfg, nota } = cfgPannello(c, sc, r);
       const chart = Gr.profilo($('cv-' + c.id), { ...cfg,
         selezionato: S.selezione !== null ? (r.righe[S.selezione] || {}).z : undefined,
         onClick: (indice) => seleziona(indice)
       });
       S.grafici.push({ id: c.id, titolo: c.titolo, chart, cfg });
-      // note: valori fuori scala (non modificati) e significato
-      const note = [];
-      if (isNum(c.xMax)) {
-        const fuori = serie.reduce((n, s) => n + s.punti.filter(p => p.x > c.xMax).length, 0);
-        if (fuori) note.push(fuori + ' valori oltre ' + fmt(c.xMax, c.xMax < 2 ? 1 : 0) + ' non visibili (fuori scala, vedi tabella)');
-      }
-      if (c.nota) note.push(c.nota);
-      $('nota-' + c.id).textContent = note.join(' · ');
+      $('nota-' + c.id).textContent = nota;
     }
     box.querySelectorAll('[data-preset]').forEach(el => el.onclick = () => { S.pannelli.preset = el.dataset.preset; S.pannelli.id = new Set(presets[el.dataset.preset].filter(id => cat.some(c => c.id === id))); renderRisultati(); });
     box.querySelectorAll('[data-pannello]').forEach(el => el.addEventListener('change', () => {
@@ -1246,10 +1259,38 @@
   $('btnStampa').addEventListener('click', () => {
     const sc = scenario(), blocco = bloccoUscite(sc, 'stampare');
     if (blocco) { alert(blocco); return; }
-    if (S.tab !== 'profili') mostraTab('profili');
     preparaStampa();
+    S.stampaPreparata = true; // beforeprint non rifà il lavoro appena fatto
     setTimeout(() => window.print(), 50);
   });
+
+  /** Tavole di stampa, sempre le stesse per metodo, indipendenti dai pannelli aperti a video. */
+  const PANNELLI_STAMPA = ['Ic', 'qc1N', 'N', 'N160', 'Vs', 'csrcrr', 'FS', 'PL', 'IL', 'epsv', 'sced'];
+
+  /** Svuota il rapporto di stampa: nessun rapporto resta in pagina dopo una modifica o una stampa. */
+  function svuotaStampa() {
+    const st = $('stampa'); if (st) st.innerHTML = '';
+    const mg = document.getElementById('stileMargini'); if (mg) mg.textContent = '';
+    S.stampaPreparata = false;
+  }
+
+  /** Pagina mostrata quando si stampa dal browser (Ctrl+P) senza risultati validi e aggiornati. */
+  function stampaNonValida(motivo) {
+    svuotaStampa();
+    $('stampa').innerHTML = '<div class="st-testata"><div class="st-titolo">GeoHub-LiquiSite – STAMPA NON VALIDA</div>' +
+      '<div class="st-norma">Risultati assenti, non aggiornati o con dati da correggere</div></div>' +
+      '<p class="st-nota"><b>Questo foglio non è un rapporto di verifica.</b> ' + esc(motivo) + '</p>' +
+      '<p class="st-nota">Correggere o ricalcolare lo scenario e stampare di nuovo con «Stampa / PDF».</p>';
+  }
+
+  // Stampa dal menu del browser o con Ctrl+P / Cmd+P: il rapporto si prepara qui, ogni volta.
+  window.addEventListener('beforeprint', () => {
+    if (S.stampaPreparata) { S.stampaPreparata = false; return; }
+    const blocco = bloccoUscite(scenario(), 'stampare');
+    if (blocco) { stampaNonValida(blocco); return; }
+    try { preparaStampa(); } catch (e) { stampaNonValida('Errore nella preparazione del rapporto: ' + (e && e.message ? e.message : String(e)) + '.'); }
+  });
+  window.addEventListener('afterprint', svuotaStampa);
 
   const nFS = (r, soglia) => r.righe.filter(x => x.stato === 'calcolato' && isNum(x.valori?.FS) && x.valori.FS < soglia).length;
 
@@ -1320,14 +1361,16 @@
       riga('Indice IL (Iwasaki, 0–20 m, senza classi)', r.indiceIL ? esc(testoIL(r.indiceIL)) + (r.indiceIL.stato === 'calcolato' && !r.indiceIL.completo ? ' — copertura incompleta: ' + fmt(r.indiceIL.spessori.ignoto, 2) + ' m senza risultato, con contributo nullo nel valore inferiore e contributo massimo del modello nel superiore (limiti convenzionali del modello, non un intervallo di confidenza)' : '') : '–') +
       riga('Intervalli non calcolati', q.intervalliNonCalcolati.length ? q.intervalliNonCalcolati.map(i => fmt(i.da) + '–' + fmt(i.a) + ' m: ' + esc(i.codice && F.MOTIVI_BREVI[i.codice] ? F.MOTIVI_BREVI[i.codice] : F.ETICHETTE_STATI[i.stato])).join('; ') : 'nessuno') +
       '</tbody></table><p class="st-nota"><b>Criterio di verifica e scelta del coefficiente di sicurezza.</b> ' + esc(F.criterioFS(sc)) + '</p><p class="st-nota">Il FS minimo non descrive da solo la risposta del sito. ' + esc(q.notaFS) + ' ' + esc(q.notaPL) + '</p>';
-    const tavole = S.grafici.filter(g => g.cfg);
+    const cat = catalogoPannelli(pv, sc, r);
+    const tavole = PANNELLI_STAMPA.map(id => cat.find(c => c.id === id)).filter(Boolean)
+      .map(c => ({ id: c.id, titolo: c.titolo, ...cfgPannello(c, sc, r) }));
     for (let i = 0; i < tavole.length; i += 2) {
       h += '<div class="st-h st-pagina">4. Profili · Tavola ' + (i / 2 + 1) + ' · ' + esc(pv.nome) + (pv.esempio ? ' · ESEMPIO SINTETICO' : '') + '</div>' +
         '<p class="st-nota">' + esc(S.pr.progetto.titolo) + ' · ' + esc(sc.nome) + '<br>' + esc(P.NOMI_METODI[sc.metodo]) + ' · Mw ' + fmt(sc.Mw) + ' · amax ' + fmt(sc.amax,3) + ' g · falda ' + fmt(sc.zFalda) + ' m</p><div class="st-grafici">' +
-        tavole.slice(i,i+2).map(g => '<figure><img alt="' + esc(g.titolo) + '" src="' + Gr.immagineStampa(g.cfg, 400, 700) + '"><figcaption>' + esc(g.titolo) + ($('nota-' + g.id) && $('nota-' + g.id).textContent ? ' – ' + esc($('nota-' + g.id).textContent) : '') + '</figcaption></figure>').join('') + '</div>' +
+        tavole.slice(i,i+2).map(g => '<figure><img alt="' + esc(g.titolo) + '" src="' + Gr.immagineStampa(g.cfg, 400, 700) + '"><figcaption>' + esc(g.titolo) + (g.nota ? ' – ' + esc(g.nota) : '') + '</figcaption></figure>').join('') + '</div>' +
         '<p class="st-nota">' + legendaTavola(tavole.slice(i, i + 2).map(g => g.id)) + '</p>';
     }
-    const sbt = S.grafici.find(g => g.id === 'sbt');
+    const sbt = sc.metodo === 'bi2014Cpt';
     if (sbt) h += '<div class="st-h st-pagina">5. Carta di comportamento CPT</div><figure class="st-sbt"><img alt="Carta di comportamento CPT" src="' +
       Gr.immagineDa(Gr.cartaSBT, cfgSBT(r, sc), 640, 560) + '"></figure>' + tabellaZoneSBT(r) +
       '<p class="st-nota">Strumento di lettura della prova, non entra nel calcolo. Zone 2–7 delimitate da Ic (Robertson e Wride 1998, Tab. 1, da Robertson 1990); le zone 1, 8 e 9 non sono definite da Ic e non sono rappresentate.</p>';
@@ -1367,6 +1410,7 @@
   // ---------------------------------------------------------------------------
   function renderTutto() {
     $('topVersione').textContent = 'v' + P.VERSIONE_APP + ' · motore ' + L.VERSIONE_MOTORE;
+    svuotaStampa();
     renderProgetto(); renderProva(); renderScenario(); renderStrati(); renderStato(); renderRisultati();
   }
 

@@ -107,6 +107,8 @@ Le profondità non indagate non generano righe: il riepilogo distingue profondit
   5. carta di comportamento (CPT);
   6. avvisi, assunzioni e limiti.
 
+  Le tavole dei profili sono sempre le stesse per metodo (Ic o resistenza misurata, resistenza normalizzata, CSR e CRR, FS, PL e indice IL se previsti; con CPT anche deformazione volumetrica e cedimento cumulato), qualunque pannello sia aperto a video. Il rapporto si prepara anche stampando dal menu del browser o con Ctrl+P / Cmd+P; se i risultati mancano, non sono aggiornati o ci sono dati da correggere (FS di riferimento, motivazione della M_w) si stampa solo un foglio «STAMPA NON VALIDA» con il motivo. Dopo ogni stampa e a ogni modifica degli input il rapporto preparato si cancella: nessuna stampa può contenere risultati di uno stato precedente.
+
   Con Chrome ed Edge ogni pagina ha un'intestazione (titolo, progetto e scenario) e un piè di pagina (versione dell'app e del motore, firma degli input, numero di pagina). Gli stessi dati, con data e ora del calcolo, chiudono il documento, anche nei browser che non supportano intestazioni e piè di pagina CSS. Non compaiono frasi del tipo «sito sicuro».
 - **CSV** (separatore `;`, decimale `,`, UTF-8 con BOM).
   - Intestazione: progetto, prova, scenario, metodo, parametri, origine della M_w, FS di riferimento, esito della verifica preliminare, IL e cedimento.
