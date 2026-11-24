@@ -57,6 +57,7 @@
     riga(['# FS di riferimento', F.fsRiferimento(scenario)]);
     if (opz.preliminare) riga(['# Verifica preliminare NTC 2018 par. 7.11.3.4.2', opz.preliminare]);
     riga(['# Criterio di verifica', F.criterioFS(scenario)]);
+    for (const a of risultato.avvisiScenario || []) riga(['# Avviso sui dati dello scenario', a.messaggio]);
     riga(['# Motore', risultato.versioneMotore, 'calcolato il', risultato.calcolatoIl, 'firma input', risultato.firma]);
     const ind = risultato.indiceIL;
     if (ind && ind.stato === 'calcolato') {

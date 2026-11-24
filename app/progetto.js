@@ -275,6 +275,14 @@
         if (!Array.isArray(r) || r.length !== colonne.length) { err(c + '.dati[' + k + ']', 'numero di valori diverso dalle colonne'); return; }
         dati.push(r.map((v, j) => { if (v !== null && !isNum(v)) { err(c + '.dati[' + k + '][' + j + ']', 'deve essere un numero o null'); return null; } return v; }));
       });
+      // Profondità obbligatoria e crescente, come nell'importazione (app/importa.js): nessun riordino in silenzio.
+      const iz = colonne.indexOf('z');
+      dati.forEach((r, k) => {
+        if (r.length !== colonne.length) return;
+        if (r[iz] === null) err(c + '.dati[' + k + '][' + iz + ']', 'profondità mancante');
+        else if (k > 0 && dati[k - 1].length === colonne.length && dati[k - 1][iz] !== null && !(r[iz] > dati[k - 1][iz]))
+          err(c + '.dati[' + k + '][' + iz + ']', 'profondità non crescente (' + r[iz] + ' dopo ' + dati[k - 1][iz] + ')');
+      });
       if (p.parametri !== undefined && !isOggetto(p.parametri)) { err(c + '.parametri', 'deve essere un oggetto'); return; }
       const parametri = parametriPredefiniti(tipo);
       for (const [k, t] of Object.entries(PARAMETRI_TIPO[tipo])) {

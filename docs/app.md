@@ -22,7 +22,7 @@ Percorso: **prova → scenario → calcolo → verifica preliminare, profili e t
    - a_max in superficie [g], fornita dal geologo con la sua fonte;
    - le opzioni del metodo;
    - il FS di riferimento: con il campo vuoto vale 1,25 (EN 1998-5, §4.1.4); si può scegliere un valore tra 1 e 3. Un valore fuori intervallo o non numerico non viene sostituito: resta segnalato come errore, e stampa ed esportazione sono bloccate finché non viene corretto.
-5. **Stratigrafia**: falda di verifica e strati, con γ, γ_sat, contenuto di fini FC (facoltativo) e descrizione.
+5. **Stratigrafia**: falda di verifica e strati, con γ, γ_sat, contenuto di fini FC (facoltativo) e descrizione. Controlli: γ_sat minore di γ, oppure non maggiore del peso di volume dell'acqua (9,81 kN/m³), è un errore che impedisce il calcolo; con γ_sat > 9,81 kN/m³ in ogni strato la tensione efficace è positiva a ogni profondità. Pesi di volume fuori da 11–27 kN/m³ e a_max oltre 1 g producono un avviso di unità (g/cm³, kg/m³, m/s², gal), non bloccante, riportato anche in «Avvisi e assunzioni», in stampa e nel CSV. Le soglie sono scelte operative dell'app (`PLAUSIBILITA_SCENARIO` in `app/profilo.js`), non limiti normativi.
 6. **Calcola scenario**. Se un input di calcolo cambia, i risultati diventano «non aggiornati» fino al ricalcolo: lo segnalano un'etichetta, un velo sui grafici e un avviso nelle tabelle. Esportazione CSV e stampa richiedono risultati aggiornati.
 
 I campi numerici accettano la virgola o il punto come separatore decimale, non i separatori delle migliaia.
@@ -117,7 +117,7 @@ Le profondità non indagate non generano righe: il riepilogo distingue profondit
 - **PNG** di ogni pannello (titolo, assi, unità, legenda, sfondo bianco).
 - **JSON**: salvataggio e riapertura del progetto.
   - Il file contiene solo gli input: dopo l'apertura i risultati si ricalcolano con «Calcola».
-  - Un file con dati non validi non viene aperto: l'app elenca gli errori e lascia invariato il progetto corrente.
+  - Un file con dati non validi non viene aperto: l'app elenca gli errori e lascia invariato il progetto corrente. Come nell'importazione, le profondità di ogni prova devono essere presenti e crescenti.
   - Prima di sostituire un progetto con modifiche non salvate (Nuovo, Demo sintetica, Apri) l'app chiede conferma.
   - Le bozze di importazione restano in memoria solo durante la sessione.
 - **Bozza automatica del progetto** (memoria locale del browser, `localStorage`).

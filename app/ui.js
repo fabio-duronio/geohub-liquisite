@@ -216,7 +216,7 @@
       '<label><input type="radio" name="scMwOrig" value="manuale"' + (dm.origine === 'manuale' ? ' checked' : '') + '> Inserimento manuale</label></div>' +
       '<div class="mw-proposta hint" id="scMwProp"></div>' +
       '<div class="field-row"><div class="field"><label for="scMw">M<sub>w</sub> adottata</label><input type="text" inputmode="decimal" step="0.01" id="scMw" value="' + esc(sc.Mw ?? '') + '"></div>' +
-      '<div class="field"><label for="scAmax">a<sub>max</sub> in superficie [g]</label><input type="text" inputmode="decimal" step="0.001" min="0" id="scAmax" value="' + esc(sc.amax ?? '') + '"></div></div>' +
+      '<div class="field"><label for="scAmax">a<sub>max</sub> in superficie [g]</label><input type="text" inputmode="decimal" step="0.001" min="0" id="scAmax" value="' + esc(sc.amax ?? '') + '" aria-describedby="scAmaxAvv"><div class="field-warn" id="scAmaxAvv" role="status" hidden></div></div></div>' +
       '<div class="field"><label for="scMwMot">Motivazione della M<sub>w</sub> (obbligatoria)</label><textarea id="scMwMot" placeholder="es. disaggregazione INGV, nodo …, probabilità di superamento …">' + esc(dm.motivazione) + '</textarea></div>' +
       '<div id="scMwMsg"></div></div>';
     h += '<div class="hint" style="margin:-4px 0 10px;">a<sub>max</sub> è l\'accelerazione massima attesa in superficie, in campo libero, nel sito: non è la a<sub>g</sub> della mappa di pericolosità, riferita a suolo rigido e pianeggiante. ' +
@@ -239,7 +239,8 @@
     $('scNote').addEventListener('input', (e) => { sc.note = e.target.value; });
     $('scMetodo').addEventListener('change', (e) => { sc.metodo = e.target.value; S.pannelli = null; renderScenario(); inputCambiato(); renderStrati(); });
     const num = (id, set) => { const el = $(id); if (el) el.addEventListener('input', () => { set(leggiNumero(el)); inputCambiato(); }); };
-    num('scMw', v => { sc.Mw = v; aggiornaMsgMw(); }); num('scAmax', v => { sc.amax = v; });
+    num('scMw', v => { sc.Mw = v; aggiornaMsgMw(); }); num('scAmax', v => { sc.amax = v; aggiornaAvvisoAmax(); });
+    aggiornaAvvisoAmax();
     box.querySelectorAll('input[name="scMwOrig"]').forEach(el => el.addEventListener('change', () => {
       sc.magnitudo = { ...MG.datiMagnitudo(sc), origine: el.value };
       if (el.value === 'zs9') MG.applicaProposta(sc, proposta());
@@ -309,7 +310,9 @@
   function mostraErroriStrati() {
     const sc = scenario(), pv = prova();
     const err = sc && pv ? F.controllaScenario(pv, sc, L).filter(e => /strati|zFalda/.test(e.campo)) : [];
-    $('erroriStrati').innerHTML = err.length ? '<div class="alert alert-danger" style="margin-top:10px;"><ul>' + err.map(e => '<li>' + esc(e.motivo) + '</li>').join('') + '</ul></div>' : '';
+    const avv = sc ? F.avvisiScenario(sc).filter(a => /^strati/.test(a.campo)) : [];
+    $('erroriStrati').innerHTML = (err.length ? '<div class="alert alert-danger" style="margin-top:10px;"><ul>' + err.map(e => '<li>' + esc(e.motivo) + '</li>').join('') + '</ul></div>' : '') +
+      (avv.length ? '<div class="alert alert-warn" role="status" style="margin-top:10px;"><ul>' + avv.map(a => '<li>' + esc(a.messaggio) + '</li>').join('') + '</ul></div>' : '');
   }
   $('scFalda').addEventListener('input', (e) => { const sc = scenario(); if (!sc) return; sc.zFalda = leggiNumero(e.target); inputCambiato(); mostraErroriStrati(); $('sumStrati').textContent = (isNum(sc.zFalda) ? 'falda ' + fmt(sc.zFalda, 1) + ' m · ' : '') + sc.strati.length + ' strati'; });
   $('tabStrati').addEventListener('input', (e) => {
@@ -953,6 +956,12 @@
     const usa = MG.datiMagnitudo(sc).origine !== 'zs9' || !isNum(sc.Mw) || MG.diversaDallaProposta(sc, prop);
     return '<span><b>Proposta ZS9:</b> ' + esc(prop.titolo) + '.</span>' + (usa ? '<button class="btn btn-sm" type="button" id="scMwUsa">Usa la proposta (' + fmt(prop.mw) + ')</button>' : '');
   }
+  /** Avviso di plausibilità di amax (unità), senza ridisegnare i campi. */
+  function aggiornaAvvisoAmax() {
+    const sc = scenario(), box = $('scAmaxAvv'); if (!sc || !box) return;
+    const a = F.avvisiScenario(sc).find(x => x.campo === 'amax');
+    box.textContent = a ? a.messaggio : ''; box.hidden = !a;
+  }
   /** Aggiorna proposta, errori e avvisi della Mw senza ridisegnare i campi (il cursore resta dov'è). */
   function aggiornaMsgMw() {
     const sc = scenario(), box = $('scMwMsg'); if (!sc || !box) return;
@@ -1037,6 +1046,8 @@
     const mg = MG.statoMagnitudo(sc, proposta());
     if (mg.errori.length || mg.avvisi.length) h += '<div class="section-title">Magnitudo M<sub>w</sub></div><ul>' +
       mg.errori.map(e => '<li><b>Da correggere prima di stampa ed esportazione:</b> ' + esc(e.motivo) + '</li>').join('') + mg.avvisi.map(a => '<li>' + esc(a.testo) + '</li>').join('') + '</ul>';
+    const avvSc = r.avvisiScenario || [];
+    if (avvSc.length) h += '<div class="section-title">Dati dello scenario da controllare</div><ul>' + avvSc.map(a => '<li>' + esc(a.messaggio) + '</li>').join('') + '</ul>';
     const q = r.riepilogo;
     h += '<div class="section-title">Intervalli non calcolati</div>';
     h += q.intervalliNonCalcolati.length ? '<div class="table-scroll"><table class="data-table"><thead><tr><th scope="col">da<span class="u">[m]</span></th><th scope="col">a<span class="u">[m]</span></th><th scope="col">punti</th><th scope="col">stato</th><th scope="col" style="text-align:left;">motivo</th></tr></thead><tbody>' +
@@ -1456,6 +1467,7 @@
       q.avvisi.map(a => '<li><b>' + esc(a.codice) + '</b> (' + esc(a.n) + ' punti, z ' + fmt(a.zDa) + '–' + fmt(a.zA) + ' m): ' + esc(a.messaggio) + '</li>').join('') +
       q.assunzioni.map(a => '<li>Assunzione: ' + esc(a.descrizione) + (a.n ? ' (' + esc(a.n) + ' punti)' : '') + '</li>').join('') +
       MG.statoMagnitudo(sc, proposta()).avvisi.map(a => '<li><b>Magnitudo.</b> ' + esc(a.testo) + '</li>').join('') +
+      (r.avvisiScenario || []).map(a => '<li><b>Dati dello scenario.</b> ' + esc(a.messaggio) + '</li>').join('') +
       '<li>Profondità oltre ' + fmt(q.profonditaIndagata ? q.profonditaIndagata.a : 0) + ' m non indagate; un intervallo non calcolato non è un intervallo sicuro.</li>' +
       (r.indiceIL && r.indiceIL.stato === 'calcolato' ? r.indiceIL.assunzioni.map(a => '<li><b>Indice IL.</b> ' + esc(a.descrizione) + '</li>').join('') + '<li><b>Indice IL.</b> ' + esc(r.indiceIL.fonte) + '</li>' : '') +
       (r.cedimenti && r.cedimenti.stato === 'calcolato' ? r.cedimenti.assunzioni.concat(r.cedimenti.avvisi.map(a => ({ descrizione: a.messaggio }))).map(a => '<li><b>Cedimento.</b> ' + esc(a.descrizione) + '</li>').join('') + '<li>Cedimento: ' + esc(r.cedimenti.fonte) + '</li>' : '<li>Cedimenti post-sismici: calcolati solo con prove CPT.</li>') +
