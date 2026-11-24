@@ -1198,6 +1198,7 @@
     S.pr = pr; S.confronto = []; S.selezione = null; S.pannelli = null; S.esclSel = null;
     S.salvato = P.salvaProgetto(pr);
     renderTutto();
+    pianificaBozza();
   }
   $('btnNuovo').addEventListener('click', () => { if (confermaSostituzione('Iniziare un nuovo progetto')) sostituisciProgetto(P.nuovoProgetto()); });
   $('btnEsempio').addEventListener('click', () => { if (confermaSostituzione('Aprire l\'esempio sintetico')) sostituisciProgetto(E.progettoEsempio()); });
@@ -1226,7 +1227,84 @@
     const testo = P.salvaProgetto(S.pr);
     scarica(URL.createObjectURL(new Blob([testo], { type: 'application/json' })), nomeFile('progetto', 'json'));
     S.salvato = testo;
+    pianificaBozza();
   });
+
+  // ---------------------------------------------------------------------------
+  // Bozza locale e avviso in uscita (audit B7)
+  // ---------------------------------------------------------------------------
+  // Con modifiche non salvate in un file, gli input del progetto (mai i risultati) si copiano nel
+  // localStorage di questo browser, 0,5 s dopo l'ultima modifica e alla chiusura della pagina.
+  // Nessun invio in rete. La bozza si cancella quando il progetto coincide con l'ultimo file
+  // aperto o salvato. Alla riapertura la bozza passa dalla stessa validazione di un file (apriProgetto).
+  const CHIAVE_BOZZA = 'geohub_liquisite_bozza_v1';
+  const BOZZA = { attiva: false, timer: null, spazioEsaurito: false, propria: false }; // propria: scritta o ripristinata da questa pagina
+  function leggiBozza() {
+    try {
+      const b = JSON.parse(localStorage.getItem(CHIAVE_BOZZA) || 'null');
+      return b && typeof b === 'object' && typeof b.progetto === 'string' ? b : null;
+    } catch (e) { return null; }
+  }
+  function cancellaBozza() { try { localStorage.removeItem(CHIAVE_BOZZA); } catch (e) { /* storage non disponibile */ } }
+  function salvaBozza() {
+    clearTimeout(BOZZA.timer);
+    if (!BOZZA.attiva) return; // bozza precedente in attesa di una scelta: non si sovrascrive
+    const testo = P.salvaProgetto(S.pr);
+    // si cancella solo la bozza scritta da questa pagina: un'altra scheda può avere la sua
+    if (testo === S.salvato) { if (BOZZA.propria) { cancellaBozza(); BOZZA.propria = false; } return; }
+    try {
+      localStorage.setItem(CHIAVE_BOZZA, JSON.stringify({ versione: 1, app: P.VERSIONE_APP, salvataIl: new Date().toISOString(), progetto: testo }));
+      BOZZA.propria = true;
+      BOZZA.spazioEsaurito = false;
+    } catch (e) {
+      if (!BOZZA.spazioEsaurito) {
+        BOZZA.spazioEsaurito = true;
+        mostraBanner('<b>Bozza automatica non salvata</b>: il browser non consente di conservarla (spazio esaurito o memoria locale disattivata). Usa «Salva progetto» per non perdere il lavoro.',
+          [['Chiudi', () => nascondiBanner()]]);
+      }
+    }
+  }
+  function pianificaBozza() { clearTimeout(BOZZA.timer); BOZZA.timer = setTimeout(salvaBozza, 500); }
+  for (const ev of ['input', 'change', 'click']) document.addEventListener(ev, pianificaBozza, true);
+  window.addEventListener('pagehide', salvaBozza);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') salvaBozza(); });
+  window.addEventListener('beforeunload', (e) => {
+    if (!modificato()) return;
+    salvaBozza();
+    e.preventDefault(); e.returnValue = ''; // avviso standard del browser
+  });
+
+  function mostraBanner(html, azioni) {
+    const b = $('bozzaBanner');
+    b.innerHTML = '<div class="alert alert-warn"><span>' + html + '</span><span class="btn-row">' +
+      azioni.map((a, i) => '<button class="btn btn-sm" type="button" data-azione="' + i + '">' + esc(a[0]) + '</button>').join('') + '</span></div>';
+    b.querySelectorAll('[data-azione]').forEach(el => el.addEventListener('click', () => azioni[Number(el.dataset.azione)][1]()));
+    b.hidden = false;
+  }
+  function nascondiBanner() { const b = $('bozzaBanner'); b.hidden = true; b.innerHTML = ''; }
+
+  /** All'avvio: se c'è una bozza, si chiede se ripristinarla; finché non si sceglie resta intatta. */
+  function avviaBozza() {
+    const b = leggiBozza();
+    if (!b) { BOZZA.attiva = true; return; }
+    const iso = typeof b.salvataIl === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/.test(b.salvataIl);
+    const data = iso && !isNaN(new Date(b.salvataIl)) ? new Date(b.salvataIl).toLocaleString('it-IT') : 'data non nota';
+    mostraBanner('<b>Bozza non salvata del ' + esc(data) + '</b>: il lavoro precedente non era stato salvato in un file. Ripristinarlo? La bozza resta solo in questo browser e non sostituisce «Salva progetto».', [
+      ['Ripristina la bozza', () => {
+        const esito = P.apriProgetto(b.progetto);
+        nascondiBanner();
+        if (!esito.ok) { alert('La bozza non è valida e non è stata aperta: viene eliminata.\n\n' + esito.errori.slice(0, 5).map(x => '• ' + x.campo + ': ' + x.motivo).join('\n')); cancellaBozza(); BOZZA.attiva = true; return; }
+        S.pr = esito.progetto; S.confronto = []; S.selezione = null; S.pannelli = null; S.esclSel = null;
+        S.salvato = null; // la bozza non è salvata in un file: resta «modificato» fino a «Salva progetto»
+        BOZZA.attiva = true; BOZZA.propria = true;
+        renderTutto();
+      }],
+      ['Elimina la bozza', () => {
+        if (!confirm('Eliminare la bozza? Il lavoro che contiene non si potrà recuperare.')) return;
+        cancellaBozza(); nascondiBanner(); BOZZA.attiva = true; pianificaBozza();
+      }]
+    ]);
+  }
   /** Motivo che impedisce stampa ed esportazione dello scenario attivo, oppure null. */
   function bloccoUscite(sc, azione) {
     if (!sc || statoRisultato(sc) !== 'aggiornato' || risultatoDi(sc).stato !== 'calcolato') return 'Calcola lo scenario attivo prima di ' + azione + ': i risultati devono essere aggiornati.';
@@ -1417,4 +1495,5 @@
   window.LiquiUI = { stato: S, renderTutto, calcola, statoRisultato };
   S.salvato = P.salvaProgetto(S.pr);
   renderTutto();
+  avviaBozza();
 })();

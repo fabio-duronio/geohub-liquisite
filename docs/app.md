@@ -120,6 +120,12 @@ Le profondità non indagate non generano righe: il riepilogo distingue profondit
   - Un file con dati non validi non viene aperto: l'app elenca gli errori e lascia invariato il progetto corrente.
   - Prima di sostituire un progetto con modifiche non salvate (Nuovo, Demo sintetica, Apri) l'app chiede conferma.
   - Le bozze di importazione restano in memoria solo durante la sessione.
+- **Bozza automatica del progetto** (memoria locale del browser, `localStorage`).
+  - Con modifiche non salvate in un file, gli input del progetto (mai i risultati) si copiano nella memoria locale del browser mezzo secondo dopo l'ultima modifica e alla chiusura della pagina. Nulla viene inviato in rete.
+  - Chiudendo o ricaricando la pagina con modifiche non salvate il browser chiede conferma.
+  - Alla riapertura, se c'è una bozza, un riquadro propone «Ripristina la bozza» o «Elimina la bozza» (con conferma). Finché non si sceglie, la bozza non viene sovrascritta. La bozza ripristinata passa dalla stessa validazione di un file aperto e i risultati si ricalcolano con «Calcola».
+  - La bozza si cancella quando il progetto coincide con l'ultimo file aperto o salvato («Salva progetto»). Non sostituisce il file: resta solo in quel browser, su quel dispositivo, e si perde se si cancellano i dati di navigazione.
+  - Una sola bozza per browser: con più schede aperte vale l'ultima scheda modificata.
 
 ## Limiti
 
@@ -137,4 +143,4 @@ Le profondità non indagate non generano righe: il riepilogo distingue profondit
   - oltre circa 10 m di profondità l'incertezza di r_d diventa grande e la banca dati di Boulanger & Idriss (2014) arriva a circa 10–12 m (pag. 9): i FS minimi in quel tratto vanno letti con questa cautela, eventualmente con un'analisi di risposta sismica locale;
   - la soglia di Ic (2,6 predefinita; 2,4–2,8 per l'analisi di sensibilità, B&I 2014, pag. 99) decide quali punti si verificano: l'IL può cambiare in modo sensibile con la soglia. Nella prova d'uso del 22/11/2026 (vedi [Validazione](validazione.md)) l'IL è variato di circa il 40–60 % tra 2,4 e 2,8;
   - con il metodo CPT il contenuto di fini è stimato da Ic se non è indicato per lo strato.
-- **Dati e rete.** I dati delle prove e i calcoli restano nel browser: nessun dato del progetto viene inviato a server. La libreria dei grafici (Chart.js) e i caratteri (IBM Plex) sono inclusi nell'app, che non contatta servizi esterni. Una politica di sicurezza dei contenuti (CSP) ammette solo risorse della pagina stessa.
+- **Dati e rete.** I dati delle prove e i calcoli restano nel browser: nessun dato del progetto viene inviato a server. La bozza automatica resta nella memoria locale del browser (vedi Stampa ed esportazioni). La libreria dei grafici (Chart.js) e i caratteri (IBM Plex) sono inclusi nell'app, che non contatta servizi esterni. Una politica di sicurezza dei contenuti (CSP) ammette solo risorse della pagina stessa.
