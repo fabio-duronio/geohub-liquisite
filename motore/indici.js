@@ -38,6 +38,8 @@
  *                 applicabile (N.A.); F(z) = 0 per convenzione operativa di calcolo dichiarata
  *                 (non è un FS nullo e non coincide con la condizione FS > 1); spessore
  *                 riportato a parte;
+ *  - 'addensato'  oltre il campo della correlazione per addensamento (audit B1, scelta di LiquiSite):
+ *                 punto non liquefacibile, FS non calcolato; F(z) = 0 dichiarato; spessore a parte;
  *  - 'ignoto'     dato mancante, non valido, non calcolato, profondità non indagata:
  *                 F non noto → contributo compreso tra 0 (F = 0) e w (F = 1).
  * Risultato: IL_min (tratti ignoti con F = 0) e IL_max (tratti ignoti con F = 1). L'indice è
@@ -51,7 +53,7 @@
 
   const VERSIONE_INDICI = '0.2.1';
   const Z_IL = 20;
-  const CATEGORIE = ['FS', 'sopraFalda', 'argilloso', 'ignoto'];
+  const CATEGORIE = ['FS', 'sopraFalda', 'argilloso', 'addensato', 'ignoto'];
   /** Numero con virgola decimale, per i testi in italiano. */
   const decimale = (v, cifre) => v.toFixed(cifre).replace('.', ',');
   const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
@@ -102,7 +104,7 @@
 
   /**
    * Calcola IL.
-   * punti: [{ z (m), categoria: 'FS'|'sopraFalda'|'argilloso'|'ignoto', FS (se 'FS'),
+   * punti: [{ z (m), categoria: 'FS'|'sopraFalda'|'argilloso'|'addensato'|'ignoto', FS (se 'FS'),
    *          limiti: { da, a } facoltativo, strato che contiene il punto (m) }]
    * zFalda: profondità della falda di verifica (m, ≥ 0)
    * opz: { vuotoMax (m) } — default 3 × passo mediano
@@ -159,7 +161,7 @@
     }
 
     let ILmin = 0, ILmax = 0;
-    const spessori = { FS: 0, sopraFalda: 0, argilloso: 0, ignoto: 0, liquefacibileFSmin1: 0 };
+    const spessori = { FS: 0, sopraFalda: 0, argilloso: 0, addensato: 0, ignoto: 0, liquefacibileFSmin1: 0 };
     const curva = [{ z: 0, ILmin: 0, ILmax: 0 }];
     for (const t of tratti) {
       spessori[t.categoria] += t.a - t.da;
@@ -175,6 +177,7 @@
     ];
     if (ord.some(p => p.limiti)) assunzioni.push({ codice: 'IL_LIMITE_STRATO', descrizione: 'Prova SPT: ogni prova rappresenta al più lo strato che la contiene, senza estensione automatica ad altri strati (decisione di GeoHub del 21/11/2026). Le parti di strati senza prova restano senza risultato.' });
     if (spessori.argilloso > 0) assunzioni.push({ codice: 'IL_ARGILLOSO', descrizione: 'Tratti esclusi per Ic oltre la soglia adottata (CNR-CentroMS 2024, §3.2.1.2, pag. 32: dati CPT con Ic ≤ 2,6, soglia adattabile tra 2,4 e 2,8): FS non applicabile (N.A.), non calcolato. Per convenzione operativa di calcolo il contributo F(z) di questi tratti all\'indice è assunto pari a zero (' + decimale(spessori.argilloso, 2) + ' m): non equivale a un fattore di sicurezza nullo e non coincide con la condizione FS > 1 della definizione di F(z). L\'esclusione non dimostra l\'assenza di perdita di resistenza ciclica: nei terreni fini sensibili o di transizione serve una verifica specifica (granulometria, limiti di Atterberg, criteri di suscettibilità).' });
+    if (spessori.addensato > 0) assunzioni.push({ codice: 'IL_ADDENSATO', descrizione: 'Tratti oltre il campo della correlazione per addensamento (' + decimale(spessori.addensato, 2) + ' m): terreno molto addensato, non liquefacibile; FS non calcolato e contributo F(z) = 0. Soglie scelte da LiquiSite, non indicate dagli autori del metodo (Boulanger & Idriss 2014: qc1Ncs > 211, (N1)60cs > 37, valori a cui gli autori limitano Cσ, Eq. 2.16).' });
     if (!completo) assunzioni.push({ codice: 'IL_INCOMPLETO', descrizione: 'Tratti senza risultato in 0–20 m (' + decimale(spessori.ignoto, 2) + ' m: dati mancanti, non calcolati o profondità non indagate): IL compreso tra IL_min (contributo nullo in quei tratti) e IL_max (contributo massimo del modello in quei tratti). I due valori sono limiti convenzionali del modello, non un intervallo di confidenza né un massimo fisico garantito.' });
     return {
       stato: 'calcolato', versione: VERSIONE_INDICI,

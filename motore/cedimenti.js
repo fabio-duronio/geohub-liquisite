@@ -91,7 +91,7 @@
 
   /**
    * Cedimento post-sismico S.
-   * punti: [{ z, categoria: 'FS'|'sopraFalda'|'argilloso'|'ignoto', FS?, qc1Ncs? }] (come per IL,
+   * punti: [{ z, categoria: 'FS'|'sopraFalda'|'argilloso'|'addensato'|'ignoto', FS?, qc1Ncs? }] (come per IL,
    *        con (qc1N)cs per i punti 'FS'). zFalda: falda di verifica [m].
    * Esito: { stato, Smin, Smax [m], completo, punti, tratti,
    *          conteggi, assunzioni, avvisi, fonte }.
@@ -129,7 +129,7 @@
     const assunzioni = [
       { codice: 'ZHANG_CURVE', descrizione: 'εv da Zhang et al. (2002), Eq. A1–A14 (curve di Ishihara e Yoshimine 1992), con interpolazione lineare in FS tra le curve; FS ≤ 0,5: curva limite; FS ≥ 2,0: εv = 0; (qc1N)cs fuori da 33–200 ricondotto al limite più vicino.' },
       { codice: 'ZHANG_COMBINAZIONE', descrizione: 'Le curve sono state ricavate con (qc1N)cs e FS di Robertson e Wride (1998); qui si applicano con (qc1N)cs e FS di Boulanger e Idriss (2014), come nello studio di Tonkin & Taylor (2015, App. A).' },
-      { codice: 'ZHANG_ESCLUSI', descrizione: 'Tratti con Ic oltre la soglia dello scenario e tratti sopra falda: εv = 0, secondo le ipotesi del modello.' },
+      { codice: 'ZHANG_ESCLUSI', descrizione: 'Tratti con Ic oltre la soglia dello scenario, tratti sopra falda e tratti oltre il campo della correlazione per addensamento (qc1Ncs > 211, scelta di LiquiSite; per Zhang et al. 2002 con FS ≥ 2 εv = 0): εv = 0.' },
       { codice: 'ZHANG_AMBITO', descrizione: 'Piano campagna sub-orizzontale, lontano da scarpate libere: deformazione volumetrica = deformazione verticale. Gli autori indicano il metodo per progetti a rischio basso o medio e come stima preliminare per gli altri; nessuno spostamento laterale è calcolato.' },
       { codice: 'ZHANG_INTEGRAZIONE', descrizione: 'Cedimento S = Σ εv · Δz (Zhang et al. 2002, Eq. 1) su 0–20 m, con la partizione della verticale dell\'indice IL.' }
     ];

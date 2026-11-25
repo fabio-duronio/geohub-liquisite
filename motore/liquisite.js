@@ -31,7 +31,8 @@
  *   'calcolato'          calcolo riuscito (possono esserci avvisi);
  *   'input_non_valido'   dato impossibile o di tipo errato → `errori` [{campo, codice, motivo}];
  *   'dati_insufficienti' manca un dato necessario o la copertura non basta;
- *   'non_applicabile'    il metodo o LiquiSite non si applicano al punto (`motivo`, `codice`);
+ *   'non_applicabile'    il metodo o LiquiSite non si applicano al punto (`motivo`, `codice`;
+ *                        es. NON_SATURO, IC_OLTRE_SOGLIA, OLTRE_CAMPO_ADDENSAMENTO);
  *   'non_convergente'    un ciclo iterativo non ha raggiunto la tolleranza;
  *   'errore_numerico'    una grandezza calcolata non è un numero finito.
  * Solo con stato 'calcolato' i campi FS, CRR, CSR e PL sono valori utilizzabili.
@@ -139,15 +140,38 @@
    * Se u = σv − σ'v è nulla il punto non è sotto la falda: esito 'non_applicabile' con le
    * grandezze calcolate in `diagnostica` (utili per la normalizzazione, non per la verifica).
    */
+  const MOTIVO_NON_SATURO = 'pressione interstiziale nulla (σ\'v = σv): il punto non è sotto la falda di verifica. Le grandezze in diagnostica non costituiscono una verifica.';
   function chiudi(ris, chiavi, punto) {
     const r = controllaFiniti(ris, chiavi);
     if (r.stato !== STATI.CALCOLATO) return r;
-    if (punto.sv - punto.sve < 1e-9) {
-      return nonApplicabile(ris.metodo, ris.z, 'NON_SATURO',
-        'pressione interstiziale nulla (σ\'v = σv): il punto non è sotto la falda di verifica. Le grandezze in diagnostica non costituiscono una verifica.',
-        { diagnostica: ris });
-    }
+    if (punto.sv - punto.sve < 1e-9) return nonApplicabile(ris.metodo, ris.z, 'NON_SATURO', MOTIVO_NON_SATURO, { diagnostica: ris });
     return r;
+  }
+
+  /**
+   * Punto oltre il campo della correlazione per addensamento (audit v1.0.0, B1; scelta di
+   * LiquiSite approvata il 25/11/2026, non indicata dagli autori).
+   * Boulanger & Idriss (2014) non fissano un limite superiore di validità delle curve del CRR
+   * (Eq. 2.24–2.25, pag. 17): oltre le soglie l'esponenziale cresce senza limite (alla soglia
+   * CRR7,5 = 3,7 da CPT e 1,75 da SPT; poi 10¹⁰ e oltre, fino all'overflow numerico). Le soglie sono i valori a cui gli
+   * autori limitano già Cσ ≤ 0,3 [B&I 2014, Eq. 2.16b–c, pag. 11]; nella banca dati CPT nessun caso
+   * con liquefazione supera qc1Ncs ≈ 163 [Tab. 3.1]. Il punto si dichiara non liquefacibile per
+   * addensamento: nessun CRR, FS o PL; normalizzazione e domanda sismica restano nel risultato.
+   * Non è un'esclusione ai sensi del §7.11.3.4.2 delle NTC 2018. Sopra falda prevale NON_SATURO.
+   */
+  const SOGLIE_ADDENSAMENTO_BI = Object.freeze({ qc1Ncs: 211, N160cs: 37 });
+  /** CRR7,5 alla soglia, con le stesse Eq. 2.24 e 2.25 del metodo (solo per il messaggio). */
+  const CRR75_ALLA_SOGLIA = Object.freeze({
+    qc1Ncs: ((q) => Math.exp(q / 113 + Math.pow(q / 1000, 2) - Math.pow(q / 140, 3) + Math.pow(q / 137, 4) - 2.80))(211),
+    '(N1)60cs': ((n) => Math.exp(n / 14.1 + Math.pow(n / 126, 2) - Math.pow(n / 23.6, 3) + Math.pow(n / 25.4, 4) - 2.8))(37)
+  });
+  function oltreCampoAddensamento(metodo, z, punto, grandezza, valore, soglia, extra) {
+    if (punto.sv - punto.sve < 1e-9) return nonApplicabile(metodo, z, 'NON_SATURO', MOTIVO_NON_SATURO, { diagnostica: { metodo, z, ...extra } });
+    return nonApplicabile(metodo, z, 'OLTRE_CAMPO_ADDENSAMENTO',
+      grandezza + ' = ' + valore.toFixed(1).replace('.', ',') + ' > ' + soglia + ': terreno molto addensato, oltre il campo della correlazione di Boulanger & Idriss (2014). ' +
+      'Punto non liquefacibile per addensamento: CRR, FS e PL non calcolati (alla soglia CRR7,5 = ' + CRR75_ALLA_SOGLIA[grandezza].toFixed(2).replace('.', ',') + '). Soglia scelta da LiquiSite, non indicata dagli autori: è il valore a cui limitano Cσ (Eq. 2.16, pag. 11). ' +
+      'Non è un\'esclusione ai sensi del §7.11.3.4.2 delle NTC 2018.',
+      { soglia, ...extra });
   }
 
   /** Controlla che tutte le grandezze indicate siano numeri finiti. */
@@ -459,6 +483,11 @@
     const MSFmax = Math.min(1.09 + Math.pow(N160cs / 31.5, 2), 2.2);
     const MSF = BI.msf(Mw, MSFmax);
 
+    // oltre il campo della correlazione per addensamento (scelta di LiquiSite, vedi sopra)
+    if (N160cs > SOGLIE_ADDENSAMENTO_BI.N160cs) return oltreCampoAddensamento(metodo, z, punto, '(N1)60cs', N160cs, SOGLIE_ADDENSAMENTO_BI.N160cs, {
+      lunghezzaAste, CR, CE, CB, CS, N60, CN, N160, dN160: dN, N160cs,
+      rd, CSR, Csigma, Ksigma, MSFmax, MSF, CSR75: CSR / (MSF * Ksigma), convergenza: it.convergenza, avvisi });
+
     // CRR per M = 7,5 e σ'v = 1 atm [B&I 2014, Eq. 2.25, pag. 17]
     const n = N160cs;
     const CRR75 = Math.exp(n / 14.1 + Math.pow(n / 126, 2) - Math.pow(n / 23.6, 3) + Math.pow(n / 25.4, 4) - 2.8);
@@ -600,6 +629,11 @@
     // [B&I 2014, Eq. 2.20 e 2.18, pag. 14]
     const MSFmax = Math.min(1.09 + Math.pow(qc1Ncs / 180, 3), 2.2);
     const MSF = BI.msf(Mw, MSFmax);
+
+    // oltre il campo della correlazione per addensamento (scelta di LiquiSite, vedi sopra)
+    if (qc1Ncs > SOGLIE_ADDENSAMENTO_BI.qc1Ncs) return oltreCampoAddensamento(metodo, z, punto, 'qc1Ncs', qc1Ncs, SOGLIE_ADDENSAMENTO_BI.qc1Ncs, {
+      tipo, ar, qt, ...cls, FC, origineFC, IcSoglia, qcN, CN, qc1N, dqc1N: dq, qc1Ncs,
+      rd, CSR, Csigma, Ksigma, MSFmax, MSF, CSR75: CSR / (MSF * Ksigma), convergenza: it.convergenza, assunzioni, avvisi });
 
     // [B&I 2014, Eq. 2.24, pag. 17]
     const q = qc1Ncs;
@@ -1032,7 +1066,7 @@
   }
 
   return {
-    VERSIONE_MOTORE, GAMMA_W, STATI, Z_MAX_APP, TIPI_CPT,
+    VERSIONE_MOTORE, GAMMA_W, STATI, Z_MAX_APP, TIPI_CPT, SOGLIE_ADDENSAMENTO_BI,
     Phi, PhiInv, tensioni,
     bi2014Spt, bi2014Cpt, cetin2018Spt, kayen2013Vs,
     rdCetin, crCetin, crIdrissBoulanger2010, icRobertsonWride, avvisiProfondita, avvisiProfonditaBI,

@@ -408,7 +408,7 @@
     return '<div class="blocco-il"><div><span class="eyebrow">INDICE DEL POTENZIALE DI LIQUEFAZIONE · IWASAKI · 0–20 m</span>' +
       '<div class="il-valore num">IL ' + (ind.completo ? '= ' : '') + esc(testoIL(ind)) + '</div></div>' +
       '<span>' + (ind.completo ? 'Profilo coperto in 0–20 m.' : 'Copertura incompleta in 0–20 m: ' + fmt(sp.ignoto, 2) + ' m senza risultato (dati mancanti, non calcolati o non indagati): contributo nullo nel valore inferiore, contributo massimo del modello nel superiore: limiti convenzionali del modello, non un intervallo di confidenza né un massimo fisico garantito. Nessun tratto ignoto è considerato sicuro.') +
-      ' Spessori: FS calcolato ' + fmt(sp.FS, 2) + ' m (di cui FS &lt; 1 ' + fmt(sp.liquefacibileFSmin1, 2) + ' m), sopra falda ' + fmt(sp.sopraFalda, 2) + ' m, esclusi per comportamento argilloso (Ic oltre soglia, FS N.A., nessun contributo) ' + fmt(sp.argilloso, 2) + ' m. Senza classi: il giudizio resta del progettista.</span></div>';
+      ' Spessori: FS calcolato ' + fmt(sp.FS, 2) + ' m (di cui FS &lt; 1 ' + fmt(sp.liquefacibileFSmin1, 2) + ' m), sopra falda ' + fmt(sp.sopraFalda, 2) + ' m, esclusi per comportamento argilloso (Ic oltre soglia, FS N.A., nessun contributo) ' + fmt(sp.argilloso, 2) + ' m' + (sp.addensato > 0 ? ', oltre il campo della correlazione per addensamento (non liquefacibili, FS non calcolato, nessun contributo) ' + fmt(sp.addensato, 2) + ' m' : '') + '. Senza classi: il giudizio resta del progettista.</span></div>';
   }
 
   function renderRiepilogo() {
@@ -523,7 +523,7 @@
       p.push({ id: 'Vs', titolo: 'Vs (misurata) e Vs1', etichettaX: 'Vs, Vs1 [m/s]', serie: [s('Vs', 'Vs', COL.ink, 'ingresso'), s('Vs1', 'Vs1', COL.grigio, 'valori', true)], def: true, cifre: 0 });
     }
     const crr = sc.metodo === 'kayen2013Vs' ? 'CRR15' : 'CRR';
-    p.push({ id: 'csrcrr', titolo: 'Domanda e resistenza', etichettaX: 'CSR, CRR [–]', serie: [s('CSR', 'CSR (sito)', '#bd3c3c', 'valori', true), s(crr, sc.metodo === 'kayen2013Vs' ? 'CRR PL 15 % (sito)' : 'CRR (sito)', '#218273')], def: true, cifre: 3, xMin: 0 });
+    p.push({ id: 'csrcrr', titolo: 'Domanda e resistenza', etichettaX: 'CSR, CRR [–]', serie: [s('CSR', 'CSR (sito)', '#bd3c3c', 'valori', true), s(crr, sc.metodo === 'kayen2013Vs' ? 'CRR PL 15 % (sito)' : 'CRR (sito)', '#218273')], def: true, cifre: 3, xMin: 0, xMax: 1 });
     p.push({ id: 'FS', titolo: 'Fattore di sicurezza', etichettaX: 'FS [–]', serie: [s('FS', 'FS', COL.blu)], rif: [{ x: 1, etichetta: 'FS = 1' }].concat(F.fsRiferimento(sc) === null ? [] : [{ x: F.fsRiferimento(sc), etichetta: 'FS rif ' + fmt(F.fsRiferimento(sc)) }]), xMin: 0, xMax: 3, def: true, cifre: 2, nota: 'Rosso: FS < 1; ambra: FS tra 1 e il riferimento ' + fmt(F.fsRiferimento(sc)) + '; verde tenue: oltre. Confronto puntuale, non giudizio di sicurezza del sito.' });
     if (sc.metodo !== 'bi2014Spt') p.push({ id: 'PL', titolo: 'Probabilità PL', etichettaX: 'PL [–]', serie: [s('PL', 'PL', COL.ink)], xMin: 0, xMax: 1, def: false, cifre: 3, nota: F.METODI[sc.metodo].notaPL });
     const ind = r && r.indiceIL;
@@ -721,7 +721,7 @@
         return intest(k.startsWith('t:') ? k.slice(2) : k);
       }).join('') + '</tr></thead><tbody>' +
         r.righe.map(x => '<tr data-indice="' + x.indice + '" class="' + (S.selezione === x.indice ? 'hl ' : '') + (x.stato !== 'calcolato' ? 'muted' : '') + '"><td>' + fmt(x.z) + '</td>' + cols.map(k => {
-          if (k === 'letturaFS') { const fs = F.valoreRisultato(x, 'FS'); return '<td class="txt">' + (fs === null ? (x.codice === 'IC_OLTRE_SOGLIA' ? 'FS N.A. · escluso per comportamento argilloso' : 'Non valutabile: vedere motivo') : (() => { const rf = F.fsRiferimento(sc); return '<span class="esito-chip ' + (fs < 1 ? 'esito-critico' : rf === null ? 'esito-neutro' : fs < rf ? 'esito-attesa' : 'esito-neutro') + '">' + (fs < 1 ? 'FS < 1 · domanda > resistenza' : rf === null ? 'FS ≥ 1 · riferimento da correggere' : fs < rf ? '1 ≤ FS < ' + fmt(rf) + ' · margine inferiore al riferimento' : 'FS ≥ ' + fmt(rf) + ' · margine ≥ riferimento') + '</span>'; })()) + '</td>'; }
+          if (k === 'letturaFS') { const fs = F.valoreRisultato(x, 'FS'); return '<td class="txt">' + (fs === null ? (x.codice === 'IC_OLTRE_SOGLIA' ? 'FS N.A. · escluso per comportamento argilloso' : x.codice === 'OLTRE_CAMPO_ADDENSAMENTO' ? 'FS non calcolato · molto addensato, non liquefacibile' : 'Non valutabile: vedere motivo') : (() => { const rf = F.fsRiferimento(sc); return '<span class="esito-chip ' + (fs < 1 ? 'esito-critico' : rf === null ? 'esito-neutro' : fs < rf ? 'esito-attesa' : 'esito-neutro') + '">' + (fs < 1 ? 'FS < 1 · domanda > resistenza' : rf === null ? 'FS ≥ 1 · riferimento da correggere' : fs < rf ? '1 ≤ FS < ' + fmt(rf) + ' · margine inferiore al riferimento' : 'FS ≥ ' + fmt(rf) + ' · margine ≥ riferimento') + '</span>'; })()) + '</td>'; }
           if (k === 'stato') return '<td><span class="stato-tag ' + esc(x.stato) + '">' + esc(F.ETICHETTE_STATI[x.stato] || x.stato) + '</span></td>';
           if (k === 'motivo') return '<td class="txt" title="' + esc(x.motivo || '') + '">' + esc([x.codice ? (F.MOTIVI_BREVI[x.codice] || x.codice) : null, ...x.avvisi.map(a => a.codice)].filter(Boolean).join(' · ')) + '</td>';
           if (k === 'origineFC') return '<td class="txt" style="min-width:120px;">' + esc(x.origineFC || '–') + '</td>';
@@ -1072,7 +1072,7 @@
         h += '<div class="table-scroll"><table class="data-table"><thead><tr><th scope="col">grandezza</th><th scope="col">valore</th></tr></thead><tbody>' +
           [['IL_min (tratti senza risultato: contributo nullo)', fmt(ind.ILmin, 2)], ['IL_max (tratti senza risultato: contributo massimo)', fmt(ind.ILmax, 2)], ['indice completo', ind.completo ? 'sì: IL = ' + fmt(ind.IL, 2) : 'no'],
             ['spessore con FS calcolato [m]', fmt(ind.spessori.FS, 2)], ['di cui con FS < 1 [m]', fmt(ind.spessori.liquefacibileFSmin1, 2)], ['sopra falda, contributo nullo [m]', fmt(ind.spessori.sopraFalda, 2)],
-            ['escluso per comportamento argilloso, FS N.A. [m]', fmt(ind.spessori.argilloso, 2)], ['senza risultato [m]', fmt(ind.spessori.ignoto, 2)]]
+            ['escluso per comportamento argilloso, FS N.A. [m]', fmt(ind.spessori.argilloso, 2)], ['oltre il campo per addensamento, non liquefacibile [m]', fmt(ind.spessori.addensato || 0, 2)], ['senza risultato [m]', fmt(ind.spessori.ignoto, 2)]]
             .map(([a, b]) => '<tr><td class="txt">' + a + '</td><td>' + b + '</td></tr>').join('') + '</tbody></table></div>';
         h += '<ul>' + ind.assunzioni.map(a => '<li>' + esc(a.descrizione) + '</li>').join('') + '<li>' + esc(ind.fonte) + '</li></ul>';
       }

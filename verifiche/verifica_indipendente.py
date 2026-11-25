@@ -65,6 +65,8 @@ def bi_spt(p):
             break
         n160cs = nuovo
     n160cs = nuovo
+    if n160cs > 37:  # oltre il campo della correlazione per addensamento (scelta di LiquiSite, audit B1)
+        return {'stato': 'non_applicabile'}
     rd = rd_bi(p['z'], p['Mw'])
     csr = 0.65 * p['amax'] * p['sv'] / p['sve'] * rd
     cs = min(1 / (18.9 - 2.55 * math.sqrt(min(max(n160cs, 0), 37))), 0.3)  # Eq. 2.16c
@@ -105,6 +107,8 @@ def bi_cpt(p):
             break
         q = nuovo
     q = nuovo
+    if q > 211:  # oltre il campo della correlazione per addensamento (scelta di LiquiSite, audit B1)
+        return {'stato': 'non_applicabile'}
     rd = rd_bi(p['z'], p['Mw'])
     csr = 0.65 * p['amax'] * p['sv'] / p['sve'] * rd
     cs = min(1 / (37.3 - 8.27 * min(q, 211) ** 0.264), 0.3)  # Eq. 2.16b

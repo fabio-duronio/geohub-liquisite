@@ -48,6 +48,8 @@ La relazione probabilistica da SPT degli stessi autori (Boulanger & Idriss 2012a
 
 Il FS deterministico = 1 corrisponde a P_L ≈ 16 % (pag. 78–80). Con I_c oltre la soglia (2,6 di base; 2,4 o 2,8 per l'analisi di sensibilità, pag. 99) il metodo **non si applica** al punto (stato `non_applicabile`, codice `IC_OLTRE_SOGLIA`): non è un'esclusione ai sensi del §7.11.3.4.2 e non dimostra l'assenza di problemi ciclici nei terreni fini.
 
+**Oltre il campo della correlazione per addensamento** (audit v1.0.0, B1; scelta di LiquiSite approvata il 25/11/2026). Gli autori non fissano un limite superiore di validità delle curve del CRR (Eq. 2.24–2.25): oltre un certo addensamento l'esponenziale cresce senza limite (FS fino a 10²¹² e, al rifiuto, overflow numerico). Con q_c1Ncs > 211 (CPT) o (N₁)₆₀cs > 37 (SPT) il punto si dichiara non liquefacibile per addensamento: stato `non_applicabile`, codice `OLTRE_CAMPO_ADDENSAMENTO`, CRR, FS e P_L non calcolati; resistenza normalizzata e domanda sismica restano in tabella, nei grafici e nel criterio 3 della verifica preliminare. Indice IL: F = 0; cedimento: ε_v = 0; spessore riportato a parte. Le soglie sono i valori a cui gli autori limitano già C_σ ≤ 0,3 (Eq. 2.16b–c, pag. 11); alla soglia CRR7,5 = 3,72 (CPT) e 1,75 (SPT); nella banca dati CPT nessun caso con liquefazione supera q_c1Ncs ≈ 163 (Tab. 3.1). Non è un'esclusione ai sensi del §7.11.3.4.2.
+
 Tipo di prova: `CPTE` (punta elettrica senza misura di u, q_t = q_c) o `CPTU` (piezocono, u₂ obbligatoria; a_r = 0,8 se non indicato, segnalato come assunzione). La CPT a punta meccanica non è supportata (sottostima la suscettibilità: volume CNR-CentroMS 2024, pag. 27).
 
 ## Cetin et al. (2018) — SPT
@@ -130,7 +132,7 @@ Ogni funzione restituisce un oggetto con `stato`; FS, CRR, CSR e P_L sono utiliz
 | `calcolato` | calcolo riuscito, eventualmente con avvisi |
 | `input_non_valido` | dato impossibile o di tipo errato; `errori: [{campo, codice, motivo}]` |
 | `dati_insufficienti` | manca un dato necessario (es. u₂ di una CPTU, f_s nullo) o la copertura della curva non basta |
-| `non_applicabile` | il metodo o LiquiSite non si applicano al punto: `AMAX_NULLA`, `OLTRE_LIMITE_APP` (z > 20 m), `NON_SATURO` (u = 0, grandezze in `diagnostica`), `IC_OLTRE_SOGLIA` |
+| `non_applicabile` | il metodo o LiquiSite non si applicano al punto: `AMAX_NULLA`, `OLTRE_LIMITE_APP` (z > 20 m), `NON_SATURO` (u = 0, grandezze in `diagnostica`), `IC_OLTRE_SOGLIA`, `OLTRE_CAMPO_ADDENSAMENTO` (B&I 2014: q_c1Ncs > 211 o (N₁)₆₀cs > 37, grandezze di normalizzazione nel risultato) |
 | `non_convergente` | iterazione non convergente; dettagli in `convergenza` e `diagnostica` |
 | `errore_numerico` | una grandezza calcolata non è un numero finito |
 

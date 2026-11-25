@@ -17,6 +17,9 @@
  *    fuori dall'esponente m, il motore solo nell'esponente, come in B&I 2014 pag. 10) e,
  *    per CRR, con CRR7,5 < 2 (l'esempio limita CRR7,5 a 2,0); profondità entro 20 m, limite
  *    di LiquiSite (la tabella arriva a 83,7 ft).
+ *  - righe con (qc1N)cs > 211: oltre il campo della correlazione per addensamento (scelta di
+ *    LiquiSite, audit B1): il motore non calcola CRR e FS; si confrontano normalizzazione e
+ *    domanda sismica e si controlla che nell'esempio il loro CRR7,5 sia al tetto di 2,0.
  * Tolleranze: grandezze a 3 decimali nella tabella → 0,5 %; grandezze a 2 decimali →
  * metà dell'ultima cifra più un margine (0,006), oppure 1 % per i valori maggiori di 1.
  * Uso: node verifiche/verifica_riferimento.mjs [--verbose]
@@ -45,7 +48,7 @@ console.log('1. Calcolo dettagliato a 24,93 ft (Tabella G4)');
 
 console.log('2. Profilo intero, Tabelle G3, G5 e G6');
 {
-  let n = 0, nCRR = 0;
+  let n = 0, nCRR = 0, nOltre = 0, oltreNonAlTetto = 0;
   const peggio = {};
   const rel = (a, b) => Math.abs(a - b) / Math.abs(b);
   const segna = (k, d) => { peggio[k] = Math.max(peggio[k] || 0, d); };
@@ -55,11 +58,13 @@ console.log('2. Profilo intero, Tabelle G3, G5 e G6');
     const sv = g5[2] * PSF, sve = sv - (z - D.falda_ft) * PCF_W * PSF;
     const FC = Math.min(100, Math.max(0, 80 * g5[3] - 137));
     const r = L.bi2014Cpt({ z: z * FT, sv, sve, qc: qt * TSF / 1000, fs: fs * TSF, FC }, D.evento1, { tipo: 'CPTE', IcSoglia: 3.9 });
-    if (r.stato !== 'calcolato') { check('riga ' + z + ' ft calcolata', false, r.stato + ' ' + (r.codice || '')); continue; }
+    const oltre = r.stato === 'non_applicabile' && r.codice === 'OLTRE_CAMPO_ADDENSAMENTO';
+    if (r.stato !== 'calcolato' && !oltre) { check('riga ' + z + ' ft calcolata', false, r.stato + ' ' + (r.codice || '')); continue; }
     n++;
+    if (oltre) { nOltre++; if (!(g6[8] >= 2 - 1e-9)) oltreNonAlTetto++; }
     segna('CN', rel(r.CN, g5[7])); segna('qc1N', rel(r.qc1N, g5[6])); segna('qc1Ncs', rel(r.qc1Ncs, g5[10]));
     segna('rd', Math.abs(r.rd - g6[1])); segna('Kσ', Math.abs(r.Ksigma - g6[4])); segna('MSF', Math.abs(r.MSF - g6[7])); segna('CSR', Math.abs(r.CSR - g6[10]));
-    if (g6[8] < 2) {
+    if (!oltre && g6[8] < 2) {
       nCRR++;
       const sc = (a, b) => (b > 1 ? rel(a, b) / 0.01 : Math.abs(a - b) / 0.006);
       segna('CRR7,5', sc(r.CRR75, g6[8])); segna('CRR', sc(r.CRR, g6[9]));
@@ -67,6 +72,8 @@ console.log('2. Profilo intero, Tabelle G3, G5 e G6');
   }
   check('righe confrontate (sotto falda, qc1Ncs < 254)', n >= 55, String(n));
   check('righe con CRR confrontato (CRR7,5 < 2)', nCRR >= 35, String(nCRR));
+  check('righe oltre il campo per addensamento (qc1Ncs > 211)', nOltre >= 1, String(nOltre));
+  check('righe oltre il campo: nell\'esempio CRR7,5 al tetto di 2,0', oltreNonAlTetto === 0, oltreNonAlTetto + ' righe sotto il tetto');
   for (const k of ['CN', 'qc1N', 'qc1Ncs']) check(k + ' entro 0,5 % su ogni riga', peggio[k] <= 0.005, 'scarto massimo ' + (peggio[k] * 100).toFixed(3) + ' %');
   for (const k of ['rd', 'Kσ', 'MSF', 'CSR']) check(k + ' entro l\'arrotondamento a 2 decimali', peggio[k] <= 0.006, 'scarto massimo ' + peggio[k].toFixed(4));
   for (const k of ['CRR7,5', 'CRR']) check(k + ' entro arrotondamento (0,006) o 1 %', peggio[k] <= 1, 'rapporto con la tolleranza ' + peggio[k].toFixed(2));

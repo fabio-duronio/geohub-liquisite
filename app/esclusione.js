@@ -89,7 +89,8 @@
     const zsS = righe.map(r => r.z);
     let lacuna = zsS[0] - zDa > tol || zA - zsS[zsS.length - 1] > tol;
     for (let i = 1; i < zsS.length && !lacuna; i++) if (zsS[i] - zsS[i - 1] > tol) lacuna = true;
-    const valori = righe.map(r => (r.stato === 'calcolato' && r.valori && isNum(r.valori[chiave])) ? r.valori[chiave] : null);
+    // anche i punti oltre il campo per addensamento hanno la resistenza normalizzata (audit B1)
+    const valori = righe.map(r => ((r.stato === 'calcolato' || r.codice === 'OLTRE_CAMPO_ADDENSAMENTO') && r.valori && isNum(r.valori[chiave])) ? r.valori[chiave] : null);
     const mancanti = valori.filter(v => v === null).length;
     // punti senza valore perché Ic supera la soglia (metodo non applicabile), distinti dai dati mancanti
     const conIcOltre = righe.filter((r, i) => valori[i] === null && r.codice === 'IC_OLTRE_SOGLIA').length;
