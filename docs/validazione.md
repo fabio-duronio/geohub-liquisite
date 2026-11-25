@@ -36,7 +36,7 @@ Fonte: *Pile Design for Downdrag: Examples and Supporting Materials*, Appendice 
 - **Ic.** L'esempio calcola l'esponente n con l'iterazione di Robertson (2009); LiquiSite usa la regola di Robertson & Wride (1998) adottata da Boulanger & Idriss (2014). Per confrontare la catena di calcolo il test impone il contenuto di fini ricavato dall'Ic pubblicato. Con l'Ic calcolato da LiquiSite il FS cambia di qualche punto percentuale, per esempio 1,13 contro 1,08 a 24,77 ft.
 - **Convenzioni dell'esempio non adottate da LiquiSite:**
   - q_c1Ncs limitato a 254 anche fuori dal calcolo dell'esponente m;
-  - CRR limitato a 2,0;
+  - CRR limitato a 2,0 (LiquiSite non limita il CRR: con q_c1Ncs > 211 dichiara il punto oltre il campo della correlazione; nelle 9 righe dell'esempio con q_c1Ncs > 211 il CRR7,5 pubblicato è al tetto di 2,0);
   - FS posto pari a 2,0 dove Ic ≥ 2,6;
   - peso di volume stimato dalla CPT.
 - **Refusi del documento**, senza effetto sui valori numerici:
@@ -66,7 +66,7 @@ Le verifiche numeriche non hanno dipendenze; il controllo nel browser richiede P
 | `verifica_il.mjs` | indice IL: profili analitici, seconda implementazione, falda come confine, limiti di strato per le SPT | 67 |
 | `verifica_preliminare.mjs` | verifica preliminare per strato e per sito, carta di comportamento, esempio completo | 57 |
 | `verifica_cedimenti.mjs` | equazioni di Zhang et al. (2002), cedimento, assenza dell'LSN | 48 |
-| `verifica_riferimento.mjs` | caso pubblicato National Academies (2024) | 24 |
+| `verifica_riferimento.mjs` | caso pubblicato National Academies (2024) | 26 |
 | `verifica_casi_pubblicati.mjs` | confronti indicativi su figure digitalizzate: IL su due profili di Iwasaki et al. (1981), cedimento sul profilo di esempio di Zhang et al. (2002) | 4 |
 | `verifica_casuale.mjs` | prove casuali ripetibili (opzioni `--casi`, `--seme`) | 20 |
 | `verifica_restituzione.mjs` | coerenza di Ic tra grafici, tabelle e CSV | 6 |
@@ -74,6 +74,9 @@ Le verifiche numeriche non hanno dipendenze; il controllo nel browser richiede P
 | `verifica_unita.mjs` | controllo di plausibilità delle unità all'importazione: avvisi non bloccanti su qc, fs, u2, profondità, N, Vs, FC e sul rapporto fs/qc; nessun falso positivo sull'esempio | 23 |
 | `verifica_validazione.mjs` | congruenza dei pesi di volume (γ_sat < γ, γ_sat ≤ γ_w), σ'v positiva a ogni profondità su 400 stratigrafie casuali, avvisi di unità su γ e a_max, profondità dei file di progetto (audit B5, §4 punto 1) | 31 |
 | `verifica_strati.mjs` | id stabili degli strati: collegamento dei dati della verifica preliminare dopo un cambio di quota, salvataggio e riapertura, file della 1.0.0 senza id, file alterati, firma indipendente dagli id (audit B4.3) | 27 |
+| `verifica_addensamento.mjs` | punti oltre il campo della correlazione per addensamento (B&I 2014, q_c1Ncs > 211, (N₁)₆₀cs > 37): stato e motivo, nessun errore numerico fino al rifiuto, F = 0 e ε_v = 0, grafici, tabelle, CSV, criterio 3 (audit B1); Kayen 2013, Vs1 > 277 m/s (B1.c) | 42 |
+| `verifica_copertura.mjs` | criterio 3: tolleranza di copertura fissa (SPT 1,5 m, CPT 0,25 m, limiti esatti, tratti scoperti), «sabbia pulita» contraddetta da FC > 5 % o Ic > 1,775, CSV (audit B4.1–B4.2, decisione D5; letto dell'ultimo strato, §4 punto 3) | 49 |
+| `verifica_esclusione_strati.mjs` | esclusione motivata di uno strato da IL e cedimento: IL senza lo strato, F = 0 e εv = 0 dichiarati, criterio e motivazione obbligatori, criterio 4 solo se confermato, firma degli input, file precedenti, SPT per strato intero, avviso FS < 1, CSV (audit B2.3, decisione D3) | 40 |
 | `verifica_versioni.mjs` | parametro `?v=` dei file in `index.html` uguale alla versione dell'app (Chart.js: la propria), per evitare copie vecchie in cache | 23 |
 | `verifica_sicurezza.mjs` | apertura di progetti alterati (tipi, valori enumerati, proprietà ereditate, ID, risultati), 1500 alterazioni casuali, FS di riferimento senza ripiego | 73 |
 | `verifica_zs9.mjs` | modulo ZS9 copiato da SismaSite, con gli stessi casi: località di controllo, casi limite, casi A–G della specifica del 15/11/2026 | 57 |

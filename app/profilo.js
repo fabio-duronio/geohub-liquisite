@@ -14,10 +14,13 @@
  *  - SPT: punti discreti, nessun profilo continuo (assunzione dichiarata).
  */
 (function (root, factory) {
-  if (typeof module === 'object' && module.exports) module.exports = factory(require('./progetto.js'), require('../motore/indici.js'), require('../motore/cedimenti.js'));
-  else root.LiquiProfilo = factory(root.LiquiProgetto, root.LiquiIndici, root.LiquiCedimenti);
-})(typeof self !== 'undefined' ? self : this, function (P, IND, CED) {
+  if (typeof module === 'object' && module.exports) module.exports = factory(require('./progetto.js'), require('../motore/indici.js'), require('../motore/cedimenti.js'), require('./esclusione.js'));
+  else root.LiquiProfilo = factory(root.LiquiProgetto, root.LiquiIndici, root.LiquiCedimenti, root.LiquiEsclusione);
+})(typeof self !== 'undefined' ? self : this, function (P, IND, CED, EX) {
   'use strict';
+
+  /** Codice del motore per i punti oltre il campo della correlazione per addensamento (audit B1). */
+  const ADDENSATO = 'OLTRE_CAMPO_ADDENSAMENTO';
 
   const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
 
@@ -240,24 +243,34 @@
     const par = prova.parametri || {};
     const sisma = { amax: scenario.amax, Mw: scenario.Mw };
     const righe = dati.map((d) => calcolaRiga(d, prova, scenario, L, richiesti, par, sisma));
-    const indiceIL = IND ? IND.indiceIL(puntiPerIL(righe, prova.tipo === 'SPT' ? scenario.strati : null), scenario.zFalda) : null;
+    // D3: strati esclusi motivatamente (convenzione applicativa di GeoHub): F = 0 dichiarato, εv = 0, spessore a parte
+    const escl = EX ? EX.stratiEsclusi(L, scenario) : { esclusi: [], nonAttive: [] };
+    const oplEsc = escl.esclusi.length ? { esclusi: escl.esclusi } : {};
+    const indiceIL = IND ? IND.indiceIL(puntiPerIL(righe, prova.tipo === 'SPT' ? scenario.strati : null), scenario.zFalda, oplEsc) : null;
     // cedimento post-sismico: metodo da CPT (Zhang et al. 2002), solo con il metodo CPT
     let cedimenti = null;
     if (CED && scenario.metodo === 'bi2014Cpt') {
-      cedimenti = CED.cedimento(puntiPerCedimenti(righe), scenario.zFalda);
+      cedimenti = CED.cedimento(puntiPerCedimenti(righe), scenario.zFalda, oplEsc);
       if (cedimenti.stato === 'calcolato') {
         const perZ = new Map();
         for (const t of cedimenti.tratti) if (t.categoria === 'FS') perZ.set(t.zPunto, t.epsMin);
         for (const r of righe) if (perZ.has(r.z) && r.stato === 'calcolato' && r.valori) r.valori.epsV = perZ.get(r.z);
       }
     }
-    return { ...base, stato: 'calcolato', righe, riepilogo: riepiloga(righe, prova, scenario), indiceIL, cedimenti };
+    // avvisi non bloccanti: richiesta incompleta (strato incluso) e FS < 1 in strato escluso
+    const avvEsc = escl.nonAttive.map(n => ({ codice: 'ESCLUSIONE_STRATO_NON_APPLICATA', messaggio: 'Strato ' + numeroIt(n.da) + '–' + numeroIt(n.a) + ' m: esclusione motivata non applicata (' + n.motivo + '); lo strato resta incluso nel calcolo.' }));
+    for (const e of escl.esclusi) {
+      const n = righe.filter(r => r.stato === 'calcolato' && r.valori && isNum(r.valori.FS) && r.valori.FS < 1 && r.z >= e.da && r.z < e.a).length;
+      if (n) avvEsc.push({ codice: 'ESCLUSO_CON_FS_MINORE_DI_1', messaggio: 'Strato ' + numeroIt(e.da) + '–' + numeroIt(e.a) + ' m escluso motivatamente, ma ' + n + ' punti hanno FS < 1: i metodi sono tarati su terreni granulari; il FS è mostrato come «non considerato» e non entra in IL né nel cedimento.' });
+    }
+    return { ...base, stato: 'calcolato', righe, riepilogo: riepiloga(righe, prova, scenario), indiceIL, cedimenti,
+      esclusioneStrati: escl, avvisiEsclusione: avvEsc };
   }
 
   /**
    * Categorie dei punti per l'indice IL (motore/indici.js):
    *  calcolato con FS → 'FS'; sopra falda (NON_SATURO) → 'sopraFalda';
-   *  Ic oltre soglia → 'argilloso'; tutto il resto (dati mancanti, non validi, fuori
+   *  Ic oltre soglia → 'argilloso'; oltre il campo per addensamento → 'addensato'; tutto il resto (dati mancanti, non validi, fuori
    *  stratigrafia, non convergenti, oltre il limite dell'app) → 'ignoto'.
    * Le righe senza profondità valida non entrano.
    * strati (solo prove SPT): ogni punto porta i limiti dello strato che lo contiene e non ne esce
@@ -275,6 +288,7 @@
     if (r.stato === 'calcolato' && r.valori && isNum(r.valori.FS) && r.valori.FS >= 0) return { z: r.z, categoria: 'FS', FS: r.valori.FS };
     if (r.stato === 'non_applicabile' && r.codice === 'NON_SATURO') return { z: r.z, categoria: 'sopraFalda' };
     if (r.stato === 'non_applicabile' && r.codice === 'IC_OLTRE_SOGLIA') return { z: r.z, categoria: 'argilloso' };
+    if (r.stato === 'non_applicabile' && r.codice === ADDENSATO) return { z: r.z, categoria: 'addensato' };
     return { z: r.z, categoria: 'ignoto' };
   }
 
@@ -372,6 +386,13 @@
       riga.motivo = esito.motivo || (esito.errori || []).map(e => e.campo + ': ' + e.motivo).join('; ');
       if (esito.errori) riga.errori = esito.errori;
       if (esito.Ic !== undefined) riga.valori = { Ic: esito.Ic, FCusato: esito.FC };
+      // oltre il campo per addensamento: normalizzazione e domanda restano (tabelle, grafici, criterio 3); CRR, FS e PL no
+      if (esito.codice === ADDENSATO) {
+        const valori = {};
+        for (const k of METODI[m].intermedie.concat(METODI[m].finali)) valori[k] = isNum(esito[k]) ? esito[k] : null;
+        if (m === 'bi2014Cpt') valori.FCusato = esito.FC;
+        riga.valori = valori;
+      }
       // Sopra falda con Ic oltre soglia: il motore controlla Ic prima della saturazione; qui il
       // punto si etichetta «sopra falda», come l'indice IL che lo classifica per profondità.
       // Motore invariato; Ic resta nella carta di comportamento (riga.sbt) e nel motivo.
@@ -391,6 +412,8 @@
   /** Motivi brevi per tabelle e grafici (il motivo completo resta in riga.motivo). */
   const MOTIVI_BREVI = {
     NON_SATURO: 'sopra falda (u = 0)', IC_OLTRE_SOGLIA: 'Ic oltre soglia: metodo non applicabile (comportamento argilloso), FS N.A.',
+    OLTRE_CAMPO_ADDENSAMENTO: 'oltre il campo della correlazione (molto addensato): non liquefacibile, FS non calcolato',
+    CR_NON_DEFINITO: 'aste troppo corte: C_R di Cetin ≤ 0, punto non calcolato',
     DATO_MANCANTE: 'dato mancante', FC_MANCANTE: 'FC mancante', FUORI_STRATIGRAFIA: 'fuori dalla stratigrafia',
     OLTRE_LIMITE_APP: 'oltre 20 m (limite di LiquiSite)', AMAX_NULLA: 'amax = 0', U2_MANCANTE: 'u2 mancante (CPTU)',
     IC_NON_CALCOLABILE: 'Ic non calcolabile', Z_NON_VALIDA: 'profondità non valida', DATO_NON_NUMERICO: 'valore non numerico'
@@ -486,7 +509,7 @@
     let seg = [], zPrec = null;
     for (const r of righe) {
       const v = valoreDi(r, chiave, sorgente);
-      const valido = isNum(r.z) && isNum(v) && (sorgente !== 'valori' || r.stato === 'calcolato' || (chiave === 'Ic' && r.codice === 'IC_OLTRE_SOGLIA'));
+      const valido = isNum(r.z) && isNum(v) && (sorgente !== 'valori' || r.stato === 'calcolato' || r.codice === ADDENSATO || (chiave === 'Ic' && r.codice === 'IC_OLTRE_SOGLIA'));
       if (!valido) { if (seg.length) segmenti.push(seg); seg = []; zPrec = null; continue; }
       const p = { x: v, y: r.z, indice: r.indice };
       punti.push(p);
@@ -521,7 +544,7 @@
    * del metodo di innesco (coerenza con il grafico Ic); i FS non applicabili non vengono esposti.
    */
   function valoreRisultato(r, chiave) {
-    const ammesso = r.stato === 'calcolato' || (chiave === 'Ic' && r.codice === 'IC_OLTRE_SOGLIA');
+    const ammesso = r.stato === 'calcolato' || r.codice === ADDENSATO || (chiave === 'Ic' && r.codice === 'IC_OLTRE_SOGLIA');
     const v = ammesso && r.valori ? r.valori[chiave] : null;
     return isNum(v) ? v : null;
   }

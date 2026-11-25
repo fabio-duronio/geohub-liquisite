@@ -289,6 +289,15 @@
   // ---------------------------------------------------------------------------
   // Pannello: falda e stratigrafia
   // ---------------------------------------------------------------------------
+  // D3: esclusione motivata dello strato dal calcolo di IL e cedimento (convenzione applicativa di GeoHub)
+  const inEscluso = (r, x) => !!(r.esclusioneStrati && r.esclusioneStrati.esclusi.some(e => x.z >= e.da && x.z < e.a));
+  function htmlEsclusioneStrato(s, i) {
+    const on = s.escluso_motivatamente === true;
+    const opz = Object.entries(EX.CRITERI_ESCLUSIONE).map(([k, v]) => '<option value="' + k + '"' + (s.criterio === k ? ' selected' : '') + '>' + esc(v) + '</option>').join('');
+    return '<label class="chk"><input type="checkbox" data-k="escluso_motivatamente" aria-label="Escludi motivatamente lo strato ' + (i + 1) + ' dal calcolo di IL e cedimento"' + (on ? ' checked' : '') + '> escludi lo strato da IL e cedimento (convenzione applicativa di GeoHub)</label>' +
+      (on ? '<div class="esc-strato"><select data-k="criterio" aria-label="Criterio di esclusione, strato ' + (i + 1) + '"><option value="">criterio…</option>' + opz + '</select> ' +
+        '<input class="txt" type="text" data-k="motivazione" placeholder="motivazione (obbligatoria; per terreno coesivo indicare i parametri di plasticità)" aria-label="Motivazione dell\'esclusione, strato ' + (i + 1) + '" value="' + esc(s.motivazione || '') + '"></div>' : '');
+  }
   function renderStrati() {
     const sc = scenario();
     const tb = $('tabStrati').querySelector('tbody');
@@ -299,7 +308,8 @@
     tb.innerHTML = sc.strati.map((s, i) => '<tr data-i="' + i + '" class="r1">' +
       ['da', 'a', 'gamma', 'gammaSat', 'FC'].map(k => '<td><input type="text" inputmode="decimal" step="0.1" data-k="' + k + '" aria-label="' + etich[k] + ', strato ' + (i + 1) + '" value="' + esc(s[k] ?? '') + '"></td>').join('') + '</tr>' +
       '<tr data-i="' + i + '" class="r2"><td colspan="4"><input class="txt" type="text" data-k="descrizione" placeholder="descrizione" aria-label="descrizione, strato ' + (i + 1) + '" value="' + esc(s.descrizione || '') + '"></td>' +
-      '<td style="text-align:right;"><button class="btn-link" type="button" data-rimuovi="' + i + '" aria-label="Rimuovi strato ' + (i + 1) + '">rimuovi</button></td></tr>').join('');
+      '<td style="text-align:right;"><button class="btn-link" type="button" data-rimuovi="' + i + '" aria-label="Rimuovi strato ' + (i + 1) + '">rimuovi</button></td></tr>' +
+      '<tr data-i="' + i + '" class="r3"><td colspan="5">' + htmlEsclusioneStrato(s, i) + '</td></tr>').join('');
     $('sumStrati').textContent = (isNum(sc.zFalda) ? 'falda ' + fmt(sc.zFalda, 1) + ' m · ' : '') + sc.strati.length + ' strati';
     const pv = prova();
     $('hintFC').textContent = pv && pv.tipo.startsWith('CPT')
@@ -310,7 +320,7 @@
   function mostraErroriStrati() {
     const sc = scenario(), pv = prova();
     const err = sc && pv ? F.controllaScenario(pv, sc, L).filter(e => /strati|zFalda/.test(e.campo)) : [];
-    const avv = sc ? F.avvisiScenario(sc).filter(a => /^strati/.test(a.campo)) : [];
+    const avv = (sc ? F.avvisiScenario(sc).filter(a => /^strati/.test(a.campo)) : []).concat(sc ? EX.stratiEsclusi(L, sc).nonAttive.map(n => ({ messaggio: 'Strato ' + fmt(n.da, 2) + '–' + fmt(n.a, 2) + ' m: esclusione motivata non applicata (' + n.motivo + '); lo strato resta incluso nel calcolo.' })) : []);
     $('erroriStrati').innerHTML = (err.length ? '<div class="alert alert-danger" style="margin-top:10px;"><ul>' + err.map(e => '<li>' + esc(e.motivo) + '</li>').join('') + '</ul></div>' : '') +
       (avv.length ? '<div class="alert alert-warn" role="status" style="margin-top:10px;"><ul>' + avv.map(a => '<li>' + esc(a.messaggio) + '</li>').join('') + '</ul></div>' : '');
   }
@@ -318,6 +328,9 @@
   $('tabStrati').addEventListener('input', (e) => {
     const sc = scenario(); const tr = e.target.closest('tr'); if (!sc || !tr) return;
     const s = sc.strati[Number(tr.dataset.i)], k = e.target.dataset.k;
+    if (k === 'escluso_motivatamente') { s[k] = e.target.checked; renderStrati(); inputCambiato(); return; }
+    if (k === 'criterio') { if (e.target.value) s.criterio = e.target.value; else delete s.criterio; inputCambiato(); mostraErroriStrati(); return; }
+    if (k === 'motivazione') { s.motivazione = e.target.value; inputCambiato(); mostraErroriStrati(); return; }
     s[k] = k === 'descrizione' ? e.target.value : leggiNumero(e.target);
     inputCambiato(); mostraErroriStrati();
   });
@@ -408,7 +421,7 @@
     return '<div class="blocco-il"><div><span class="eyebrow">INDICE DEL POTENZIALE DI LIQUEFAZIONE · IWASAKI · 0–20 m</span>' +
       '<div class="il-valore num">IL ' + (ind.completo ? '= ' : '') + esc(testoIL(ind)) + '</div></div>' +
       '<span>' + (ind.completo ? 'Profilo coperto in 0–20 m.' : 'Copertura incompleta in 0–20 m: ' + fmt(sp.ignoto, 2) + ' m senza risultato (dati mancanti, non calcolati o non indagati): contributo nullo nel valore inferiore, contributo massimo del modello nel superiore: limiti convenzionali del modello, non un intervallo di confidenza né un massimo fisico garantito. Nessun tratto ignoto è considerato sicuro.') +
-      ' Spessori: FS calcolato ' + fmt(sp.FS, 2) + ' m (di cui FS &lt; 1 ' + fmt(sp.liquefacibileFSmin1, 2) + ' m), sopra falda ' + fmt(sp.sopraFalda, 2) + ' m, esclusi per comportamento argilloso (Ic oltre soglia, FS N.A., nessun contributo) ' + fmt(sp.argilloso, 2) + ' m. Senza classi: il giudizio resta del progettista.</span></div>';
+      ' Spessori: FS calcolato ' + fmt(sp.FS, 2) + ' m (di cui FS &lt; 1 ' + fmt(sp.liquefacibileFSmin1, 2) + ' m), sopra falda ' + fmt(sp.sopraFalda, 2) + ' m, esclusi per comportamento argilloso (Ic oltre soglia, FS N.A., nessun contributo) ' + fmt(sp.argilloso, 2) + ' m' + (sp.addensato > 0 ? ', oltre il campo della correlazione per addensamento (non liquefacibili, FS non calcolato, nessun contributo) ' + fmt(sp.addensato, 2) + ' m' : '') + '. Senza classi: il giudizio resta del progettista.</span></div>';
   }
 
   function renderRiepilogo() {
@@ -523,7 +536,7 @@
       p.push({ id: 'Vs', titolo: 'Vs (misurata) e Vs1', etichettaX: 'Vs, Vs1 [m/s]', serie: [s('Vs', 'Vs', COL.ink, 'ingresso'), s('Vs1', 'Vs1', COL.grigio, 'valori', true)], def: true, cifre: 0 });
     }
     const crr = sc.metodo === 'kayen2013Vs' ? 'CRR15' : 'CRR';
-    p.push({ id: 'csrcrr', titolo: 'Domanda e resistenza', etichettaX: 'CSR, CRR [–]', serie: [s('CSR', 'CSR (sito)', '#bd3c3c', 'valori', true), s(crr, sc.metodo === 'kayen2013Vs' ? 'CRR PL 15 % (sito)' : 'CRR (sito)', '#218273')], def: true, cifre: 3, xMin: 0 });
+    p.push({ id: 'csrcrr', titolo: 'Domanda e resistenza', etichettaX: 'CSR, CRR [–]', serie: [s('CSR', 'CSR (sito)', '#bd3c3c', 'valori', true), s(crr, sc.metodo === 'kayen2013Vs' ? 'CRR PL 15 % (sito)' : 'CRR (sito)', '#218273')], def: true, cifre: 3, xMin: 0, xMax: 1 });
     p.push({ id: 'FS', titolo: 'Fattore di sicurezza', etichettaX: 'FS [–]', serie: [s('FS', 'FS', COL.blu)], rif: [{ x: 1, etichetta: 'FS = 1' }].concat(F.fsRiferimento(sc) === null ? [] : [{ x: F.fsRiferimento(sc), etichetta: 'FS rif ' + fmt(F.fsRiferimento(sc)) }]), xMin: 0, xMax: 3, def: true, cifre: 2, nota: 'Rosso: FS < 1; ambra: FS tra 1 e il riferimento ' + fmt(F.fsRiferimento(sc)) + '; verde tenue: oltre. Confronto puntuale, non giudizio di sicurezza del sito.' });
     if (sc.metodo !== 'bi2014Spt') p.push({ id: 'PL', titolo: 'Probabilità PL', etichettaX: 'PL [–]', serie: [s('PL', 'PL', COL.ink)], xMin: 0, xMax: 1, def: false, cifre: 3, nota: F.METODI[sc.metodo].notaPL });
     const ind = r && r.indiceIL;
@@ -720,8 +733,9 @@
         if (k === 'origineFC') return '<th scope="col" style="text-align:left;">origine FC<span class="u">&nbsp;</span></th>';
         return intest(k.startsWith('t:') ? k.slice(2) : k);
       }).join('') + '</tr></thead><tbody>' +
-        r.righe.map(x => '<tr data-indice="' + x.indice + '" class="' + (S.selezione === x.indice ? 'hl ' : '') + (x.stato !== 'calcolato' ? 'muted' : '') + '"><td>' + fmt(x.z) + '</td>' + cols.map(k => {
-          if (k === 'letturaFS') { const fs = F.valoreRisultato(x, 'FS'); return '<td class="txt">' + (fs === null ? (x.codice === 'IC_OLTRE_SOGLIA' ? 'FS N.A. · escluso per comportamento argilloso' : 'Non valutabile: vedere motivo') : (() => { const rf = F.fsRiferimento(sc); return '<span class="esito-chip ' + (fs < 1 ? 'esito-critico' : rf === null ? 'esito-neutro' : fs < rf ? 'esito-attesa' : 'esito-neutro') + '">' + (fs < 1 ? 'FS < 1 · domanda > resistenza' : rf === null ? 'FS ≥ 1 · riferimento da correggere' : fs < rf ? '1 ≤ FS < ' + fmt(rf) + ' · margine inferiore al riferimento' : 'FS ≥ ' + fmt(rf) + ' · margine ≥ riferimento') + '</span>'; })()) + '</td>'; }
+        r.righe.map(x => '<tr data-indice="' + x.indice + '" class="' + (S.selezione === x.indice ? 'hl ' : '') + (x.stato !== 'calcolato' || inEscluso(r, x) ? 'muted' : '') + '"><td>' + fmt(x.z) + '</td>' + cols.map(k => {
+          if (k === 'letturaFS' && inEscluso(r, x) && x.stato === 'calcolato') return '<td class="txt">FS ' + fmt(F.valoreRisultato(x, 'FS'), 2) + ' · non considerato (strato escluso motivatamente)' + (F.valoreRisultato(x, 'FS') < 1 ? ' · FS < 1: metodi tarati su terreni granulari' : '') + '</td>';
+          if (k === 'letturaFS') { const fs = F.valoreRisultato(x, 'FS'); return '<td class="txt">' + (fs === null ? (x.codice === 'IC_OLTRE_SOGLIA' ? 'FS N.A. · escluso per comportamento argilloso' : x.codice === 'OLTRE_CAMPO_ADDENSAMENTO' ? 'FS non calcolato · molto addensato, non liquefacibile' : 'Non valutabile: vedere motivo') : (() => { const rf = F.fsRiferimento(sc); return '<span class="esito-chip ' + (fs < 1 ? 'esito-critico' : rf === null ? 'esito-neutro' : fs < rf ? 'esito-attesa' : 'esito-neutro') + '">' + (fs < 1 ? 'FS < 1 · domanda > resistenza' : rf === null ? 'FS ≥ 1 · riferimento da correggere' : fs < rf ? '1 ≤ FS < ' + fmt(rf) + ' · margine inferiore al riferimento' : 'FS ≥ ' + fmt(rf) + ' · margine ≥ riferimento') + '</span>'; })()) + '</td>'; }
           if (k === 'stato') return '<td><span class="stato-tag ' + esc(x.stato) + '">' + esc(F.ETICHETTE_STATI[x.stato] || x.stato) + '</span></td>';
           if (k === 'motivo') return '<td class="txt" title="' + esc(x.motivo || '') + '">' + esc([x.codice ? (F.MOTIVI_BREVI[x.codice] || x.codice) : null, ...x.avvisi.map(a => a.codice)].filter(Boolean).join(' · ')) + '</td>';
           if (k === 'origineFC') return '<td class="txt" style="min-width:120px;">' + esc(x.origineFC || '–') + '</td>';
@@ -895,7 +909,9 @@
       dett += '<div class="escl-blocco"><div class="escl-tit">' + icona(iconaCriterio(c3)) + ' <b>Criterio 3</b> · sabbie pulite con ' + (c3.grandezza ? esc(c3.grandezza) + ' > ' + c3.soglia : '(N1)60 > 30 o qc1N > 180') + '</div>' +
         '<div class="field"><label for="exSabbia">Strato costituito da sabbie pulite</label>' + sceltaSiNo('exSabbia', sel.dati.sabbiaPulita) + '<div class="hint">giudizio del geologo, da granulometria e descrizione</div></div>' +
         (isNum(c3.punti) ? '<p class="hint">Punti saturi nello strato: ' + c3.punti + (c3.mancanti ? ' (senza ' + esc(c3.grandezza) + ': ' + [c3.conIcOltre ? c3.conIcOltre + ' con Ic oltre la soglia' : '', c3.mancanti - c3.conIcOltre ? (c3.mancanti - c3.conIcOltre) + ' per dati mancanti o non calcolati' : ''].filter(Boolean).join(', ') + ')' : '') + ' · minimo ' + esc(c3.grandezza) + ' = ' + fmt(c3.minimo, 1) + ' · oltre soglia: ' + c3.sopraSoglia + '. Normalizzazione: ' + esc(P.NOMI_METODI[sc.metodo]) + '.</p>' : '') +
-        '<p class="escl-motivo">' + esc(c3.motivo || '') + '</p></div>';
+        '<p class="escl-motivo">' + esc(c3.motivo || '') + '</p>' +
+        (c3.trattiScoperti && c3.trattiScoperti.length ? '<p class="hint">Tratti saturi non coperti da prove (distanza oltre ' + fmt(c3.tolleranza, 2) + ' m, criterio di screening di LiquiSite): ' + c3.trattiScoperti.map(t => fmt(t.da, 2) + '–' + fmt(t.a, 2) + ' m').join(', ') + '. Non sono considerati sicuri.</p>' : '') +
+        '</div>';
       dett += '<div class="escl-blocco"><div class="escl-tit">' + icona(iconaCriterio(c4)) + ' <b>Criterio 4</b> · granulometria esterna ai fusi della Fig. 7.11.1</div>' +
         '<div class="field"><label for="exCampione">Campione</label><input type="text" id="exCampione" value="' + esc(sel.dati.campione) + '" placeholder="es. S1-C3, 6,0–6,5 m"></div>' +
         '<div class="field"><label for="exCurva">Curva granulometrica: una riga per setaccio, «diametro [mm]; passante [%]»</label><textarea id="exCurva" rows="7" spellcheck="false">' + esc(EX.testoCurva(sel.dati.curva)) + '</textarea><div class="hint" id="exCurvaErr"></div></div>';
@@ -1046,6 +1062,8 @@
     const mg = MG.statoMagnitudo(sc, proposta());
     if (mg.errori.length || mg.avvisi.length) h += '<div class="section-title">Magnitudo M<sub>w</sub></div><ul>' +
       mg.errori.map(e => '<li><b>Da correggere prima di stampa ed esportazione:</b> ' + esc(e.motivo) + '</li>').join('') + mg.avvisi.map(a => '<li>' + esc(a.testo) + '</li>').join('') + '</ul>';
+    const avvEs = r.avvisiEsclusione || [];
+    if (avvEs.length) h += '<div class="section-title">Strati esclusi motivatamente</div><ul>' + avvEs.map(a => '<li>' + esc(a.messaggio) + '</li>').join('') + '</ul>';
     const avvSc = r.avvisiScenario || [];
     if (avvSc.length) h += '<div class="section-title">Dati dello scenario da controllare</div><ul>' + avvSc.map(a => '<li>' + esc(a.messaggio) + '</li>').join('') + '</ul>';
     const q = r.riepilogo;
@@ -1072,7 +1090,7 @@
         h += '<div class="table-scroll"><table class="data-table"><thead><tr><th scope="col">grandezza</th><th scope="col">valore</th></tr></thead><tbody>' +
           [['IL_min (tratti senza risultato: contributo nullo)', fmt(ind.ILmin, 2)], ['IL_max (tratti senza risultato: contributo massimo)', fmt(ind.ILmax, 2)], ['indice completo', ind.completo ? 'sì: IL = ' + fmt(ind.IL, 2) : 'no'],
             ['spessore con FS calcolato [m]', fmt(ind.spessori.FS, 2)], ['di cui con FS < 1 [m]', fmt(ind.spessori.liquefacibileFSmin1, 2)], ['sopra falda, contributo nullo [m]', fmt(ind.spessori.sopraFalda, 2)],
-            ['escluso per comportamento argilloso, FS N.A. [m]', fmt(ind.spessori.argilloso, 2)], ['senza risultato [m]', fmt(ind.spessori.ignoto, 2)]]
+            ['escluso per comportamento argilloso, FS N.A. [m]', fmt(ind.spessori.argilloso, 2)], ['oltre il campo per addensamento, non liquefacibile [m]', fmt(ind.spessori.addensato || 0, 2)], ['escluso motivatamente, F = 0 dichiarato [m]', fmt(ind.spessori.escluso || 0, 2)], ['senza risultato [m]', fmt(ind.spessori.ignoto, 2)]]
             .map(([a, b]) => '<tr><td class="txt">' + a + '</td><td>' + b + '</td></tr>').join('') + '</tbody></table></div>';
         h += '<ul>' + ind.assunzioni.map(a => '<li>' + esc(a.descrizione) + '</li>').join('') + '<li>' + esc(ind.fonte) + '</li></ul>';
       }
@@ -1329,7 +1347,7 @@
     const sc = scenario(), blocco = bloccoUscite(sc, 'esportare');
     if (blocco) { alert(blocco); return; }
     const pre = EX.valutaEsclusione(L, prova(), sc, risultatoDi(sc));
-    const csv = X.csvRisultati(S.pr, prova(), sc, risultatoDi(sc), { preliminare: pre.esito.titolo + '. ' + pre.esito.testo, magnitudo: MG.testoOrigine(sc, proposta()) });
+    const csv = X.csvRisultati(S.pr, prova(), sc, risultatoDi(sc), { preliminare: pre.esito.titolo + '. ' + pre.esito.testo + (EX.testoTrattiScoperti(pre) ? ' ' + EX.testoTrattiScoperti(pre) : ''), magnitudo: MG.testoOrigine(sc, proposta()) });
     scarica(URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' })), nomeFile('risultati-' + sc.nome, 'csv'));
   });
 
@@ -1404,7 +1422,7 @@
       ' (falda ' + (isNum(d.faldaMediaStagionale) ? fmt(d.faldaMediaStagionale) + ' m' : 'non indicata') + '; p.c. sub-orizzontale: ' + (siNo(d.pcSubOrizzontale) || 'non indicato') + '; fondazioni superficiali: ' + (siNo(d.fondazioniSuperficiali) || 'non indicato') + ')</td></tr>' +
       '</tbody></table><table class="st-tab num"><thead><tr><th>da [m]</th><th>a [m]</th><th>descrizione</th><th>criterio 3</th><th>criterio 4</th><th>esito</th></tr></thead><tbody>' +
       v.strati.map(x => '<tr><td>' + fmt(x.da) + '</td><td>' + fmt(x.a) + '</td><td style="text-align:left;">' + esc(x.descrizione) + '</td>' +
-        '<td style="text-align:left;">' + es(x.c3) + (isNum(x.c3.minimo) ? ' · min ' + esc(x.c3.grandezza) + ' ' + fmt(x.c3.minimo, 1) : '') + (x.dati.sabbiaPulita === null ? '' : ' · sabbia pulita: ' + siNo(x.dati.sabbiaPulita)) + '</td>' +
+        '<td style="text-align:left;">' + es(x.c3) + (isNum(x.c3.minimo) ? ' · min ' + esc(x.c3.grandezza) + ' ' + fmt(x.c3.minimo, 1) : '') + (x.c3.trattiScoperti && x.c3.trattiScoperti.length ? ' · tratti non coperti da prove: ' + x.c3.trattiScoperti.map(t => fmt(t.da, 2) + '–' + fmt(t.a, 2) + ' m').join(', ') : '') + (x.c3.contraddizione ? ' · sabbia pulita contraddetta dai dati' + (isNum(x.c3.contraddizione.fcMax) ? ' (FC fino a ' + fmt(x.c3.contraddizione.fcMax, 1) + ' %)' : '') + (isNum(x.c3.contraddizione.icMax) ? ' (Ic fino a ' + fmt(x.c3.contraddizione.icMax, 3) + ')' : '') : '') + (x.dati.sabbiaPulita === null ? '' : ' · sabbia pulita: ' + siNo(x.dati.sabbiaPulita)) + '</td>' +
         '<td style="text-align:left;">' + es(x.c4) + (x.c4.motore && isNum(x.c4.motore.Uc) ? ' · Uc ' + fmt(x.c4.motore.Uc, 1) : '') + (x.dati.campione ? ' · ' + esc(x.dati.campione) : '') +
         (x.c4.motore ? ' · proposta: ' + esc(x.c4.proposta) + (x.dati.decisione4 ? '; geologo: ' + esc(x.dati.decisione4) + (x.dati.motivazione4 ? ' (' + esc(x.dati.motivazione4) + ')' : '') : '; da confermare') : '') + '</td>' +
         '<td style="text-align:left;">' + ESITI[x.esito] + '</td></tr>').join('') + '</tbody></table>';
@@ -1448,6 +1466,7 @@
       riga('FS di riferimento', fmt(F.fsRiferimento(sc)) + ' · punti calcolati con FS < 1: ' + nFS(r, 1) + '; con FS < ' + fmt(F.fsRiferimento(sc)) + ': ' + nFS(r, F.fsRiferimento(sc))) +
       (r.cedimenti && r.cedimenti.stato === 'calcolato' ? riga('Cedimento post-sismico da CPT (Zhang et al. 2002, 0–20 m)', esc(testoCedimento(r.cedimenti)) + (r.cedimenti.completo ? '' : ' — copertura incompleta: contributo nullo nel valore inferiore, deformazione della curva limite ' + fmt(r.cedimenti.epsLimite, 2) + ' % nel superiore (limiti convenzionali del modello, non un intervallo di confidenza)')) : '') +
       riga('Indice IL (Iwasaki, 0–20 m, senza classi)', r.indiceIL ? esc(testoIL(r.indiceIL)) + (r.indiceIL.stato === 'calcolato' && !r.indiceIL.completo ? ' — copertura incompleta: ' + fmt(r.indiceIL.spessori.ignoto, 2) + ' m senza risultato, con contributo nullo nel valore inferiore e contributo massimo del modello nel superiore (limiti convenzionali del modello, non un intervallo di confidenza)' : '') : '–') +
+      (r.esclusioneStrati && r.esclusioneStrati.esclusi.length && r.indiceIL && r.indiceIL.stato === 'calcolato' ? riga('Strati esclusi motivatamente (convenzione applicativa di GeoHub, F = 0 in IL, εv = 0 nel cedimento)', fmt(r.indiceIL.spessori.escluso, 2) + ' m: ' + r.esclusioneStrati.esclusi.map(e => fmt(e.da, 2) + '–' + fmt(e.a, 2) + ' m, ' + esc(e.etichetta) + ' — ' + esc(e.motivazione)).join('; ')) : '') +
       riga('Intervalli non calcolati', q.intervalliNonCalcolati.length ? q.intervalliNonCalcolati.map(i => fmt(i.da) + '–' + fmt(i.a) + ' m: ' + esc(i.codice && F.MOTIVI_BREVI[i.codice] ? F.MOTIVI_BREVI[i.codice] : F.ETICHETTE_STATI[i.stato])).join('; ') : 'nessuno') +
       '</tbody></table><p class="st-nota"><b>Criterio di verifica e scelta del coefficiente di sicurezza.</b> ' + esc(F.criterioFS(sc)) + '</p><p class="st-nota">Il FS minimo non descrive da solo la risposta del sito. ' + esc(q.notaFS) + ' ' + esc(q.notaPL) + '</p>';
     const cat = catalogoPannelli(pv, sc, r);
@@ -1467,6 +1486,7 @@
       q.avvisi.map(a => '<li><b>' + esc(a.codice) + '</b> (' + esc(a.n) + ' punti, z ' + fmt(a.zDa) + '–' + fmt(a.zA) + ' m): ' + esc(a.messaggio) + '</li>').join('') +
       q.assunzioni.map(a => '<li>Assunzione: ' + esc(a.descrizione) + (a.n ? ' (' + esc(a.n) + ' punti)' : '') + '</li>').join('') +
       MG.statoMagnitudo(sc, proposta()).avvisi.map(a => '<li><b>Magnitudo.</b> ' + esc(a.testo) + '</li>').join('') +
+      (r.avvisiEsclusione || []).map(a => '<li><b>Strati esclusi.</b> ' + esc(a.messaggio) + '</li>').join('') +
       (r.avvisiScenario || []).map(a => '<li><b>Dati dello scenario.</b> ' + esc(a.messaggio) + '</li>').join('') +
       '<li>Profondità oltre ' + fmt(q.profonditaIndagata ? q.profonditaIndagata.a : 0) + ' m non indagate; un intervallo non calcolato non è un intervallo sicuro.</li>' +
       (r.indiceIL && r.indiceIL.stato === 'calcolato' ? r.indiceIL.assunzioni.map(a => '<li><b>Indice IL.</b> ' + esc(a.descrizione) + '</li>').join('') + '<li><b>Indice IL.</b> ' + esc(r.indiceIL.fonte) + '</li>' : '') +

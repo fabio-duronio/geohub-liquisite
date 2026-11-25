@@ -63,6 +63,12 @@
     if (ind && ind.stato === 'calcolato') {
       riga(['# IL Iwasaki 0-20 m (senza classi)', 'IL_min', ind.ILmin, 'IL_max', ind.ILmax, 'completo', ind.completo ? 'si' : 'no', 'spessore ignoto (m)', ind.spessori.ignoto]);
     }
+    const esc = risultato.esclusioneStrati;
+    if (esc && esc.esclusi.length && ind && ind.stato === 'calcolato') {
+      riga(['# Strati esclusi motivatamente (convenzione applicativa di GeoHub, non esclusione ai sensi del par. 7.11.3.4.2): F = 0 in IL, εv = 0 nel cedimento', 'spessore escluso (m)', ind.spessori.escluso]);
+      for (const e of esc.esclusi) riga(['# Strato escluso', e.da + '–' + e.a + ' m', e.etichetta, e.motivazione]);
+    }
+    for (const a of risultato.avvisiEsclusione || []) riga(['# Avviso sugli strati esclusi', a.messaggio]);
     const ced = risultato.cedimenti;
     if (ced && ced.stato === 'calcolato') {
       riga(['# Cedimento post-sismico 0-20 m (Zhang et al. 2002)', 'S_min (cm)', ced.Smin * 100, 'S_max (cm)', ced.Smax * 100, 'completo', ced.completo ? 'si' : 'no']);

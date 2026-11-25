@@ -85,6 +85,61 @@ check('MSFmax = 1,8 a qc1Ncs ≈ 160 (pag. 14)', 1.09 + Math.pow(160 / 180, 3), 
 check('MSFmax ≈ 1,10 a (N1)60cs ≈ 6 (pag. 14)', 1.09 + Math.pow(6 / 31.5, 2), 1.10, 0.04);
 check('MSF(M 7,5) = 1 (Eq. 2.19)', BI.msf(7.5, 2.0), 1.0, 0.001);
 check('MSF(M 5,25) = MSFmax (Eq. 2.18)', BI.msf(5.25, 2.0), 2.0, 0.001);
+// MSFmax è il valore massimo che l'MSF può assumere per un terremoto di piccola magnitudo (App. A pag. 126;
+// pag. 12; curve costanti sotto 5,25 nelle Fig. 2.6 e A.17): sotto M = 5,25 l'MSF resta MSFmax (audit v1.0.0, B3.1). Sopra 5,25 la formula non cambia.
+check('MSF(M 5,0) = MSFmax: limite superiore (App. A pag. 126)', BI.msf(5.0, 2.0), 2.0, 1e-12);
+check('MSF(M 4,5, MSFmax 2,2) = 2,2 (prima 2,776)', BI.msf(4.5, 2.2), 2.2, 1e-12);
+check('MSF(M 4,0, MSFmax 1,1) = 1,1', BI.msf(4.0, 1.1), 1.1, 1e-12);
+check('MSF(M 6,0) invariato sopra 5,25', BI.msf(6.0, 2.0), 1 + (2.0 - 1) * (Math.exp(-6 / 4) - Math.exp(-7.5 / 4)) / (Math.exp(-5.25 / 4) - Math.exp(-7.5 / 4)), 1e-12);
+{
+  let monotono = true, massimo = 0;
+  for (let M = 3.5; M <= 9.0001; M += 0.05) for (const mx of [1.09, 1.5, 2.2]) {
+    const v = BI.msf(M, mx), w = BI.msf(M + 0.05, mx);
+    if (w > v + 1e-12) monotono = false;
+    massimo = Math.max(massimo, v - mx);
+  }
+  check('MSF non crescente con M (3,5–9,0)', monotono ? 1 : 0, 1, 0);
+  check('MSF mai oltre MSFmax (3,5–9,0)', massimo <= 1e-12 ? 1 : 0, 1, 0);
+}
+{
+  const t = L.tensioni([{ da: 0, a: 20, gamma: 18, gammaSat: 19 }], 1, 6);
+  const r = L.bi2014Spt({ z: 6, N: 10, FC: 10, sv: t.sv, sve: t.sve }, { amax: 0.25, Mw: 4.5 }, { CE: 1, CB: 1, CS: 1, sporgenza: 1 });
+  check('SPT con Mw 4,5: MSF del punto = MSFmax del punto', r.MSF, r.MSFmax, 1e-12);
+}
+// Cetin 2018: Kσ limitato a 0,8–1,6 [SDEE Eq. 14, pag. 706], anche dentro CRR e PL (Eq. 10–11), dove
+// −θ3·ln(σ'v/Pa) = θ6·ln Kσ (audit v1.0.0, B3.2). Prima, a 0,5 m con falda al p.c., Kσ = 2,83.
+{
+  const C = L._CETIN;
+  const cet = (z, zw, N = 10) => { const t = L.tensioni([{ da: 0, a: 20, gamma: 18, gammaSat: 19 }], zw, z); return [t, L.cetin2018Spt({ z, N, FC: 10, sv: t.sv, sve: t.sve }, { amax: 0.25, Mw: 6.5 }, { CE: 1, CB: 1, CS: 1, sporgenza: 1 }, { Vs12: 180 })]; };
+  const [t1, a] = cet(0.5, 0);
+  check('Cetin, σ\'v basso: Kσ = 1,6 (Eq. 14)', a.Ksigma, 1.6, 1e-12);
+  check('Cetin, σ\'v basso: avviso KSIGMA_LIMITATO', a.avvisi.some(x => x.codice === 'KSIGMA_LIMITATO') ? 1 : 0, 1, 0);
+  const libero = Math.pow(t1.sve / C.PA, -C.t3 / C.t6);
+  const baseLibera = a.N160 * (1 + C.t1 * 10) - C.t2 * Math.log(6.5) - C.t3 * Math.log(t1.sve / C.PA) + C.t4 * 10 + C.t5;
+  check('Cetin, σ\'v basso: CRR = CRR senza limite × 1,6 / Kσ libero', a.CRR, Math.exp(baseLibera / C.t6) * 1.6 / libero, 1e-9);
+  // PL coerente con il CRR limitato: PL = Φ(−θ6·ln(CRR/CSR)/σε) [SDEE Eq. 10–11]
+  const phi = (x) => { const t = 1 / (1 + 0.2316419 * Math.abs(x)), d = Math.exp(-x * x / 2) / Math.sqrt(2 * Math.PI);
+    const p = d * t * (0.319381530 + t * (-0.356563782 + t * (1.781477937 + t * (-1.821255978 + t * 1.330274429)))); return x >= 0 ? 1 - p : p; };
+  check('Cetin, σ\'v basso: PL coerente con il CRR limitato', a.PL, phi(-C.t6 * Math.log(a.CRR / a.CSR) / C.se), 1e-6);
+  const [, m] = cet(8, 1);
+  check('Cetin, σ\'v nel campo: Kσ invariato', m.Ksigma, Math.pow((L.tensioni([{ da: 0, a: 20, gamma: 18, gammaSat: 19 }], 1, 8).sve) / C.PA, -C.t3 / C.t6), 1e-12);
+  check('Cetin, σ\'v nel campo: nessun avviso KSIGMA_LIMITATO', m.avvisi.some(x => x.codice === 'KSIGMA_LIMITATO') ? 1 : 0, 0, 0);
+  const t3 = L.tensioni([{ da: 0, a: 20, gamma: 26, gammaSat: 27 }], 20, 19.5);
+  const d = L.cetin2018Spt({ z: 19.5, N: 10, FC: 10, sv: t3.sv + 1, sve: t3.sv }, { amax: 0.25, Mw: 6.5 }, { CE: 1, CB: 1, CS: 1, sporgenza: 1 }, { Vs12: 180 });
+  check('Cetin, σ\'v alto (> 1,94 atm): Kσ = 0,8 (Eq. 14)', d.Ksigma, 0.8, 1e-12);
+}
+// Cetin 2018: C_R = 0,48 + 0,225·ln(d) [MethodsX Tab. 2, pag. 1562] senza minimo nella fonte; per
+// d ≤ e^(−0,48/0,225) ≈ 0,118 m C_R ≤ 0 e N1,60 non ha senso: punto non applicabile (audit B3.3,
+// decisione D4 del 25/11/2026). Sopra, formula come pubblicata (effetto cautelativo).
+{
+  const cetCorto = (z, sporgenza) => { const t = L.tensioni([{ da: 0, a: 20, gamma: 18, gammaSat: 19 }], 0, z); return L.cetin2018Spt({ z, N: 10, FC: 10, sv: t.sv, sve: t.sve }, { amax: 0.25, Mw: 6.5 }, { CE: 1, CB: 1, CS: 1, sporgenza }, { Vs12: 180 }); };
+  const a = cetCorto(0.10, 0), b = cetCorto(0.118, 0), c = cetCorto(0.13, 0);
+  check('Cetin, aste 0,10 m: non applicabile (C_R ≤ 0)', a.stato === 'non_applicabile' && a.codice === 'CR_NON_DEFINITO' ? 1 : 0, 1, 0);
+  check('Cetin, aste 0,118 m: non applicabile (C_R ≤ 0)', b.stato === 'non_applicabile' ? 1 : 0, 1, 0);
+  check('Cetin, aste 0,13 m: calcolato con C_R > 0 (formula invariata)', c.stato === 'calcolato' && c.CR > 0 ? 1 : 0, 1, 0);
+  check('Cetin, aste 0,13 m: C_R = 0,48 + 0,225·ln(0,13)', c.CR, 0.48 + 0.225 * Math.log(0.13), 1e-12);
+  check('Cetin, motivo con lunghezza e assenza di minimo nella fonte', /0,10 m.*Tab\. 2.*nessun.*minim/i.test(a.motivo) ? 1 : 0, 1, 0);
+}
 {
   // Kσ = 1,1 raggiunto a ≈ 0,4 atm per (N1)60cs = 15 (pag. 11)
   const Cs = 1 / (18.9 - 2.55 * Math.sqrt(15));

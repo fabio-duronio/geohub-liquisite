@@ -25,7 +25,7 @@ Grandezza comune: CSR = 0,65 · (a_max/g) · (σ_v/σ'_v) · r_d, con a_max in s
 | C_N | (P_a/σ'_v)^m ≤ 1,7; m = 0,784 − 0,0768·√(N₁)₆₀cs, (N₁)₆₀cs ≤ 46; iterativo | Eq. 2.15a, 2.15c |
 | Δ(N₁)₆₀ | exp[1,63 + 9,7/(FC + 0,01) − (15,7/(FC + 0,01))²] | Eq. 2.23 |
 | K_σ | 1 − C_σ·ln(σ'_v/P_a) ≤ 1,1; C_σ = 1/(18,9 − 2,55·√(N₁)₆₀cs) ≤ 0,3 | Eq. 2.16a, 2.16c |
-| MSF | 1 + (MSF_max − 1)·[e^(−M/4) − e^(−7,5/4)]/[e^(−5,25/4) − e^(−7,5/4)]; MSF_max = 1,09 + ((N₁)₆₀cs/31,5)² ≤ 2,2 | Eq. 2.18, 2.21 |
+| MSF | 1 + (MSF_max − 1)·[e^(−M/4) − e^(−7,5/4)]/[e^(−5,25/4) − e^(−7,5/4)] ≤ MSF_max; MSF_max = 1,09 + ((N₁)₆₀cs/31,5)² ≤ 2,2 | Eq. 2.18, 2.21; limite: App. A pag. 126, Fig. 2.6 |
 | CRR (M 7,5; 1 atm) | exp[N/14,1 + (N/126)² − (N/23,6)³ + (N/25,4)⁴ − 2,8], N = (N₁)₆₀cs | Eq. 2.25 |
 | FS | CRR · MSF · K_σ / CSR | Eq. 2.7 |
 
@@ -48,6 +48,8 @@ La relazione probabilistica da SPT degli stessi autori (Boulanger & Idriss 2012a
 
 Il FS deterministico = 1 corrisponde a P_L ≈ 16 % (pag. 78–80). Con I_c oltre la soglia (2,6 di base; 2,4 o 2,8 per l'analisi di sensibilità, pag. 99) il metodo **non si applica** al punto (stato `non_applicabile`, codice `IC_OLTRE_SOGLIA`): non è un'esclusione ai sensi del §7.11.3.4.2 e non dimostra l'assenza di problemi ciclici nei terreni fini.
 
+**Oltre il campo della correlazione per addensamento** (audit v1.0.0, B1; scelta di LiquiSite approvata il 25/11/2026). Gli autori non fissano un limite superiore di validità delle curve del CRR (Eq. 2.24–2.25): oltre un certo addensamento l'esponenziale cresce senza limite (FS fino a 10²¹² e, al rifiuto, overflow numerico). Con q_c1Ncs > 211 (CPT) o (N₁)₆₀cs > 37 (SPT) il punto si dichiara non liquefacibile per addensamento: stato `non_applicabile`, codice `OLTRE_CAMPO_ADDENSAMENTO`, CRR, FS e P_L non calcolati; resistenza normalizzata e domanda sismica restano in tabella, nei grafici e nel criterio 3 della verifica preliminare. Indice IL: F = 0; cedimento: ε_v = 0; spessore riportato a parte. Le soglie sono i valori a cui gli autori limitano già C_σ ≤ 0,3 (Eq. 2.16b–c, pag. 11); alla soglia CRR7,5 = 3,72 (CPT) e 1,75 (SPT); nella banca dati CPT nessun caso con liquefazione supera q_c1Ncs ≈ 163 (Tab. 3.1). Non è un'esclusione ai sensi del §7.11.3.4.2.
+
 Tipo di prova: `CPTE` (punta elettrica senza misura di u, q_t = q_c) o `CPTU` (piezocono, u₂ obbligatoria; a_r = 0,8 se non indicato, segnalato come assunzione). La CPT a punta meccanica non è supportata (sottostima la suscettibilità: volume CNR-CentroMS 2024, pag. 27).
 
 ## Cetin et al. (2018) — SPT
@@ -55,14 +57,15 @@ Tipo di prova: `CPTE` (punta elettrica senza misura di u, q_t = q_c) o `CPTU` (p
 | Grandezza | Formula | Fonte |
 |---|---|---|
 | N₁,₆₀ | N · C_N · C_R · C_S · C_B · C_E; C_N = (P_a/σ'_v)^0,5 ≤ 2,0 | MethodsX, Eq. 6, Tab. 2 |
-| C_R | 0,48 + 0,225·ln(d) per d ≤ 10 m; **1,0** per 10–30 m (vedi refusi) | Tab. 2 |
+| C_R | 0,48 + 0,225·ln(d) per d ≤ 10 m; **1,0** per 10–30 m (vedi refusi). La fonte non indica una lunghezza minima delle aste: per d ≤ 0,118 m C_R ≤ 0 e il punto non si calcola (`non_applicabile`, codice `CR_NON_DEFINITO`; decisione del 25/11/2026). Sopra, formula come pubblicata: C_R basso abbassa N₁,₆₀ e il FS (cautelativo) | Tab. 2, pag. 1562 |
 | C_S | 1 + N₁,₆₀/100, tra 1,10 e 1,30, solo per campionatori con alloggiamento per il rivestimento usati senza rivestimento | Tab. 2 |
 | r_d | relazione di Cetin & Seed (2004) in funzione di d, M_w, a_max, V*_s,12 | MethodsX Eq. 26–27 |
 | P_L | Φ{−[N₁,₆₀(1 + θ₁FC) − θ₆ ln CSR − θ₂ ln M_w − θ₃ ln(σ'_v/P_a) + θ₄FC + θ₅]/σ_ε} | SDEE Eq. 10 |
 | CRR (P_L = 50 %) | exp{[N₁,₆₀(1 + θ₁FC) − θ₂ ln M_w − θ₃ ln(σ'_v/P_a) + θ₄FC + θ₅]/θ₆} | SDEE Eq. 11 |
+| K_σ nel termine di tensione | −θ₃ ln(σ'_v/P_a) = θ₆ ln K_σ, con K_σ = (σ'_v/P_a)^(−θ₃/θ₆) limitato a 0,8–1,6: equivale al percorso «per parti» degli autori (Eq. 13–15) | SDEE Eq. 14, pag. 706 |
 | Coefficienti | θ₁ 0,00167; θ₂ 27,352; θ₃ 3,958; θ₄ 0,089; θ₅ 16,084; θ₆ 11,771; σ_ε 2,95 | SDEE Tab. 7 |
 
-FS = CRR/CSR corrisponde a P_L = 50 %. Limiti dichiarati: FC 5–35 %; K_σ 0,8–1,6 (σ'_v 0,25–1,8 atm); M_w 5,5–8,4; V*_s,12 ≤ 230 m/s nelle analisi di progetto.
+FS = CRR/CSR corrisponde a P_L = 50 %. Limiti dichiarati: FC 5–35 %; K_σ 0,8–1,6, applicato nel calcolo di CRR e P_L con avviso `KSIGMA_LIMITATO` (relazione valida per σ'_v 0,25–1,8 atm, avviso `SVE_FUORI_CAMPO`); M_w 5,5–8,4; V*_s,12 ≤ 230 m/s nelle analisi di progetto.
 
 ## Kayen et al. (2013) — V_s (solo confronto)
 
@@ -76,11 +79,13 @@ FS = CRR/CSR corrisponde a P_L = 50 %. Limiti dichiarati: FC 5–35 %; K_σ 0,8�
 
 **Tensione efficace oltre 180 kPa.** Le Eq. 13–14 contengono sempre il termine −0,0099·ln σ'_v0. Gli autori presentano CSR* con K_σ fissato a 1 (Eq. 15) perché la banca dati (siti entro 22 m e 180 kPa, media 60,2 kPa) non permette di valutare K_σ oltre 200 kPa (pag. 413–414). Il motore applica le Eq. 13–14 senza modifiche e segnala σ'_v0 > 180 kPa come fuori dalla banca dati.
 
+**Oltre il campo della correlazione per addensamento** (audit v1.0.0, B1.c; scelta di LiquiSite approvata il 25/11/2026). Con V_s1 > 277 m/s (dopo C_Vs ≤ 1,5) il punto si dichiara non liquefacibile per addensamento: stato `non_applicabile`, codice `OLTRE_CAMPO_ADDENSAMENTO`, CRR, FS e P_L non calcolati; V_s1, r_d e CSR restano in tabella e nei grafici. Indice IL: F = 0, con spessore riportato a parte. La soglia corrisponde a CRR7,5 ≈ 2,0 (CRR a P_L 15 %, M_w 7,5, σ'_v0 100 kPa, FC 0: 2,02) ed è una scelta applicativa di LiquiSite, non un limite pubblicato dagli autori. Stato al 25/11/2026: il campo dei casi della banca dati degli autori (Tab. S1) non è riportato nel repository e non si cita, né a memoria né da altre fonti, come giustificazione della soglia; il confronto con la banca dati si rifà solo quando la tabella è disponibile e documentata nel repository. Il confronto è stretto: 277,00 si calcola, 277,01 no. FC e σ'_v0 spostano la soglia di circa 1 m/s. Non è un'esclusione ai sensi del §7.11.3.4.2.
+
 ## Refusi delle fonti e scelte adottate
 
 - **Kayen et al. (2013), Eq. 14**: la versione editoriale stampa «− 0,4809·Φ⁻¹(P_L)». Invertendo l'Eq. 13 si ottiene «+», che è coerente con la Fig. 6 degli autori (V_s1 150 → CRR ≈ 0,10; 200 → ≈ 0,22, per P_L 15 %, M_w 7,5, σ'_v0 100 kPa, FC 0). Si usa «+».
 - **Cetin et al. (2018), Tab. 2**: per aste di 10–30 m è stampato «C_R = 0,48»; si usa 1,0 (continuità con il primo ramo a 10 m; esempio degli autori, Tab. 3; valore di Youd et al. 2001). Nella stessa tabella la correzione dell'energia è stampata come «C_R = ER/60»: si intende C_E.
-- **Boulanger & Idriss (2014), MSF**: si usa la forma esatta (Eq. 2.18); l'Eq. 2.19 ne è la versione con i termini fissi arrotondati.
+- **Boulanger & Idriss (2014), MSF**: si usa la forma esatta (Eq. 2.18); l'Eq. 2.19 ne è la versione con i termini fissi arrotondati. MSF_max è il valore massimo che l'MSF può assumere per un terremoto di piccola magnitudo, dominato da un solo impulso (App. A, pag. 126; §2.5, pag. 12) ed è assegnato a M = 5,25 (pag. 117 e 127, Eq. A.7); le curve della Fig. 2.6 (pag. 14) e A.17 (pag. 128) sono costanti sotto M = 5,25: sotto M = 5,25 l'MSF resta MSF_max (MSF ≤ MSF_max). Vale per CPT e SPT.
 
 ## Unità
 
@@ -102,7 +107,7 @@ Basta un criterio soddisfatto. L'app scrive «verifica omessa ai sensi del §7.1
 |---|---|---|
 | 1 | a_max in campo libero < 0,1 g | confronto diretto; se non soddisfatto, la Circolare (C7.11.3.4) chiede di approfondire le indagini per gli altri tre criteri |
 | 2 | falda media stagionale > 15 m, p.c. sub-orizzontale, fondazioni superficiali | le tre condizioni insieme |
-| 3 | sabbie pulite con (N₁)₆₀ > 30 o q_c1N > 180 | normalizzazione del **metodo principale** scelto, dichiarata in stampa (le NTC indicano solo la normalizzazione a 100 kPa); avviso se il valore supera la soglia di meno del 10 % (scelta di LiquiSite) |
+| 3 | sabbie pulite con (N₁)₆₀ > 30 o q_c1N > 180 | normalizzazione del **metodo principale** scelto, dichiarata in stampa (le NTC indicano solo la normalizzazione a 100 kPa); avviso se il valore supera la soglia di meno del 10 % (scelta di LiquiSite). Copertura e «sabbia pulita» (decisione D5 del 25/11/2026, scelte applicative di LiquiSite, non prescrizioni delle NTC): tolleranza fissa tra prove di 1,5 m (SPT) o 0,25 m (CPT), tra tetto saturo e prima prova, tra prove consecutive e tra ultima prova e letto; un intervallo oltre tolleranza rende il criterio non soddisfatto e i tratti scoperti non sono considerati sicuri. «Sabbia pulita» contraddetta dai dati (FC > 5 %; CPT senza FC misurato: Ic > 1,775, FC ≈ 5 % da B&I 2014 Eq. 2.30 con C_FC = 0, valore centrale, incertezza di ±0,29 su Ic non considerata) → non soddisfatto, senza deroga |
 | 4 | curva granulometrica esterna ai fusi della Fig. 7.11.1 ((a) U_c < 3,5; (b) U_c > 3,5) | vedi sotto |
 
 ### Fusi della Fig. 7.11.1
@@ -130,7 +135,7 @@ Ogni funzione restituisce un oggetto con `stato`; FS, CRR, CSR e P_L sono utiliz
 | `calcolato` | calcolo riuscito, eventualmente con avvisi |
 | `input_non_valido` | dato impossibile o di tipo errato; `errori: [{campo, codice, motivo}]` |
 | `dati_insufficienti` | manca un dato necessario (es. u₂ di una CPTU, f_s nullo) o la copertura della curva non basta |
-| `non_applicabile` | il metodo o LiquiSite non si applicano al punto: `AMAX_NULLA`, `OLTRE_LIMITE_APP` (z > 20 m), `NON_SATURO` (u = 0, grandezze in `diagnostica`), `IC_OLTRE_SOGLIA` |
+| `non_applicabile` | il metodo o LiquiSite non si applicano al punto: `AMAX_NULLA`, `OLTRE_LIMITE_APP` (z > 20 m), `NON_SATURO` (u = 0, grandezze in `diagnostica`), `IC_OLTRE_SOGLIA`, `OLTRE_CAMPO_ADDENSAMENTO` (B&I 2014: q_c1Ncs > 211 o (N₁)₆₀cs > 37, grandezze di normalizzazione nel risultato) |
 | `non_convergente` | iterazione non convergente; dettagli in `convergenza` e `diagnostica` |
 | `errore_numerico` | una grandezza calcolata non è un numero finito |
 
@@ -143,3 +148,5 @@ Profondità: il limite di 20 m è di LiquiSite. L'avviso sull'incertezza di r_d 
 Precondizione di saturazione: il punto deve essere sotto la falda di verifica. La posizione rispetto alla falda la stabilisce il profilo (`app/profilo.js`) con le tensioni del motore; il motore controlla inoltre che u = σ_v − σ'_v sia positiva.
 
 Iterazioni (B&I SPT e CPT, Cetin con campionatore senza rivestimento): arresto quando la variazione assoluta tra due passi è < 10⁻⁹; massimo 100, 200 e 50 passi (modificabile con `opz.maxIterazioni`). Il risultato riporta `convergenza: {convergente, numeroIterazioni, residuoFinale, tolleranza, maxIterazioni}`.
+
+- **Strati esclusi motivatamente (IL e cedimento)**: F = 0 dichiarato nello strato (anche dove ci sono prove) e εv = 0; IL_min e IL_max non cambiano per quei tratti; spessore escluso distinto dai tratti senza risultato. Convenzione applicativa di GeoHub, non un'esclusione ai sensi del §7.11.3.4.2. Con SPT lo strato è escluso per intero.
