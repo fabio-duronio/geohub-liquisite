@@ -357,10 +357,14 @@
     /**
      * MSF [B&I 2014, Eq. 2.18, pag. 14], forma esatta. L'Eq. 2.19 ne è la versione con i
      * termini fissi arrotondati (8,64 e 1,325): differenza relativa ≤ 2·10⁻⁴.
+     * Limite superiore MSF ≤ MSFmax: MSFmax è il valore massimo che l'MSF può assumere per un
+     * terremoto di piccola magnitudo, dominato da un solo impulso (App. A, pag. 126; §2.5, pag. 12),
+     * assegnato a M = 5,25 (pag. 117 e 127, Eq. A.7); curve costanti sotto M = 5,25 nelle Fig. 2.6
+     * (pag. 14) e A.17 (pag. 128). Sotto M = 5,25 l'Eq. 2.18 supererebbe MSFmax.
      */
     msf(M, MSFmax) {
       const e = Math.exp;
-      return 1 + (MSFmax - 1) * (e(-M / 4) - e(-7.5 / 4)) / (e(-5.25 / 4) - e(-7.5 / 4));
+      return Math.min(MSFmax, 1 + (MSFmax - 1) * (e(-M / 4) - e(-7.5 / 4)) / (e(-5.25 / 4) - e(-7.5 / 4)));
     },
 
     /** Kσ [B&I 2014, Eq. 2.16a, pag. 11]: Kσ = 1 − Cσ·ln(σ'v/Pa) ≤ 1,1. */

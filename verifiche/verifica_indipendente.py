@@ -39,8 +39,10 @@ def rd_bi(z, M):  # Eq. 2.14
 
 
 def msf_bi(M, msfmax):  # Eq. 2.18 in forma generale (non la forma numerica 2.19)
+    # MSF <= MSFmax: MSFmax e' il valore massimo dell'MSF per M piccole (App. A pag. 126; pag. 12; Fig. 2.6),
+    # raggiunto a M = 5,25. Prima mancava, come nel motore (audit v1.0.0, B3.1).
     e = math.exp
-    return 1 + (msfmax - 1) * (e(-M / 4) - e(-7.5 / 4)) / (e(-5.25 / 4) - e(-7.5 / 4))
+    return min(msfmax, 1 + (msfmax - 1) * (e(-M / 4) - e(-7.5 / 4)) / (e(-5.25 / 4) - e(-7.5 / 4)))
 
 
 def cr_ib2010(L):  # I&B 2010 pag. 9
@@ -167,13 +169,15 @@ process.stdout.write(JSON.stringify(out));
 """
 
 
-def caso(rng):
+def caso(rng, metodo):
     z = rng.uniform(1.0, 19.5)
     zw = rng.uniform(0.0, min(z, 6))
     g, gs = rng.uniform(16, 20), rng.uniform(18, 21.5)
     sv = g * zw + gs * (z - zw)
     sve = sv - 9.81 * (z - zw)
-    return dict(z=z, sv=sv, sve=sve, amax=rng.uniform(0.05, 0.5), Mw=rng.uniform(5.5, 7.8),
+    # B&I 2014: Mw anche sotto 5,25, dove vale il limite MSF <= MSFmax; Cetin e Kayen nel loro campo (>= 5,5)
+    mw = rng.uniform(4.0, 7.8) if metodo.startswith('bi_') else rng.uniform(5.5, 7.8)
+    return dict(z=z, sv=sv, sve=sve, amax=rng.uniform(0.05, 0.5), Mw=mw,
                 N=rng.uniform(1, 45), FC=rng.uniform(0, 60), CE=rng.uniform(0.8, 1.3),
                 CB=rng.choice([1.0, 1.05, 1.15]), CS=rng.choice([1.0, 1.1]), sporgenza=rng.uniform(0.5, 2.0),
                 qc=rng.uniform(0.5, 25), fs=rng.uniform(2, 200), u2=rng.uniform(0, 300), ar=rng.uniform(0.65, 0.85),
@@ -187,7 +191,7 @@ def main():
     a = ap.parse_args()
     rng = random.Random(a.seme)
     metodi = {'bi_spt': bi_spt, 'bi_cpt': bi_cpt, 'cetin': cetin, 'kayen': kayen}
-    casi = [(m, caso(rng)) for m in metodi for _ in range(a.casi)]
+    casi = [(m, caso(rng, m)) for m in metodi for _ in range(a.casi)]
     res = subprocess.run(['node', '-e', RUNNER, MOTORE], input=json.dumps(casi),
                          capture_output=True, text=True, check=True)
     js = json.loads(res.stdout)

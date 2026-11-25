@@ -25,7 +25,7 @@ Grandezza comune: CSR = 0,65 · (a_max/g) · (σ_v/σ'_v) · r_d, con a_max in s
 | C_N | (P_a/σ'_v)^m ≤ 1,7; m = 0,784 − 0,0768·√(N₁)₆₀cs, (N₁)₆₀cs ≤ 46; iterativo | Eq. 2.15a, 2.15c |
 | Δ(N₁)₆₀ | exp[1,63 + 9,7/(FC + 0,01) − (15,7/(FC + 0,01))²] | Eq. 2.23 |
 | K_σ | 1 − C_σ·ln(σ'_v/P_a) ≤ 1,1; C_σ = 1/(18,9 − 2,55·√(N₁)₆₀cs) ≤ 0,3 | Eq. 2.16a, 2.16c |
-| MSF | 1 + (MSF_max − 1)·[e^(−M/4) − e^(−7,5/4)]/[e^(−5,25/4) − e^(−7,5/4)]; MSF_max = 1,09 + ((N₁)₆₀cs/31,5)² ≤ 2,2 | Eq. 2.18, 2.21 |
+| MSF | 1 + (MSF_max − 1)·[e^(−M/4) − e^(−7,5/4)]/[e^(−5,25/4) − e^(−7,5/4)] ≤ MSF_max; MSF_max = 1,09 + ((N₁)₆₀cs/31,5)² ≤ 2,2 | Eq. 2.18, 2.21; limite: App. A pag. 126, Fig. 2.6 |
 | CRR (M 7,5; 1 atm) | exp[N/14,1 + (N/126)² − (N/23,6)³ + (N/25,4)⁴ − 2,8], N = (N₁)₆₀cs | Eq. 2.25 |
 | FS | CRR · MSF · K_σ / CSR | Eq. 2.7 |
 
@@ -80,7 +80,7 @@ FS = CRR/CSR corrisponde a P_L = 50 %. Limiti dichiarati: FC 5–35 %; K_σ 0,8�
 
 - **Kayen et al. (2013), Eq. 14**: la versione editoriale stampa «− 0,4809·Φ⁻¹(P_L)». Invertendo l'Eq. 13 si ottiene «+», che è coerente con la Fig. 6 degli autori (V_s1 150 → CRR ≈ 0,10; 200 → ≈ 0,22, per P_L 15 %, M_w 7,5, σ'_v0 100 kPa, FC 0). Si usa «+».
 - **Cetin et al. (2018), Tab. 2**: per aste di 10–30 m è stampato «C_R = 0,48»; si usa 1,0 (continuità con il primo ramo a 10 m; esempio degli autori, Tab. 3; valore di Youd et al. 2001). Nella stessa tabella la correzione dell'energia è stampata come «C_R = ER/60»: si intende C_E.
-- **Boulanger & Idriss (2014), MSF**: si usa la forma esatta (Eq. 2.18); l'Eq. 2.19 ne è la versione con i termini fissi arrotondati.
+- **Boulanger & Idriss (2014), MSF**: si usa la forma esatta (Eq. 2.18); l'Eq. 2.19 ne è la versione con i termini fissi arrotondati. MSF_max è il valore massimo che l'MSF può assumere per un terremoto di piccola magnitudo, dominato da un solo impulso (App. A, pag. 126; §2.5, pag. 12) ed è assegnato a M = 5,25 (pag. 117 e 127, Eq. A.7); le curve della Fig. 2.6 (pag. 14) e A.17 (pag. 128) sono costanti sotto M = 5,25: sotto M = 5,25 l'MSF resta MSF_max (MSF ≤ MSF_max). Vale per CPT e SPT.
 
 ## Unità
 
