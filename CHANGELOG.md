@@ -2,7 +2,7 @@
 
 La versione dell'app e quella del motore di calcolo sono distinte: l'app è indicata in alto e nel piè di pagina della stampa insieme al motore.
 
-## App 1.0.1 — 2026-11-25
+## App 1.0.1 — 2026-11-26
 
 Correzioni dall'audit pre-rilascio (mandato del 24/11/2026). **I risultati cambiano in alcuni casi**: motore di innesco 0.3.0 → 0.4.0 (MSF di B&I 2014 limitato a MSFmax, Kσ di Cetin limitato a 0,8–1,6, C_R non definito con aste ≤ 0,118 m, punti oltre il campo per addensamento «non applicabili»); modulo IL 0.2.1 → 0.3.0 (tratti SPT ripartiti dentro lo strato, esclusione motivata di uno strato); modulo cedimenti 0.2.0 → 0.3.0 (εv = 0 oltre il campo per addensamento e negli strati esclusi). La versione dei moduli entra nelle firme: i risultati calcolati con la 1.0.0 risultano «non aggiornati» e vanno ricalcolati. Le correzioni di robustezza (stampa, bozza, controllo dei dati) non cambiano formule. Verifica dei rilievi in `docs/audit-liquisite-1.0.0.md`.
 
