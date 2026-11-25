@@ -139,6 +139,8 @@ def cetin(p):
     FC = min(max(p['FC'], 5), 35)
     d = p['sporgenza'] + p['z']
     CR = 0.48 + 0.225 * math.log(d) if d <= 10 else 1.0
+    if CR <= 0:  # aste troppo corte: C_R non definito (audit B3.3, decisione D4)
+        return {'stato': 'non_applicabile'}
     CN = min(math.sqrt(101.3 / p['sve']), 2.0)
     n = p['N'] * CN * CR * p['CB'] * p['CE']
     V = min(p['Vs12'], 230)

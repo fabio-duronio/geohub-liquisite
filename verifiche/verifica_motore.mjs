@@ -128,6 +128,18 @@ check('MSF(M 6,0) invariato sopra 5,25', BI.msf(6.0, 2.0), 1 + (2.0 - 1) * (Math
   const d = L.cetin2018Spt({ z: 19.5, N: 10, FC: 10, sv: t3.sv + 1, sve: t3.sv }, { amax: 0.25, Mw: 6.5 }, { CE: 1, CB: 1, CS: 1, sporgenza: 1 }, { Vs12: 180 });
   check('Cetin, σ\'v alto (> 1,94 atm): Kσ = 0,8 (Eq. 14)', d.Ksigma, 0.8, 1e-12);
 }
+// Cetin 2018: C_R = 0,48 + 0,225·ln(d) [MethodsX Tab. 2, pag. 1562] senza minimo nella fonte; per
+// d ≤ e^(−0,48/0,225) ≈ 0,118 m C_R ≤ 0 e N1,60 non ha senso: punto non applicabile (audit B3.3,
+// decisione D4 del 25/11/2026). Sopra, formula come pubblicata (effetto cautelativo).
+{
+  const cetCorto = (z, sporgenza) => { const t = L.tensioni([{ da: 0, a: 20, gamma: 18, gammaSat: 19 }], 0, z); return L.cetin2018Spt({ z, N: 10, FC: 10, sv: t.sv, sve: t.sve }, { amax: 0.25, Mw: 6.5 }, { CE: 1, CB: 1, CS: 1, sporgenza }, { Vs12: 180 }); };
+  const a = cetCorto(0.10, 0), b = cetCorto(0.118, 0), c = cetCorto(0.13, 0);
+  check('Cetin, aste 0,10 m: non applicabile (C_R ≤ 0)', a.stato === 'non_applicabile' && a.codice === 'CR_NON_DEFINITO' ? 1 : 0, 1, 0);
+  check('Cetin, aste 0,118 m: non applicabile (C_R ≤ 0)', b.stato === 'non_applicabile' ? 1 : 0, 1, 0);
+  check('Cetin, aste 0,13 m: calcolato con C_R > 0 (formula invariata)', c.stato === 'calcolato' && c.CR > 0 ? 1 : 0, 1, 0);
+  check('Cetin, aste 0,13 m: C_R = 0,48 + 0,225·ln(0,13)', c.CR, 0.48 + 0.225 * Math.log(0.13), 1e-12);
+  check('Cetin, motivo con lunghezza e assenza di minimo nella fonte', /0,10 m.*Tab\. 2.*nessun.*minim/i.test(a.motivo) ? 1 : 0, 1, 0);
+}
 {
   // Kσ = 1,1 raggiunto a ≈ 0,4 atm per (N1)60cs = 15 (pag. 11)
   const Cs = 1 / (18.9 - 2.55 * Math.sqrt(15));

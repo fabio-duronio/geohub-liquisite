@@ -403,6 +403,7 @@
   const MOTIVI_BREVI = {
     NON_SATURO: 'sopra falda (u = 0)', IC_OLTRE_SOGLIA: 'Ic oltre soglia: metodo non applicabile (comportamento argilloso), FS N.A.',
     OLTRE_CAMPO_ADDENSAMENTO: 'oltre il campo della correlazione (molto addensato): non liquefacibile, FS non calcolato',
+    CR_NON_DEFINITO: 'aste troppo corte: C_R di Cetin ≤ 0, punto non calcolato',
     DATO_MANCANTE: 'dato mancante', FC_MANCANTE: 'FC mancante', FUORI_STRATIGRAFIA: 'fuori dalla stratigrafia',
     OLTRE_LIMITE_APP: 'oltre 20 m (limite di LiquiSite)', AMAX_NULLA: 'amax = 0', U2_MANCANTE: 'u2 mancante (CPTU)',
     IC_NON_CALCOLABILE: 'Ic non calcolabile', Z_NON_VALIDA: 'profondità non valida', DATO_NON_NUMERICO: 'valore non numerico'

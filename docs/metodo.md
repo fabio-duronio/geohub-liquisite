@@ -57,7 +57,7 @@ Tipo di prova: `CPTE` (punta elettrica senza misura di u, q_t = q_c) o `CPTU` (p
 | Grandezza | Formula | Fonte |
 |---|---|---|
 | N₁,₆₀ | N · C_N · C_R · C_S · C_B · C_E; C_N = (P_a/σ'_v)^0,5 ≤ 2,0 | MethodsX, Eq. 6, Tab. 2 |
-| C_R | 0,48 + 0,225·ln(d) per d ≤ 10 m; **1,0** per 10–30 m (vedi refusi) | Tab. 2 |
+| C_R | 0,48 + 0,225·ln(d) per d ≤ 10 m; **1,0** per 10–30 m (vedi refusi). La fonte non indica una lunghezza minima delle aste: per d ≤ 0,118 m C_R ≤ 0 e il punto non si calcola (`non_applicabile`, codice `CR_NON_DEFINITO`; decisione del 25/11/2026). Sopra, formula come pubblicata: C_R basso abbassa N₁,₆₀ e il FS (cautelativo) | Tab. 2, pag. 1562 |
 | C_S | 1 + N₁,₆₀/100, tra 1,10 e 1,30, solo per campionatori con alloggiamento per il rivestimento usati senza rivestimento | Tab. 2 |
 | r_d | relazione di Cetin & Seed (2004) in funzione di d, M_w, a_max, V*_s,12 | MethodsX Eq. 26–27 |
 | P_L | Φ{−[N₁,₆₀(1 + θ₁FC) − θ₆ ln CSR − θ₂ ln M_w − θ₃ ln(σ'_v/P_a) + θ₄FC + θ₅]/σ_ε} | SDEE Eq. 10 |

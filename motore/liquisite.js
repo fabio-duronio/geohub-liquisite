@@ -725,6 +725,14 @@
     const d = vert.sporgenza + z;
     if (!(d > 0)) return nonValido(metodo, z, [{ campo: 'punto.z', codice: 'ASTE_NULLE', motivo: 'lunghezza delle aste (sporgenza + z) nulla: CR non definito' }]);
     const CR = crCetin(d);
+    // C_R = 0,48 + 0,225·ln(d) [MethodsX Tab. 2, pag. 1562]: la fonte non indica una lunghezza minima
+    // delle aste. Per d ≤ e^(−0,48/0,225) ≈ 0,118 m C_R ≤ 0 e N1,60 non ha senso fisico: il punto non
+    // si calcola (audit B3.3, decisione del 25/11/2026). Sopra, formula come pubblicata (C_R basso
+    // abbassa N1,60, CRR e FS: effetto cautelativo).
+    if (!(CR > 0)) return nonApplicabile(metodo, z, 'CR_NON_DEFINITO',
+      'Lunghezza delle aste d = ' + d.toFixed(2).replace('.', ',') + ' m (sporgenza ' + numeroIt(vert.sporgenza) + ' m + profondità): C_R = 0,48 + 0,225·ln(d) = ' + CR.toFixed(3).replace('.', ',') +
+      ' ≤ 0 [Cetin 2018, MethodsX, Tab. 2, pag. 1562], N1,60 non definito. La fonte non indica nessuna lunghezza minima delle aste: la formula perde senso sotto 0,118 m. Indicare la sporgenza delle aste sopra il piano campagna.',
+      { lunghezzaAste: d, CR, avvisi });
     // CN [MethodsX Tab. 2]: (Pa/σ'v)^0,5 ≤ 2,0
     const CN = Math.min(Math.sqrt(C.PA / sve), 2.0);
     // N1,60 [MethodsX Eq. 6]; CS = 1 + N1,60/100 tra 1,10 e 1,30 se il campionatore è senza rivestimento (T-2)
