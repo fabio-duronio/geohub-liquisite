@@ -80,6 +80,15 @@ console.log('3. Casi analitici di cedimento');
   check('punto FS senza (qc1N)cs rifiutato', C.cedimento([{ z: 3, categoria: 'FS', FS: 1 }], 1).stato, 'input_non_valido');
 }
 
+console.log('3b. L\'integrazione si ferma a 20 m anche con la prova più profonda (audit §4 punto 4)');
+{
+  const serie = (zMax) => { const p = []; for (let z = 0.05; z < zMax; z += 0.1) p.push({ z: Math.round(z * 100) / 100, categoria: 'FS', FS: 0.7, qc1Ncs: 80 }); return p; };
+  const a = C.cedimento(serie(20), 1), b = C.cedimento(serie(35), 1);
+  check('prova a 35 m: stesso cedimento della prova a 20 m', [b.stato, b.Smin === a.Smin, b.Smax === a.Smax], ['calcolato', true, true]);
+  check('ultimo tratto integrato termina a 20,00 m', Math.max(...b.tratti.map(t => t.a)), 20);
+  check('nessun tratto oltre 20 m', b.tratti.every(t => t.a <= 20 + 1e-12), true);
+}
+
 console.log('4. Collegamento al profilo e all\'esempio');
 {
   const pr = E.progettoEsempio();

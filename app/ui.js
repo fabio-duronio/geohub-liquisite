@@ -176,7 +176,7 @@
     const s = S.pr.scenari.find(x => x.provaId === S.pr.provaAttiva);
     S.pr.scenarioAttivo = s ? s.id : null;
     S.selezione = null; S.pannelli = null;
-    renderTutto();
+    calcolaSeEsempio(); renderTutto();
   });
   $('btnEliminaProva').addEventListener('click', () => {
     const pv = prova(); if (!pv) return;
@@ -261,7 +261,7 @@
     });
   }
 
-  $('selScenario').addEventListener('change', (e) => { S.pr.scenarioAttivo = e.target.value; S.selezione = null; renderTutto(); });
+  $('selScenario').addEventListener('change', (e) => { S.pr.scenarioAttivo = e.target.value; S.selezione = null; calcolaSeEsempio(); renderTutto(); });
   $('btnNuovoScenario').addEventListener('click', () => {
     const pv = prova(); if (!pv) return;
     const s = P.nuovoScenario(pv, null, S.pr.scenari.length);
@@ -602,7 +602,7 @@
   function renderProfili() {
     const box = $('pan-profili');
     const pv = prova(), sc = scenario(), r = sc && risultatoDi(sc);
-    if (!pv || !sc) { box.innerHTML = '<div class="empty welcome"><span class="eyebrow">IL TUO SPAZIO DI ANALISI</span><h2>Una tavola, tutto il profilo.</h2><p>Carica una prova CPT/CPTu, SPT o Vs, definisci lo scenario e confronta i risultati in profondità.</p><div class="btn-row"><button class="btn btn-primary" id="welcomeSample">Esplora l’esempio sintetico</button><button class="btn" id="welcomeImport">Importa una prova</button></div><p class="hint">L’esempio è dimostrativo: non rappresenta un sito reale.</p></div>'; $('welcomeSample').onclick = () => { $('btnEsempio').click(); $('btnCalcola').click(); }; $('welcomeImport').onclick = () => $('btnNuovaProva').click(); return; }
+    if (!pv || !sc) { box.innerHTML = '<div class="empty welcome"><span class="eyebrow">IL TUO SPAZIO DI ANALISI</span><h2>Una tavola, tutto il profilo.</h2><p>Carica una prova CPT/CPTu, SPT o Vs, definisci lo scenario e confronta i risultati in profondità.</p><div class="btn-row"><button class="btn btn-primary" id="welcomeSample">Esplora l’esempio sintetico</button><button class="btn" id="welcomeImport">Importa una prova</button></div><p class="hint">L’esempio è dimostrativo: non rappresenta un sito reale.</p></div>'; $('welcomeSample').onclick = () => $('btnEsempio').click(); $('welcomeImport').onclick = () => $('btnNuovaProva').click(); return; }
     if (!r || r.stato !== 'calcolato') { box.innerHTML = '<div class="empty">' + (r ? 'Il calcolo non è stato eseguito: correggi gli input (vedi riepilogo).' : 'Premi «Calcola scenario» per ottenere i profili.') + '</div>'; return; }
     const cat = catalogoPannelli(pv, sc, r);
     const chiave = pv.tipo + '|' + sc.metodo;
@@ -829,6 +829,9 @@
       const falde = [...new Set(sel.map(s => s.zFalda))];
       $('notaConf').textContent = (fuori ? fuori + ' valori FS > 3 non visibili (fuori scala). ' : '') + 'Falde di verifica: ' + sel.map(s => '«' + s.nome + '» ' + fmt(s.zFalda) + ' m').join('; ') + '.' + (att ? '' : '');
       if (falde.length === 1) $('notaConf').textContent += ' Linea tratteggiata blu: falda comune.';
+      // FS di metodi diversi non omogenei (audit §3.1 punto 4): ogni metodo ha la propria definizione di FS (note per metodo)
+      const metodi = [...new Set(sel.map(s => s.metodo))];
+      if (metodi.length > 1) $('notaConf').textContent += ' I FS di metodi diversi non sono omogenei: ' + metodi.map(m => F.METODI[m].notaFS.replace(/\.$/, '')).join('; ') + '. Il confronto è puntuale, non un giudizio di sicurezza del sito.';
       if (falde.length === 1) { chart.options.plugins.linee.falda = falde[0]; chart.update('none'); }
       $('pngConf').addEventListener('click', () => scarica(Gr.png(chart), nomeFile('confronto-FS', 'png'), true));
     } else {
@@ -1215,7 +1218,17 @@
     S.selezione = null;
     renderTutto();
     $('dlgImporta').dispatchEvent(new CustomEvent('importa:salvato'));
+    // dopo «Salva la prova» il dialogo si chiude e propone il passaggio allo scenario (audit §4 punto 9)
+    $('dlgImporta').close();
+    $('testoProvaSalvata').textContent = 'Prova «' + pv.nome + '» salvata nel progetto. Controlla falda e stratigrafia dello scenario, poi calcola.';
+    $('avvisoProvaSalvata').hidden = false;
+    $('btnVaiScenario').focus();
   });
+  $('btnVaiScenario').addEventListener('click', () => {
+    $('avvisoProvaSalvata').hidden = true;
+    document.querySelector('[data-open-section="secScenario"]').click(); // stessa apertura del pulsante «Scenario»
+  });
+  $('btnChiudiAvvisoProva').addEventListener('click', () => { $('avvisoProvaSalvata').hidden = true; });
   $('btnNuovaProva').addEventListener('click', () => apriImporta('nuova'));
   $('btnDatiProva').addEventListener('click', () => apriImporta('sostituisci'));
 
@@ -1232,7 +1245,18 @@
     pianificaBozza();
   }
   $('btnNuovo').addEventListener('click', () => { if (confermaSostituzione('Iniziare un nuovo progetto')) sostituisciProgetto(P.nuovoProgetto()); });
-  $('btnEsempio').addEventListener('click', () => { if (confermaSostituzione('Aprire l\'esempio sintetico')) sostituisciProgetto(E.progettoEsempio()); });
+  // Demo e «Esplora l'esempio» sono lo stesso comando e calcolano lo scenario attivo; gli altri scenari dell'esempio
+  // si calcolano quando si aprono (audit §4 punto 6). Solo per le prove dichiarate di esempio.
+  function calcolaSeEsempio() {
+    const sc = scenario(), pv = sc && provaDi(sc);
+    if (!sc || !pv || pv.esempio !== true || S.pr.risultati[sc.id]) return;
+    calcola(sc); svuotaStampa();
+  }
+  $('btnEsempio').addEventListener('click', () => {
+    if (!confermaSostituzione('Aprire l\'esempio sintetico')) return;
+    sostituisciProgetto(E.progettoEsempio());
+    calcolaSeEsempio(); renderTutto();
+  });
   $('btnApri').addEventListener('click', () => { if (confermaSostituzione('Aprire un altro progetto')) $('fileApri').click(); });
   $('fileApri').addEventListener('change', (e) => {
     const f = e.target.files[0]; if (!f) return;
