@@ -176,6 +176,24 @@ const esclu = (s, criterio, motivazione) => { s.escluso_motivatamente = true; if
   if (nFs) check('FS<1: testo «tarati su terreni granulari», non bloccante', [/tarati su terreni granulari/.test(avv[0].messaggio), r.stato], [true, 'calcolato']);
 }
 
+// ---- 7b. Prove Vs (Kayen, solo confronto): argilla molle esclusa (B2.4) -----------------------------
+{
+  const { sc: sSpt } = esempio(1);
+  const vs = P.nuovaProva('VS', 'Vs sintetica');
+  vs.dati = []; for (let z = 1; z <= 19; z += 1) vs.dati.push([z, z >= 1.2 && z < 3.4 ? 130 : 220]);
+  const sc = { ...P.copia(sSpt), id: 'vs1', provaId: vs.id, metodo: 'kayen2013Vs' };
+  const base = F.calcolaScenario(vs, sc, L);
+  const s = trova(sc, 'Limo argilloso'); // 1,2–3,4 m, falda a 1,8 m: 1,6 m saturi
+  const fs2 = base.righe.filter(x => x.stato === 'calcolato' && x.z >= 1.8 && x.z < 3.4).map(x => x.valori.FS);
+  esclu(s, 'coesivo', 'Argilla molle: terreno coesivo, giudizio del geologo (parametri di plasticità in relazione).');
+  const r = F.calcolaScenario(vs, sc, L);
+  check('Vs: stato calcolato con lo strato escluso', r.stato, 'calcolato');
+  check('Vs: spessore escluso 1,6 m (sotto falda)', vicino(r.indiceIL.spessori.escluso, 1.6), true);
+  check('Vs: IL non aumenta con l\'esclusione', r.indiceIL.ILmax <= base.indiceIL.ILmax + 1e-12, true);
+  check('Vs: FS dello strato resta calcolato (non considerato, non cancellato)', r.righe.filter(x => x.z >= 1.8 && x.z < 3.4 && x.stato === 'calcolato').length, fs2.length);
+  check('Vs: avviso FS < 1 se lo strato lo contiene', r.avvisiEsclusione.some(a => a.codice === 'ESCLUSO_CON_FS_MINORE_DI_1'), fs2.some(f => f < 1));
+}
+
 // ---- 8. Stampa e CSV: spessore escluso riportato a parte ---------------------------------------
 {
   const { pr, sc, pv } = esempio(0);

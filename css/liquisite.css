@@ -278,7 +278,7 @@ dialog.dlg::backdrop{background:rgba(11,21,33,.45);}
 .profile:last-child{border-right:0;}
 .profile-head{min-height:48px;margin:0 -10px 8px;padding:10px 12px;background:#f3f6fa;border-bottom:1px solid var(--line);justify-content:flex-start;font-size:12px;}
 .profile-head .btn-link{margin-left:auto;font-size:10px;}
-.track-no{font:11px var(--font-mono);color:#8294a9;}
+.track-no{font:11px var(--font-mono);color:#5b6b80;} /* contrasto 5,0:1 su #f3f6fa (prima 2,9:1) */
 .profile .chart-wrap{height:560px;}
 .profile-note{font-size:10.5px;line-height:1.45;padding-top:9px;min-height:48px;border-top:1px solid var(--line);margin-top:8px;}
 [data-track="FS"] .profile-head{background:#f9efec;}

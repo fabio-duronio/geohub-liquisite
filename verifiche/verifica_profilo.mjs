@@ -310,6 +310,23 @@ console.log('8. Salvataggio e riapertura del progetto');
   check('JSON non valido', P.apriProgetto('{').ok, false);
   check('formato sbagliato', P.apriProgetto(JSON.stringify({ ...prs, formato: 'altro' })).ok, false);
   check('versione non supportata', P.apriProgetto(JSON.stringify({ ...prs, versioneFormato: 99 })).ok, false);
+  {
+    // Cache: ogni risorsa locale di index.html porta ?v= uguale alla versione dell'app (le librerie di terzi hanno la loro).
+    const html = require('fs').readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+    const locali = [...html.matchAll(/(?:src|href)="((?!vendor\/chart\.js)[^"]+)\?v=([^"]+)"/g)];
+    check('index.html: ' + locali.length + ' risorse locali con ?v= uguale alla versione dell\'app (' + P.VERSIONE_APP + ')', locali.length > 10 && locali.every(m => m[2] === P.VERSIONE_APP), true);
+  }
+  {
+    const nuovo = P.apriProgetto(JSON.stringify({ ...prs, versioneFormato: P.VERSIONE_FORMATO + 1 }));
+    check('file di formato più recente: rifiutato', nuovo.ok, false);
+    check('file di formato più recente: messaggio «aggiorna l\'app»', nuovo.errori.some(e => /File creato con una versione più recente di LiquiSite: aggiorna l'app/.test(e.motivo)), true);
+    check('file di formato più recente: nessun progetto restituito', nuovo.progetto === undefined || nuovo.progetto === null, true);
+    const molto = P.apriProgetto(JSON.stringify({ ...prs, versioneFormato: 99 }));
+    check('formato 99: stesso messaggio', molto.errori.some(e => /aggiorna l'app/.test(e.motivo)), true);
+    const vecchio = P.apriProgetto(JSON.stringify({ ...prs, versioneFormato: 0 }));
+    check('formato 0 o testo: rifiutato senza «aggiorna l\'app»', vecchio.ok === false && !vecchio.errori.some(e => /aggiorna l'app/.test(e.motivo)) && P.apriProgetto(JSON.stringify({ ...prs, versioneFormato: '2' })).ok === false, true);
+    check('formato corrente: aperto', P.apriProgetto(JSON.stringify({ ...prs, versioneFormato: P.VERSIONE_FORMATO })).ok, true);
+  }
   const b = P.copia(prs); b.prove[0].dati[3][1] = '2,5';
   check('stringa nei dati rifiutata', P.apriProgetto(JSON.stringify(b)).ok, false);
   const c = P.copia(prs); c.prove[0].tipo = 'CPT';

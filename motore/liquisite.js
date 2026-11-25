@@ -50,7 +50,7 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  const VERSIONE_MOTORE = '0.3.0';
+  const VERSIONE_MOTORE = '0.4.0';
   const GAMMA_W = 9.81; // kN/m³
 
   const STATI = Object.freeze({

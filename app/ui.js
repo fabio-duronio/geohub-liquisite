@@ -12,6 +12,8 @@
     X = window.LiquiEsporta, E = window.LiquiEsempio, Gr = window.LiquiGrafici, EX = window.LiquiEsclusione,
     MG = window.LiquiMagnitudo, Z9 = window.ZS9, Z9D = window.LiquiZS9Dati;
   const $ = (id) => document.getElementById(id);
+  /** Versioni dei moduli che entrano nella firma del rapporto, in stampa e CSV (audit 13.a). */
+  const versioniModuli = () => ({ motore: L.VERSIONE_MOTORE, indici: window.LiquiIndici.VERSIONE_INDICI, cedimenti: window.LiquiCedimenti.VERSIONE_CEDIMENTI, zs9: Z9.VERSIONE });
   const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const fmt = (v, cifre = 2) => isNum(v) ? v.toLocaleString('it-IT', { minimumFractionDigits: cifre, maximumFractionDigits: cifre }) : '–';
@@ -174,7 +176,7 @@
     const s = S.pr.scenari.find(x => x.provaId === S.pr.provaAttiva);
     S.pr.scenarioAttivo = s ? s.id : null;
     S.selezione = null; S.pannelli = null;
-    renderTutto();
+    calcolaSeEsempio(); renderTutto();
   });
   $('btnEliminaProva').addEventListener('click', () => {
     const pv = prova(); if (!pv) return;
@@ -259,7 +261,7 @@
     });
   }
 
-  $('selScenario').addEventListener('change', (e) => { S.pr.scenarioAttivo = e.target.value; S.selezione = null; renderTutto(); });
+  $('selScenario').addEventListener('change', (e) => { S.pr.scenarioAttivo = e.target.value; S.selezione = null; calcolaSeEsempio(); renderTutto(); });
   $('btnNuovoScenario').addEventListener('click', () => {
     const pv = prova(); if (!pv) return;
     const s = P.nuovoScenario(pv, null, S.pr.scenari.length);
@@ -304,7 +306,7 @@
     $('scFalda').disabled = $('btnAggiungiStrato').disabled = !sc;
     if (!sc) { tb.innerHTML = ''; $('scFalda').value = ''; $('sumStrati').textContent = ''; $('hintFC').textContent = ''; $('erroriStrati').innerHTML = ''; return; }
     $('scFalda').value = sc.zFalda ?? '';
-    const etich = { da: 'da [m]', a: 'a [m]', gamma: 'γ [kN/m³]', gammaSat: 'γsat [kN/m³]', FC: 'FC [%]' };
+    const etich = { da: 'da [m]', a: 'a [m]', gamma: 'γ [kN/m³]', gammaSat: 'γsat [kN/m³]', FC: 'FC [%], passante a 0,075 mm' };
     tb.innerHTML = sc.strati.map((s, i) => '<tr data-i="' + i + '" class="r1">' +
       ['da', 'a', 'gamma', 'gammaSat', 'FC'].map(k => '<td><input type="text" inputmode="decimal" step="0.1" data-k="' + k + '" aria-label="' + etich[k] + ', strato ' + (i + 1) + '" value="' + esc(s[k] ?? '') + '"></td>').join('') + '</tr>' +
       '<tr data-i="' + i + '" class="r2"><td colspan="4"><input class="txt" type="text" data-k="descrizione" placeholder="descrizione" aria-label="descrizione, strato ' + (i + 1) + '" value="' + esc(s.descrizione || '') + '"></td>' +
@@ -313,8 +315,8 @@
     $('sumStrati').textContent = (isNum(sc.zFalda) ? 'falda ' + fmt(sc.zFalda, 1) + ' m · ' : '') + sc.strati.length + ' strati';
     const pv = prova();
     $('hintFC').textContent = pv && pv.tipo.startsWith('CPT')
-      ? 'FC: se indicato nello strato sostituisce la stima da Ic (B&I 2014); vuoto → stimato da Ic.'
-      : 'FC per strato: usato quando la prova non riporta FC al punto; richiesto dai metodi SPT.';
+      ? 'FC = passante al setaccio da 0,075 mm [%]: se indicato nello strato sostituisce la stima da Ic (B&I 2014); vuoto → stimato da Ic.'
+      : 'FC = passante al setaccio da 0,075 mm [%], per strato: usato quando la prova non riporta FC al punto; richiesto dai metodi SPT.';
     mostraErroriStrati();
   }
   function mostraErroriStrati() {
@@ -600,7 +602,7 @@
   function renderProfili() {
     const box = $('pan-profili');
     const pv = prova(), sc = scenario(), r = sc && risultatoDi(sc);
-    if (!pv || !sc) { box.innerHTML = '<div class="empty welcome"><span class="eyebrow">IL TUO SPAZIO DI ANALISI</span><h2>Una tavola, tutto il profilo.</h2><p>Carica una prova CPT/CPTu, SPT o Vs, definisci lo scenario e confronta i risultati in profondità.</p><div class="btn-row"><button class="btn btn-primary" id="welcomeSample">Esplora l’esempio sintetico</button><button class="btn" id="welcomeImport">Importa una prova</button></div><p class="hint">L’esempio è dimostrativo: non rappresenta un sito reale.</p></div>'; $('welcomeSample').onclick = () => { $('btnEsempio').click(); $('btnCalcola').click(); }; $('welcomeImport').onclick = () => $('btnNuovaProva').click(); return; }
+    if (!pv || !sc) { box.innerHTML = '<div class="empty welcome"><span class="eyebrow">IL TUO SPAZIO DI ANALISI</span><h2>Una tavola, tutto il profilo.</h2><p>Carica una prova CPT/CPTu, SPT o Vs, definisci lo scenario e confronta i risultati in profondità.</p><div class="btn-row"><button class="btn btn-primary" id="welcomeSample">Esplora l’esempio sintetico</button><button class="btn" id="welcomeImport">Importa una prova</button></div><p class="hint">L’esempio è dimostrativo: non rappresenta un sito reale.</p></div>'; $('welcomeSample').onclick = () => $('btnEsempio').click(); $('welcomeImport').onclick = () => $('btnNuovaProva').click(); return; }
     if (!r || r.stato !== 'calcolato') { box.innerHTML = '<div class="empty">' + (r ? 'Il calcolo non è stato eseguito: correggi gli input (vedi riepilogo).' : 'Premi «Calcola scenario» per ottenere i profili.') + '</div>'; return; }
     const cat = catalogoPannelli(pv, sc, r);
     const chiave = pv.tipo + '|' + sc.metodo;
@@ -827,6 +829,9 @@
       const falde = [...new Set(sel.map(s => s.zFalda))];
       $('notaConf').textContent = (fuori ? fuori + ' valori FS > 3 non visibili (fuori scala). ' : '') + 'Falde di verifica: ' + sel.map(s => '«' + s.nome + '» ' + fmt(s.zFalda) + ' m').join('; ') + '.' + (att ? '' : '');
       if (falde.length === 1) $('notaConf').textContent += ' Linea tratteggiata blu: falda comune.';
+      // FS di metodi diversi non omogenei (audit §3.1 punto 4): ogni metodo ha la propria definizione di FS (note per metodo)
+      const metodi = [...new Set(sel.map(s => s.metodo))];
+      if (metodi.length > 1) $('notaConf').textContent += ' I FS di metodi diversi non sono omogenei: ' + metodi.map(m => F.METODI[m].notaFS.replace(/\.$/, '')).join('; ') + '. Il confronto è puntuale, non un giudizio di sicurezza del sito.';
       if (falde.length === 1) { chart.options.plugins.linee.falda = falde[0]; chart.update('none'); }
       $('pngConf').addEventListener('click', () => scarica(Gr.png(chart), nomeFile('confronto-FS', 'png'), true));
     } else {
@@ -914,7 +919,7 @@
         '</div>';
       dett += '<div class="escl-blocco"><div class="escl-tit">' + icona(iconaCriterio(c4)) + ' <b>Criterio 4</b> · granulometria esterna ai fusi della Fig. 7.11.1</div>' +
         '<div class="field"><label for="exCampione">Campione</label><input type="text" id="exCampione" value="' + esc(sel.dati.campione) + '" placeholder="es. S1-C3, 6,0–6,5 m"></div>' +
-        '<div class="field"><label for="exCurva">Curva granulometrica: una riga per setaccio, «diametro [mm]; passante [%]»</label><textarea id="exCurva" rows="7" spellcheck="false">' + esc(EX.testoCurva(sel.dati.curva)) + '</textarea><div class="hint" id="exCurvaErr"></div></div>';
+        '<div class="field"><label for="exCurva">Curva granulometrica: una riga per setaccio, «diametro [mm]; passante [%]»</label><textarea id="exCurva" rows="10" spellcheck="false">' + esc(EX.testoCurva(sel.dati.curva)) + '</textarea><div class="hint" id="exCurvaErr"></div></div>';
       if (m4 && m4.stato !== 'input_non_valido') {
         dett += '<p class="hint">U<sub>c</sub> = ' + (isNum(m4.Uc) ? fmt(m4.Uc, 1) : 'non determinabile') + ' · D<sub>10</sub> = ' + (isNum(m4.D10) ? fmt(m4.D10, 4) + ' mm' : '–') + ' · D<sub>60</sub> = ' + (isNum(m4.D60) ? fmt(m4.D60, 4) + ' mm' : '–') +
           ' · copertura del passante ' + fmt(m4.copertura.pCurvaMin, 0) + '–' + fmt(m4.copertura.pCurvaMax, 0) + ' % (richiesto 10–90 %, senza estrapolazione)</p>' +
@@ -1213,7 +1218,17 @@
     S.selezione = null;
     renderTutto();
     $('dlgImporta').dispatchEvent(new CustomEvent('importa:salvato'));
+    // dopo «Salva la prova» il dialogo si chiude e propone il passaggio allo scenario (audit §4 punto 9)
+    $('dlgImporta').close();
+    $('testoProvaSalvata').textContent = 'Prova «' + pv.nome + '» salvata nel progetto. Controlla falda e stratigrafia dello scenario, poi calcola.';
+    $('avvisoProvaSalvata').hidden = false;
+    $('btnVaiScenario').focus();
   });
+  $('btnVaiScenario').addEventListener('click', () => {
+    $('avvisoProvaSalvata').hidden = true;
+    document.querySelector('[data-open-section="secScenario"]').click(); // stessa apertura del pulsante «Scenario»
+  });
+  $('btnChiudiAvvisoProva').addEventListener('click', () => { $('avvisoProvaSalvata').hidden = true; });
   $('btnNuovaProva').addEventListener('click', () => apriImporta('nuova'));
   $('btnDatiProva').addEventListener('click', () => apriImporta('sostituisci'));
 
@@ -1230,7 +1245,18 @@
     pianificaBozza();
   }
   $('btnNuovo').addEventListener('click', () => { if (confermaSostituzione('Iniziare un nuovo progetto')) sostituisciProgetto(P.nuovoProgetto()); });
-  $('btnEsempio').addEventListener('click', () => { if (confermaSostituzione('Aprire l\'esempio sintetico')) sostituisciProgetto(E.progettoEsempio()); });
+  // Demo e «Esplora l'esempio» sono lo stesso comando e calcolano lo scenario attivo; gli altri scenari dell'esempio
+  // si calcolano quando si aprono (audit §4 punto 6). Solo per le prove dichiarate di esempio.
+  function calcolaSeEsempio() {
+    const sc = scenario(), pv = sc && provaDi(sc);
+    if (!sc || !pv || pv.esempio !== true || S.pr.risultati[sc.id]) return;
+    calcola(sc); svuotaStampa();
+  }
+  $('btnEsempio').addEventListener('click', () => {
+    if (!confermaSostituzione('Aprire l\'esempio sintetico')) return;
+    sostituisciProgetto(E.progettoEsempio());
+    calcolaSeEsempio(); renderTutto();
+  });
   $('btnApri').addEventListener('click', () => { if (confermaSostituzione('Aprire un altro progetto')) $('fileApri').click(); });
   $('fileApri').addEventListener('change', (e) => {
     const f = e.target.files[0]; if (!f) return;
@@ -1240,7 +1266,8 @@
       const esito = P.apriProgetto(String(rd.result));
       if (!esito.ok) {
         const altri = esito.errori.length > 10 ? '\n… e altri ' + (esito.errori.length - 10) + ' errori.' : '';
-        alert('Il file non è stato aperto: contiene dati non validi. Il progetto corrente non è stato modificato.\n\n' + esito.errori.slice(0, 10).map(x => '• ' + x.campo + ': ' + x.motivo).join('\n') + altri);
+        const piuRecente = esito.errori.some(x => x.campo === 'versioneFormato' && /più recente/.test(x.motivo));
+        alert((piuRecente ? 'Il file non è stato aperto. Il progetto corrente non è stato modificato.' : 'Il file non è stato aperto: contiene dati non validi. Il progetto corrente non è stato modificato.') + '\n\n' + esito.errori.slice(0, 10).map(x => '• ' + x.campo + ': ' + x.motivo).join('\n') + altri);
         return;
       }
       sostituisciProgetto(esito.progetto);
@@ -1347,7 +1374,7 @@
     const sc = scenario(), blocco = bloccoUscite(sc, 'esportare');
     if (blocco) { alert(blocco); return; }
     const pre = EX.valutaEsclusione(L, prova(), sc, risultatoDi(sc));
-    const csv = X.csvRisultati(S.pr, prova(), sc, risultatoDi(sc), { preliminare: pre.esito.titolo + '. ' + pre.esito.testo + (EX.testoTrattiScoperti(pre) ? ' ' + EX.testoTrattiScoperti(pre) : ''), magnitudo: MG.testoOrigine(sc, proposta()) });
+    const csv = X.csvRisultati(S.pr, prova(), sc, risultatoDi(sc), { versioni: versioniModuli(), preliminare: pre.esito.titolo + '. ' + pre.esito.testo + (EX.testoTrattiScoperti(pre) ? ' ' + EX.testoTrattiScoperti(pre) : ''), magnitudo: MG.testoOrigine(sc, proposta()) });
     scarica(URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' })), nomeFile('risultati-' + sc.nome, 'csv'));
   });
 
@@ -1492,7 +1519,7 @@
       (r.indiceIL && r.indiceIL.stato === 'calcolato' ? r.indiceIL.assunzioni.map(a => '<li><b>Indice IL.</b> ' + esc(a.descrizione) + '</li>').join('') + '<li><b>Indice IL.</b> ' + esc(r.indiceIL.fonte) + '</li>' : '') +
       (r.cedimenti && r.cedimenti.stato === 'calcolato' ? r.cedimenti.assunzioni.concat(r.cedimenti.avvisi.map(a => ({ descrizione: a.messaggio }))).map(a => '<li><b>Cedimento.</b> ' + esc(a.descrizione) + '</li>').join('') + '<li>Cedimento: ' + esc(r.cedimenti.fonte) + '</li>' : '<li>Cedimenti post-sismici: calcolati solo con prove CPT.</li>') +
       '<li>Spostamenti laterali: non calcolati.</li></ul>';
-    h += '<div class="st-piede"><span>GeoHub-LiquiSite ' + esc(P.VERSIONE_APP) + ' · motore ' + esc(r.versioneMotore) + ' · calcolato il ' + esc(new Date(r.calcolatoIl).toLocaleString('it-IT')) + ' · firma input ' + esc(r.firma) + '</span><span>Basato su LiquiSite di Fabio Duronio, geologo</span></div>';
+    h += '<div class="st-piede"><span>GeoHub-LiquiSite ' + esc(P.VERSIONE_APP) + ' · motore ' + esc(r.versioneMotore) + ' · calcolato il ' + esc(new Date(r.calcolatoIl).toLocaleString('it-IT')) + ' · indici ' + esc(versioniModuli().indici) + ' · cedimenti ' + esc(versioniModuli().cedimenti) + ' · ZS9 ' + esc(versioniModuli().zs9) + ' · firma input ' + esc(P.firmaBreve(r.firma)) + ' · firma rapporto ' + esc(P.firmaBreve(P.firmaRapporto(pv, sc, versioniModuli()))) + ' (SHA-256: primi 16 caratteri di 64; firma completa nel CSV)</span><span>Basato su LiquiSite di Fabio Duronio, geologo</span></div>';
     $('stampa').innerHTML = h;
     margineDiPagina(sc, r);
   }
@@ -1508,7 +1535,7 @@
     const testo = '@page{' +
       '@top-left{content:' + str('GeoHub-LiquiSite – Verifica a liquefazione') + '; ' + font + '}' +
       '@top-right{content:' + str((S.pr.progetto.titolo ? S.pr.progetto.titolo + ' · ' : '') + sc.nome, 90) + '; ' + font + '}' +
-      '@bottom-left{content:' + str('GeoHub-LiquiSite ' + P.VERSIONE_APP + ' · motore ' + r.versioneMotore + ' · firma input ' + r.firma) + '; ' + font + '}' +
+      '@bottom-left{content:' + str('GeoHub-LiquiSite ' + P.VERSIONE_APP + ' · motore ' + r.versioneMotore + ' · firma input ' + P.firmaBreve(r.firma) + ' · firma rapporto ' + P.firmaBreve(P.firmaRapporto(provaDi(sc), sc, versioniModuli())) + ' (SHA-256: primi 16 caratteri di 64; firma completa nel CSV)') + '; ' + font + '}' +
       '@bottom-right{content:"pagina " counter(page) " di " counter(pages); ' + font + '}}';
     let st = document.getElementById('stileMargini');
     if (!st) { st = document.createElement('style'); st.id = 'stileMargini'; document.head.appendChild(st); }

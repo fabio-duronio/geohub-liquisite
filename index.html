@@ -23,8 +23,8 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="LiquiSite: logo, descrizione e profilo del fattore di sicurezza di un esempio sintetico CPTU">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="stylesheet" href="vendor/ibm-plex/ibm-plex.css?v=1.0.0">
-<link rel="stylesheet" href="css/liquisite.css?v=1.0.0">
+<link rel="stylesheet" href="vendor/ibm-plex/ibm-plex.css?v=1.0.1">
+<link rel="stylesheet" href="css/liquisite.css?v=1.0.1">
 <script src="vendor/chart.js/chart.umd.js?v=4.4.4"></script>
 </head>
 <body>
@@ -57,6 +57,11 @@
     <div class="btn-row"><button class="btn" id="btnImpostazioni">Progetto</button><button class="btn" data-open-section="secProva">Prove</button><button class="btn" data-open-section="secScenario">Scenario</button><button class="btn" data-open-section="secStrati">Stratigrafia</button><button class="btn btn-primary" id="btnQuickCalcola">Calcola scenario</button></div>
   </div>
   <div id="bozzaBanner" class="bozza-banner no-print" role="status" hidden></div>
+  <div class="alert alert-info no-print" id="avvisoProvaSalvata" role="status" hidden>
+    <span id="testoProvaSalvata"></span>
+    <button class="btn btn-sm" type="button" id="btnVaiScenario">Vai allo scenario</button>
+    <button class="btn-link" type="button" id="btnChiudiAvvisoProva">chiudi</button>
+  </div>
   <div class="layout">
 
     <!-- ================= IMPOSTAZIONI ================= -->
@@ -126,7 +131,7 @@
           </div>
           <div class="group-label">Strati</div>
           <p class="hint">Puoi scrivere 18,5 oppure 18.5. Non usare separatori delle migliaia. Su schermi stretti scorri la tabella orizzontalmente.</p><div class="edit-scroll"><table class="edit-table" id="tabStrati">
-            <thead><tr><th>da [m]</th><th>a [m]</th><th>γ [kN/m³]</th><th>γsat [kN/m³]</th><th>FC [%]</th></tr></thead>
+            <thead><tr><th>da [m]</th><th>a [m]</th><th>γ [kN/m³]</th><th>γsat [kN/m³]</th><th>FC [%]<span class="u"> passante a 0,075 mm</span></th></tr></thead>
             <tbody></tbody>
           </table></div>
           <div class="btn-row" style="margin-top:8px;"><button class="btn btn-sm" id="btnAggiungiStrato" type="button">Aggiungi strato</button></div>
@@ -226,23 +231,23 @@
   </div>
 </dialog>
 
-<script src="motore/liquisite.js?v=1.0.0"></script>
-<script src="motore/indici.js?v=1.0.0"></script>
-<script src="motore/cedimenti.js?v=1.0.0"></script>
-<script src="app/progetto.js?v=1.0.0"></script>
-<script src="dati/fusi-ntc2018.js?v=1.0.0"></script>
-<script src="app/esclusione.js?v=1.0.0"></script>
-<script src="app/profilo.js?v=1.0.0"></script>
-<script src="app/importa.js?v=1.0.0"></script>
-<script src="app/esporta.js?v=1.0.0"></script>
-<script src="app/esempio.js?v=1.0.0"></script>
-<script src="moduli/zs9.js?v=1.0.0"></script>
-<script src="dati/zs9-data.js?v=1.0.0"></script>
-<script src="app/magnitudo.js?v=1.0.0"></script>
-<script src="app/grafici.js?v=1.0.0"></script>
-<script src="app/ui.js?v=1.0.0"></script>
-<script src="app/workspace.js?v=1.0.0"></script>
-<script src="app/guida-importa.js?v=1.0.0"></script>
-<script src="app/import-workspace.js?v=1.0.0"></script>
+<script src="motore/liquisite.js?v=1.0.1"></script>
+<script src="motore/indici.js?v=1.0.1"></script>
+<script src="motore/cedimenti.js?v=1.0.1"></script>
+<script src="app/progetto.js?v=1.0.1"></script>
+<script src="dati/fusi-ntc2018.js?v=1.0.1"></script>
+<script src="app/esclusione.js?v=1.0.1"></script>
+<script src="app/profilo.js?v=1.0.1"></script>
+<script src="app/importa.js?v=1.0.1"></script>
+<script src="app/esporta.js?v=1.0.1"></script>
+<script src="app/esempio.js?v=1.0.1"></script>
+<script src="moduli/zs9.js?v=1.0.1"></script>
+<script src="dati/zs9-data.js?v=1.0.1"></script>
+<script src="app/magnitudo.js?v=1.0.1"></script>
+<script src="app/grafici.js?v=1.0.1"></script>
+<script src="app/ui.js?v=1.0.1"></script>
+<script src="app/workspace.js?v=1.0.1"></script>
+<script src="app/guida-importa.js?v=1.0.1"></script>
+<script src="app/import-workspace.js?v=1.0.1"></script>
 </body>
 </html>

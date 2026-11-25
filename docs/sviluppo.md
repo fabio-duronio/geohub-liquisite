@@ -112,7 +112,7 @@ La CSP è una difesa aggiuntiva: la protezione principale resta la validazione d
 - **Risultati.** Non sono salvati nel file. Quelli presenti in file di versioni precedenti non vengono ricaricati: si ricalcolano dagli input con «Calcola», e l'app lo segnala all'apertura.
 - **Progetti precedenti.** I file senza `FSrif` o senza `esclusione` si aprono con i valori predefiniti. I file senza coordinate o senza `magnitudo` (versioni fino alla 0.2.3) si aprono con coordinate vuote e M_w «inserimento manuale», con il valore salvato. Coordinate fuori intervallo restano come sono e sono segnalate dall'app. Un `FSrif` presente ma fuori dall'intervallo 1–3 resta com'è ed è segnalato come errore.
 - **Rendering.** Ogni valore inserito nell'HTML passa da `esc()`, compresi gli attributi e i valori calcolati. `verifiche/verifica_sicurezza.mjs` e `verifiche/browser/verifica_browser.mjs` lo controllano con progetti alterati.
-- **Firma degli input.** È un'impronta FNV-1a di prova, scenario e versione del motore. Non la modificano nome, note, FS di riferimento, dati della verifica preliminare, coordinate del sito e origine o motivazione della M_w, perché riguardano la lettura dei risultati e non il calcolo. La M_w invece vi entra.
+- **Firma degli input.** È un'impronta SHA-256 (64 cifre esadecimali, funzione sincrona in `app/progetto.js`, verificata contro i vettori NIST e contro Node) di prova, scenario e versione del motore. In stampa e nei margini compaiono le prime 16 cifre; il CSV riporta la firma intera. Non la modificano nome, note, FS di riferimento, dati della verifica preliminare, coordinate del sito e origine o motivazione della M_w, perché riguardano la lettura dei risultati e non il calcolo. La M_w invece vi entra.
 
 ## Regole per le modifiche
 
