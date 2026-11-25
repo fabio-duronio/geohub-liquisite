@@ -106,6 +106,28 @@ check('MSF(M 6,0) invariato sopra 5,25', BI.msf(6.0, 2.0), 1 + (2.0 - 1) * (Math
   const r = L.bi2014Spt({ z: 6, N: 10, FC: 10, sv: t.sv, sve: t.sve }, { amax: 0.25, Mw: 4.5 }, { CE: 1, CB: 1, CS: 1, sporgenza: 1 });
   check('SPT con Mw 4,5: MSF del punto = MSFmax del punto', r.MSF, r.MSFmax, 1e-12);
 }
+// Cetin 2018: Kσ limitato a 0,8–1,6 [SDEE Eq. 14, pag. 706], anche dentro CRR e PL (Eq. 10–11), dove
+// −θ3·ln(σ'v/Pa) = θ6·ln Kσ (audit v1.0.0, B3.2). Prima, a 0,5 m con falda al p.c., Kσ = 2,83.
+{
+  const C = L._CETIN;
+  const cet = (z, zw, N = 10) => { const t = L.tensioni([{ da: 0, a: 20, gamma: 18, gammaSat: 19 }], zw, z); return [t, L.cetin2018Spt({ z, N, FC: 10, sv: t.sv, sve: t.sve }, { amax: 0.25, Mw: 6.5 }, { CE: 1, CB: 1, CS: 1, sporgenza: 1 }, { Vs12: 180 })]; };
+  const [t1, a] = cet(0.5, 0);
+  check('Cetin, σ\'v basso: Kσ = 1,6 (Eq. 14)', a.Ksigma, 1.6, 1e-12);
+  check('Cetin, σ\'v basso: avviso KSIGMA_LIMITATO', a.avvisi.some(x => x.codice === 'KSIGMA_LIMITATO') ? 1 : 0, 1, 0);
+  const libero = Math.pow(t1.sve / C.PA, -C.t3 / C.t6);
+  const baseLibera = a.N160 * (1 + C.t1 * 10) - C.t2 * Math.log(6.5) - C.t3 * Math.log(t1.sve / C.PA) + C.t4 * 10 + C.t5;
+  check('Cetin, σ\'v basso: CRR = CRR senza limite × 1,6 / Kσ libero', a.CRR, Math.exp(baseLibera / C.t6) * 1.6 / libero, 1e-9);
+  // PL coerente con il CRR limitato: PL = Φ(−θ6·ln(CRR/CSR)/σε) [SDEE Eq. 10–11]
+  const phi = (x) => { const t = 1 / (1 + 0.2316419 * Math.abs(x)), d = Math.exp(-x * x / 2) / Math.sqrt(2 * Math.PI);
+    const p = d * t * (0.319381530 + t * (-0.356563782 + t * (1.781477937 + t * (-1.821255978 + t * 1.330274429)))); return x >= 0 ? 1 - p : p; };
+  check('Cetin, σ\'v basso: PL coerente con il CRR limitato', a.PL, phi(-C.t6 * Math.log(a.CRR / a.CSR) / C.se), 1e-6);
+  const [, m] = cet(8, 1);
+  check('Cetin, σ\'v nel campo: Kσ invariato', m.Ksigma, Math.pow((L.tensioni([{ da: 0, a: 20, gamma: 18, gammaSat: 19 }], 1, 8).sve) / C.PA, -C.t3 / C.t6), 1e-12);
+  check('Cetin, σ\'v nel campo: nessun avviso KSIGMA_LIMITATO', m.avvisi.some(x => x.codice === 'KSIGMA_LIMITATO') ? 1 : 0, 0, 0);
+  const t3 = L.tensioni([{ da: 0, a: 20, gamma: 26, gammaSat: 27 }], 20, 19.5);
+  const d = L.cetin2018Spt({ z: 19.5, N: 10, FC: 10, sv: t3.sv + 1, sve: t3.sv }, { amax: 0.25, Mw: 6.5 }, { CE: 1, CB: 1, CS: 1, sporgenza: 1 }, { Vs12: 180 });
+  check('Cetin, σ\'v alto (> 1,94 atm): Kσ = 0,8 (Eq. 14)', d.Ksigma, 0.8, 1e-12);
+}
 {
   // Kσ = 1,1 raggiunto a ≈ 0,4 atm per (N1)60cs = 15 (pag. 11)
   const Cs = 1 / (18.9 - 2.55 * Math.sqrt(15));

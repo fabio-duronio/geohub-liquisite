@@ -742,15 +742,21 @@
     // CSR [MethodsX Eq. 31]
     const CSR = 0.65 * amax * (sv / sve) * rd;
 
-    // Funzione di stato [Cetin 2018 SDEE Eq. 10–11; MethodsX Eq. 1–2]
-    const base = N160 * (1 + C.t1 * FC) - C.t2 * Math.log(Mw) - C.t3 * Math.log(sve / C.PA) + C.t4 * FC + C.t5;
+    // Kσ = (σ'v/Pa)^(−θ3/θ6) con limite 0,8 ≤ Kσ ≤ 1,6 [Cetin 2018 SDEE Eq. 14, pag. 706].
+    // Nella funzione di stato −θ3·ln(σ'v/Pa) = θ6·ln Kσ: usare Kσ limitato equivale al percorso
+    // «per parti» degli autori (Eq. 13–15, pag. 706). Prima del limite (audit B3.2) Kσ arrivava a 2,8.
+    const KsigmaLibero = Math.pow(sve / C.PA, -C.t3 / C.t6);
+    const Ksigma = clamp(KsigmaLibero, 0.8, 1.6);
+    if (Ksigma !== KsigmaLibero) avvisi.push(avviso('KSIGMA_LIMITATO', 'fuori_campo', 'Kσ = ' + KsigmaLibero.toFixed(2).replace('.', ',') + ' limitato a ' + numeroIt(Ksigma) + ' (0,8 ≤ Kσ ≤ 1,6) [Cetin 2018 SDEE, Eq. 14, pag. 706].'));
+
+    // Funzione di stato [Cetin 2018 SDEE Eq. 10–11; MethodsX Eq. 1–2], termine di tensione = θ6·ln Kσ
+    const base = N160 * (1 + C.t1 * FC) - C.t2 * Math.log(Mw) + C.t6 * Math.log(Ksigma) + C.t4 * FC + C.t5;
     const PL = Phi(-(base - C.t6 * Math.log(CSR)) / C.se);
     const CRR = Math.exp(base / C.t6); // PL = 50 % → Φ⁻¹ = 0
     const FS = CRR / CSR; // [MethodsX Eq. 52]
 
     // Grandezze di riferimento [MethodsX Eq. 40–41, 44, 46, 48]
     const dN = FC * (C.t1 * N160 + C.t4);
-    const Ksigma = Math.pow(sve / C.PA, -C.t3 / C.t6);
     const KMw = Math.pow(Mw / 7.5, -C.t2 / C.t6);
     const CSRrif = CSR / (Ksigma * KMw);
     const sveAtm = sve / C.PA;
@@ -760,7 +766,7 @@
     return chiudi({
       metodo, z, stato: STATI.CALCOLATO,
       lunghezzaAste: d, CR, CN, CS, N160, dN160: dN, N160cs: N160 + dN, FCusato: FC,
-      Vs12, rd, CSR, Ksigma, KMw, CSRrif, CRR, FS, PL, convergenza, avvisi
+      Vs12, rd, CSR, KsigmaLibero, Ksigma, KMw, CSRrif, CRR, FS, PL, convergenza, avvisi
     }, ['CR', 'CN', 'N160', 'rd', 'CSR', 'CRR', 'FS', 'PL'], punto);
   }
 

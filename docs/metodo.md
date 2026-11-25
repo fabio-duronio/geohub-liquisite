@@ -62,9 +62,10 @@ Tipo di prova: `CPTE` (punta elettrica senza misura di u, q_t = q_c) o `CPTU` (p
 | r_d | relazione di Cetin & Seed (2004) in funzione di d, M_w, a_max, V*_s,12 | MethodsX Eq. 26–27 |
 | P_L | Φ{−[N₁,₆₀(1 + θ₁FC) − θ₆ ln CSR − θ₂ ln M_w − θ₃ ln(σ'_v/P_a) + θ₄FC + θ₅]/σ_ε} | SDEE Eq. 10 |
 | CRR (P_L = 50 %) | exp{[N₁,₆₀(1 + θ₁FC) − θ₂ ln M_w − θ₃ ln(σ'_v/P_a) + θ₄FC + θ₅]/θ₆} | SDEE Eq. 11 |
+| K_σ nel termine di tensione | −θ₃ ln(σ'_v/P_a) = θ₆ ln K_σ, con K_σ = (σ'_v/P_a)^(−θ₃/θ₆) limitato a 0,8–1,6: equivale al percorso «per parti» degli autori (Eq. 13–15) | SDEE Eq. 14, pag. 706 |
 | Coefficienti | θ₁ 0,00167; θ₂ 27,352; θ₃ 3,958; θ₄ 0,089; θ₅ 16,084; θ₆ 11,771; σ_ε 2,95 | SDEE Tab. 7 |
 
-FS = CRR/CSR corrisponde a P_L = 50 %. Limiti dichiarati: FC 5–35 %; K_σ 0,8–1,6 (σ'_v 0,25–1,8 atm); M_w 5,5–8,4; V*_s,12 ≤ 230 m/s nelle analisi di progetto.
+FS = CRR/CSR corrisponde a P_L = 50 %. Limiti dichiarati: FC 5–35 %; K_σ 0,8–1,6, applicato nel calcolo di CRR e P_L con avviso `KSIGMA_LIMITATO` (relazione valida per σ'_v 0,25–1,8 atm, avviso `SVE_FUORI_CAMPO`); M_w 5,5–8,4; V*_s,12 ≤ 230 m/s nelle analisi di progetto.
 
 ## Kayen et al. (2013) — V_s (solo confronto)
 

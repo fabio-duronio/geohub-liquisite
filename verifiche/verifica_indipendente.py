@@ -143,7 +143,9 @@ def cetin(p):
     n = p['N'] * CN * CR * p['CB'] * p['CE']
     V = min(p['Vs12'], 230)
     csr = 0.65 * p['amax'] * p['sv'] / p['sve'] * rd_cetin(p['z'], p['Mw'], p['amax'], V)
-    s = n * (1 + T['t1'] * FC) - T['t2'] * math.log(p['Mw']) - T['t3'] * math.log(p['sve'] / 101.3) + T['t4'] * FC + T['t5']
+    # Ksigma limitato a 0,8-1,6 [SDEE Eq. 14, pag. 706]: -t3*ln(sve/Pa) = t6*ln(Ksigma) (audit B3.2)
+    ks = min(max((p['sve'] / 101.3) ** (-T['t3'] / T['t6']), 0.8), 1.6)
+    s = n * (1 + T['t1'] * FC) - T['t2'] * math.log(p['Mw']) + T['t6'] * math.log(ks) + T['t4'] * FC + T['t5']
     pl = PHI(-(s - T['t6'] * math.log(csr)) / T['se'])
     return {'CSR': csr, 'FS': math.exp(s / T['t6']) / csr, 'PL': pl}
 
