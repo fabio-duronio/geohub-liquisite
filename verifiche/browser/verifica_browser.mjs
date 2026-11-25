@@ -99,7 +99,7 @@ console.log('2. Testo libero con payload in tutte le schede, nel confronto e nel
   await page.evaluate(() => { window.print = () => {}; });
   await page.click('#btnStampa'); await page.waitForTimeout(600);
   check('testo libero: nessuna iniezione', await iniettato(), { flag: false, img: 0 });
-  const margini = await page.evaluate(() => { const st = document.getElementById('stileMargini'); const r = window.LiquiUI.stato.pr.risultati[window.LiquiUI.stato.pr.scenarioAttivo]; return st ? [st.textContent.includes('firma input ' + r.firma), /@bottom-right\{content:"pagina " counter\(page\) " di " counter\(pages\)/.test(st.textContent), st.sheet ? st.sheet.cssRules.length : 0] : null; });
+  const margini = await page.evaluate(() => { const st = document.getElementById('stileMargini'); const r = window.LiquiUI.stato.pr.risultati[window.LiquiUI.stato.pr.scenarioAttivo]; return st ? [st.textContent.includes('firma input ' + r.firma.slice(0, 16) + ' ') && /^[0-9a-f]{64}$/.test(r.firma), /@bottom-right\{content:"pagina " counter\(page\) " di " counter\(pages\)/.test(st.textContent), st.sheet ? st.sheet.cssRules.length : 0] : null; });
   check('stampa: intestazione e piè di pagina ripetuti con firma e numero di pagina', margini, [true, true, 1]);
   check('testo libero: mostrato come testo', await page.evaluate((p) => document.body.textContent.includes(p), PAYLOAD), true);
 }

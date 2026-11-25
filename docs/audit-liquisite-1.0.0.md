@@ -116,7 +116,7 @@ Le versioni dei rinvii sono **proposte**, da confermare: v1.0.2 è riservata ai 
 |---|---|---|---|
 | B1.a | chiuso | `verifica_addensamento.mjs` (qc1Ncs > 211 e (N1)60cs > 37: «oltre il campo», nessun FS inventato) | 1.0.1 (D1) |
 | B1.b | chiuso | `verifica_addensamento.mjs` (punto oltre il campo non arriva all'overflow; IL_max e S_max uguali a quelli con qc 28 MPa, spessore «ignoto» invariato) | 1.0.1 |
-| B1.c | chiuso | `verifica_addensamento.mjs` sez. 4 (Vs1 > 277 m/s, confronto stretto), `verifica_indipendente.py` | 1.0.1. Il massimo di Vs1 dei 422 casi di Tab. S1 non è stato ricavato (serve la tabella): il CHANGELOG dice «almeno 328,62 m/s» |
+| B1.c | chiuso | `verifica_addensamento.mjs` sez. 4 (Vs1 > 277 m/s, confronto stretto), `verifica_indipendente.py` | 1.0.1. Tab. S1 non è nel repository: le cifre ricavate da essa (328,62 m/s e i nomi dei casi) sono tolte da CHANGELOG, metodo.md, messaggio dell'app e commenti (commit dedicato nell'Onda 2). La soglia resta scelta applicativa (CRR7,5 ≈ 2,02); il confronto con il campo della banca dati si rifà solo con la tabella in mano |
 | B1.d | chiuso | stesso controllo di B1.a (è la stessa riproduzione) | 1.0.1 |
 | B1.e | chiuso | `browser/verifica_flusso.mjs` sez. 4 (asse x del pannello 03 fisso 0–1; la nota «fuori scala» c'era già) | 1.0.1 (dal commit fbe0641) |
 | B2.1 | chiuso | `verifica_il.mjs` sez. 11 | 1.0.1 (D2) |
@@ -166,7 +166,7 @@ Le versioni dei rinvii sono **proposte**, da confermare: v1.0.2 è riservata ai 
 | 10 | chiuso in parte | `verifica_grafici.mjs` (contesto simulato) e schermate nella PR. «falda» tagliata a 1440×900: non riprodotta | 1.0.1 |
 | 11 | chiuso in parte | Contrasto `.track-no` portato a 5,0:1 (calcolo nel CHANGELOG). A 375×812 la barra delle schede scorre in orizzontale (681 px su 349) senza segnale di scorrimento e «Confronto» appare tagliato («Conf»): confermato, **rinviato**. Nessuno sforamento orizzontale della pagina | contrasto 1.0.1; barra delle schede 1.0.3 (proposta) |
 | 12 | rinviato | non verificabile da qui (intestazioni HTTP di GitHub Pages); da controllare online dopo la pubblicazione | dopo il rilascio |
-| 13 | chiuso | `verifica_firma.mjs` (firma del rapporto e versioni dei moduli, CSV); NOTICE e nota interna della Mw: testo (CHANGELOG) | 1.0.1 |
+| 13 | chiuso | `verifica_firma.mjs` (firma SHA-256 del rapporto e di calcolo, vettori NIST, FSrif, versioni dei moduli, CSV); NOTICE e nota interna della Mw: testo (CHANGELOG) | 1.0.1 |
 
 ### Controlli: esito del 25/11/2026
 

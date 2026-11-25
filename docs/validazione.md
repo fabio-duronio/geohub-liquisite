@@ -77,7 +77,7 @@ Le verifiche numeriche non hanno dipendenze; il controllo nel browser richiede P
 | `verifica_addensamento.mjs` | punti oltre il campo della correlazione per addensamento (B&I 2014, q_c1Ncs > 211, (N₁)₆₀cs > 37): stato e motivo, nessun errore numerico fino al rifiuto, F = 0 e ε_v = 0, grafici, tabelle, CSV, criterio 3 (audit B1); Kayen 2013, Vs1 > 277 m/s (B1.c) | 42 |
 | `verifica_copertura.mjs` | criterio 3: tolleranza di copertura fissa (SPT 1,5 m, CPT 0,25 m, limiti esatti, tratti scoperti), «sabbia pulita» contraddetta da FC > 5 % o Ic > 1,775, CSV (audit B4.1–B4.2, decisione D5; letto dell'ultimo strato, §4 punto 3) | 49 |
 | `verifica_esclusione_strati.mjs` | esclusione motivata di uno strato da IL e cedimento: IL senza lo strato, F = 0 e εv = 0 dichiarati, criterio e motivazione obbligatori, criterio 4 solo se confermato, firma degli input, file precedenti, SPT per strato intero, avviso FS < 1, CSV (audit B2.3, decisione D3) | 45 |
-| `verifica_firma.mjs` | firma del rapporto distinta dalla firma di calcolo: FS di riferimento, Verifica preliminare e versioni dei moduli (audit 13.a), CSV | 13 |
+| `verifica_firma.mjs` | firme SHA-256 (vettori NIST, confronto con Node), firma del rapporto distinta dalla firma di calcolo: FS di riferimento, Verifica preliminare e versioni dei moduli (audit 13.a), CSV | 20 |
 | `verifica_grafici.mjs` | etichette dei grafici su contesto simulato: «falda» a destra, riferimenti FS ravvicinati su lati opposti, nomi delle classi granulometriche su fondo bianco (audit §4 punto 10) | 8 |
 | `verifica_versioni.mjs` | parametro `?v=` dei file in `index.html` uguale alla versione dell'app (Chart.js: la propria), per evitare copie vecchie in cache | 23 |
 | `verifica_sicurezza.mjs` | apertura di progetti alterati (tipi, valori enumerati, proprietà ereditate, ID, risultati), 1500 alterazioni casuali, FS di riferimento senza ripiego | 73 |
@@ -104,7 +104,7 @@ Le verifiche numeriche non hanno dipendenze; il controllo nel browser richiede P
 | `verifica_copertura.mjs` | 49 | superato |
 | `verifica_esclusione.mjs` | 33 | superato |
 | `verifica_esclusione_strati.mjs` | 45 | superato |
-| `verifica_firma.mjs` | 13 | superato |
+| `verifica_firma.mjs` | 20 | superato |
 | `verifica_grafici.mjs` | 8 | superato |
 | `verifica_il.mjs` | 80 | superato |
 | `verifica_magnitudo.mjs` | 96 | superato |
@@ -121,7 +121,7 @@ Le verifiche numeriche non hanno dipendenze; il controllo nel browser richiede P
 | `verifica_validazione.mjs` | 31 | superato |
 | `verifica_versioni.mjs` | 23 | superato |
 | `verifica_zs9.mjs` | 57 | superato |
-| **Totale JavaScript** | **1319** | 24 file, tutti superati |
+| **Totale JavaScript** | **1326** | 24 file, tutti superati |
 
 **Python** (non si sommano ai controlli: sono confronti su casi)
 
@@ -145,7 +145,7 @@ Le verifiche numeriche non hanno dipendenze; il controllo nel browser richiede P
 | `browser/verifica_strati.mjs` | 4 | superato |
 | **Totale browser** | **132** | 6 file, tutti superati |
 
-Totale conteggiato dal programma (JavaScript + browser): **1451**. Nella 1.0.0 erano 1122 JavaScript e 54 nel browser; i controlli aggiunti sono nuovi file e nuove sezioni di file esistenti, non controlli rimossi.
+Totale conteggiato dal programma (JavaScript + browser): **1458**. Nella 1.0.0 erano 1122 JavaScript e 54 nel browser; i controlli aggiunti sono nuovi file e nuove sezioni di file esistenti, non controlli rimossi.
 
 I payload dei test di sicurezza sono innocui: al massimo impostano una variabile di prova.
 
