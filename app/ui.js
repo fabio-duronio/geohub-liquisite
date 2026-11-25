@@ -1518,7 +1518,7 @@
       (r.indiceIL && r.indiceIL.stato === 'calcolato' ? r.indiceIL.assunzioni.map(a => '<li><b>Indice IL.</b> ' + esc(a.descrizione) + '</li>').join('') + '<li><b>Indice IL.</b> ' + esc(r.indiceIL.fonte) + '</li>' : '') +
       (r.cedimenti && r.cedimenti.stato === 'calcolato' ? r.cedimenti.assunzioni.concat(r.cedimenti.avvisi.map(a => ({ descrizione: a.messaggio }))).map(a => '<li><b>Cedimento.</b> ' + esc(a.descrizione) + '</li>').join('') + '<li>Cedimento: ' + esc(r.cedimenti.fonte) + '</li>' : '<li>Cedimenti post-sismici: calcolati solo con prove CPT.</li>') +
       '<li>Spostamenti laterali: non calcolati.</li></ul>';
-    h += '<div class="st-piede"><span>GeoHub-LiquiSite ' + esc(P.VERSIONE_APP) + ' · motore ' + esc(r.versioneMotore) + ' · calcolato il ' + esc(new Date(r.calcolatoIl).toLocaleString('it-IT')) + ' · indici ' + esc(versioniModuli().indici) + ' · cedimenti ' + esc(versioniModuli().cedimenti) + ' · ZS9 ' + esc(versioniModuli().zs9) + ' · firma input ' + esc(P.firmaBreve(r.firma)) + ' · firma rapporto ' + esc(P.firmaBreve(P.firmaRapporto(pv, sc, versioniModuli()))) + '</span><span>Basato su LiquiSite di Fabio Duronio, geologo</span></div>';
+    h += '<div class="st-piede"><span>GeoHub-LiquiSite ' + esc(P.VERSIONE_APP) + ' · motore ' + esc(r.versioneMotore) + ' · calcolato il ' + esc(new Date(r.calcolatoIl).toLocaleString('it-IT')) + ' · indici ' + esc(versioniModuli().indici) + ' · cedimenti ' + esc(versioniModuli().cedimenti) + ' · ZS9 ' + esc(versioniModuli().zs9) + ' · firma input ' + esc(P.firmaBreve(r.firma)) + ' · firma rapporto ' + esc(P.firmaBreve(P.firmaRapporto(pv, sc, versioniModuli()))) + ' (SHA-256: primi 16 caratteri di 64; firma completa nel CSV)</span><span>Basato su LiquiSite di Fabio Duronio, geologo</span></div>';
     $('stampa').innerHTML = h;
     margineDiPagina(sc, r);
   }
@@ -1534,7 +1534,7 @@
     const testo = '@page{' +
       '@top-left{content:' + str('GeoHub-LiquiSite – Verifica a liquefazione') + '; ' + font + '}' +
       '@top-right{content:' + str((S.pr.progetto.titolo ? S.pr.progetto.titolo + ' · ' : '') + sc.nome, 90) + '; ' + font + '}' +
-      '@bottom-left{content:' + str('GeoHub-LiquiSite ' + P.VERSIONE_APP + ' · motore ' + r.versioneMotore + ' · firma input ' + P.firmaBreve(r.firma) + ' · firma rapporto ' + P.firmaBreve(P.firmaRapporto(provaDi(sc), sc, versioniModuli()))) + '; ' + font + '}' +
+      '@bottom-left{content:' + str('GeoHub-LiquiSite ' + P.VERSIONE_APP + ' · motore ' + r.versioneMotore + ' · firma input ' + P.firmaBreve(r.firma) + ' · firma rapporto ' + P.firmaBreve(P.firmaRapporto(provaDi(sc), sc, versioniModuli())) + ' (SHA-256: primi 16 caratteri di 64; firma completa nel CSV)') + '; ' + font + '}' +
       '@bottom-right{content:"pagina " counter(page) " di " counter(pages); ' + font + '}}';
     let st = document.getElementById('stileMargini');
     if (!st) { st = document.createElement('style'); st.id = 'stileMargini'; document.head.appendChild(st); }

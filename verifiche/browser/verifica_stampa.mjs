@@ -67,7 +67,8 @@ console.log('2. Ctrl+P con risultati aggiornati, senza usare il pulsante (B6.1)'
   const t = await stampa();
   check('rapporto preparato da beforeprint', /GeoHub-LiquiSite – Verifica a liquefazione/.test(t) && /amax 0,260 g/.test(t), true);
   check('nessun avviso di stampa non valida', /STAMPA NON VALIDA/.test(t), false);
-  check('margini di pagina con la firma', /firma input [0-9a-f]{8}/.test(await margini()), true);
+  check('margini di pagina con la firma (16 cifre) etichettata', /firma input [0-9a-f]{16} /.test(await margini()) && /primi 16 caratteri di 64; firma completa nel CSV/.test(await margini()), true);
+  check('piè di pagina del rapporto: firme abbreviate e dicitura', /firma input [0-9a-f]{16} · firma rapporto [0-9a-f]{16} \(SHA-256: primi 16 caratteri di 64; firma completa nel CSV\)/.test(t), true);
   check('tavole fisse dell\'esempio CPTU', await tavole(), TAVOLE_CPT);
   check('carta di comportamento in stampa', /Carta di comportamento CPT/.test(t), true);
   await dopoStampa();

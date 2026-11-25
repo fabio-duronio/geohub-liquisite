@@ -86,7 +86,7 @@ Le verifiche numeriche non hanno dipendenze; il controllo nel browser richiede P
 | `verifica_zs9.py` | seconda implementazione della procedura ZS9 (shapely, GeographicLib) su 13 località e 150 punti casuali; script di SismaSite invariato | – |
 | `browser/verifica_browser.mjs` | nel browser: file alterati e valori iniettati in memoria senza esecuzione di codice; testo libero in tutte le schede, nel confronto e in stampa; FS di riferimento non valido con stampa e CSV bloccati; conferma per modifiche non salvate; intestazione e piè di pagina di stampa; nessuna richiesta esterna né violazione della CSP; testi del confronto, del riepilogo e della stampa; magnitudo M_w: coordinate, proposta, motivazione sempre obbligatoria con stampa e CSV bloccati, avvertenza sul datum e assenza dell'LSN in stampa, tabella delle 36 zone in app e in stampa | 54 |
 | `browser/verifica_strati.mjs` | nel browser: cambio di quota nella tabella degli strati con curva e campione conservati, id degli strati aggiunti (audit B4.3) | 4 |
-| `browser/verifica_stampa.mjs` | nel browser: stampa con Ctrl+P (beforeprint/afterprint) senza e con risultati, foglio «STAMPA NON VALIDA», svuotamento dopo modifiche e stampe, tavole indipendenti dalla vista (audit B6) | 23 |
+| `browser/verifica_stampa.mjs` | nel browser: stampa con Ctrl+P (beforeprint/afterprint) senza e con risultati, foglio «STAMPA NON VALIDA», svuotamento dopo modifiche e stampe, tavole indipendenti dalla vista (audit B6) | 24 |
 | `browser/verifica_bozza.mjs` | nel browser: avviso in uscita, bozza dei soli input nella memoria locale, ripristino ed eliminazione, bozza alterata validata come un file, memoria locale non disponibile, più schede (audit B7) | 28 |
 | `browser/verifica_dati.mjs` | nel browser: avvisi di unità e errori dei pesi di volume accanto ai campi, nella scheda degli avvisi e in stampa (audit B5) | 11 |
 | `browser/verifica_flusso.mjs` | nel browser: «Demo sintetica» calcola, scenari dell'esempio calcolati all'apertura, dialogo che si chiude dopo «Salva la prova» con «Vai allo scenario», asse del pannello 03, FC a 0,075 mm, nota di non omogeneità nel confronto (audit §4 punti 6 e 9, B1.e, §3.1) | 12 |
@@ -141,11 +141,11 @@ Le verifiche numeriche non hanno dipendenze; il controllo nel browser richiede P
 | `browser/verifica_browser.mjs` | 54 | superato |
 | `browser/verifica_dati.mjs` | 11 | superato |
 | `browser/verifica_flusso.mjs` | 12 | superato |
-| `browser/verifica_stampa.mjs` | 23 | superato |
+| `browser/verifica_stampa.mjs` | 24 | superato |
 | `browser/verifica_strati.mjs` | 4 | superato |
-| **Totale browser** | **132** | 6 file, tutti superati |
+| **Totale browser** | **133** | 6 file, tutti superati |
 
-Totale conteggiato dal programma (JavaScript + browser): **1458**. Nella 1.0.0 erano 1122 JavaScript e 54 nel browser; i controlli aggiunti sono nuovi file e nuove sezioni di file esistenti, non controlli rimossi.
+Totale conteggiato dal programma (JavaScript + browser): **1459**. Nella 1.0.0 erano 1122 JavaScript e 54 nel browser; i controlli aggiunti sono nuovi file e nuove sezioni di file esistenti, non controlli rimossi.
 
 I payload dei test di sicurezza sono innocui: al massimo impostano una variabile di prova.
 
