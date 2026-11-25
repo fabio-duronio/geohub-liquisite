@@ -306,7 +306,7 @@
     $('scFalda').disabled = $('btnAggiungiStrato').disabled = !sc;
     if (!sc) { tb.innerHTML = ''; $('scFalda').value = ''; $('sumStrati').textContent = ''; $('hintFC').textContent = ''; $('erroriStrati').innerHTML = ''; return; }
     $('scFalda').value = sc.zFalda ?? '';
-    const etich = { da: 'da [m]', a: 'a [m]', gamma: 'γ [kN/m³]', gammaSat: 'γsat [kN/m³]', FC: 'FC [%]' };
+    const etich = { da: 'da [m]', a: 'a [m]', gamma: 'γ [kN/m³]', gammaSat: 'γsat [kN/m³]', FC: 'FC [%], passante a 0,075 mm' };
     tb.innerHTML = sc.strati.map((s, i) => '<tr data-i="' + i + '" class="r1">' +
       ['da', 'a', 'gamma', 'gammaSat', 'FC'].map(k => '<td><input type="text" inputmode="decimal" step="0.1" data-k="' + k + '" aria-label="' + etich[k] + ', strato ' + (i + 1) + '" value="' + esc(s[k] ?? '') + '"></td>').join('') + '</tr>' +
       '<tr data-i="' + i + '" class="r2"><td colspan="4"><input class="txt" type="text" data-k="descrizione" placeholder="descrizione" aria-label="descrizione, strato ' + (i + 1) + '" value="' + esc(s.descrizione || '') + '"></td>' +
@@ -315,8 +315,8 @@
     $('sumStrati').textContent = (isNum(sc.zFalda) ? 'falda ' + fmt(sc.zFalda, 1) + ' m · ' : '') + sc.strati.length + ' strati';
     const pv = prova();
     $('hintFC').textContent = pv && pv.tipo.startsWith('CPT')
-      ? 'FC: se indicato nello strato sostituisce la stima da Ic (B&I 2014); vuoto → stimato da Ic.'
-      : 'FC per strato: usato quando la prova non riporta FC al punto; richiesto dai metodi SPT.';
+      ? 'FC = passante al setaccio da 0,075 mm [%]: se indicato nello strato sostituisce la stima da Ic (B&I 2014); vuoto → stimato da Ic.'
+      : 'FC = passante al setaccio da 0,075 mm [%], per strato: usato quando la prova non riporta FC al punto; richiesto dai metodi SPT.';
     mostraErroriStrati();
   }
   function mostraErroriStrati() {
@@ -916,7 +916,7 @@
         '</div>';
       dett += '<div class="escl-blocco"><div class="escl-tit">' + icona(iconaCriterio(c4)) + ' <b>Criterio 4</b> · granulometria esterna ai fusi della Fig. 7.11.1</div>' +
         '<div class="field"><label for="exCampione">Campione</label><input type="text" id="exCampione" value="' + esc(sel.dati.campione) + '" placeholder="es. S1-C3, 6,0–6,5 m"></div>' +
-        '<div class="field"><label for="exCurva">Curva granulometrica: una riga per setaccio, «diametro [mm]; passante [%]»</label><textarea id="exCurva" rows="7" spellcheck="false">' + esc(EX.testoCurva(sel.dati.curva)) + '</textarea><div class="hint" id="exCurvaErr"></div></div>';
+        '<div class="field"><label for="exCurva">Curva granulometrica: una riga per setaccio, «diametro [mm]; passante [%]»</label><textarea id="exCurva" rows="10" spellcheck="false">' + esc(EX.testoCurva(sel.dati.curva)) + '</textarea><div class="hint" id="exCurvaErr"></div></div>';
       if (m4 && m4.stato !== 'input_non_valido') {
         dett += '<p class="hint">U<sub>c</sub> = ' + (isNum(m4.Uc) ? fmt(m4.Uc, 1) : 'non determinabile') + ' · D<sub>10</sub> = ' + (isNum(m4.D10) ? fmt(m4.D10, 4) + ' mm' : '–') + ' · D<sub>60</sub> = ' + (isNum(m4.D60) ? fmt(m4.D60, 4) + ' mm' : '–') +
           ' · copertura del passante ' + fmt(m4.copertura.pCurvaMin, 0) + '–' + fmt(m4.copertura.pCurvaMax, 0) + ' % (richiesto 10–90 %, senza estrapolazione)</p>' +

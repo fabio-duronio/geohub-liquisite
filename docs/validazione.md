@@ -78,6 +78,7 @@ Le verifiche numeriche non hanno dipendenze; il controllo nel browser richiede P
 | `verifica_copertura.mjs` | criterio 3: tolleranza di copertura fissa (SPT 1,5 m, CPT 0,25 m, limiti esatti, tratti scoperti), «sabbia pulita» contraddetta da FC > 5 % o Ic > 1,775, CSV (audit B4.1–B4.2, decisione D5; letto dell'ultimo strato, §4 punto 3) | 49 |
 | `verifica_esclusione_strati.mjs` | esclusione motivata di uno strato da IL e cedimento: IL senza lo strato, F = 0 e εv = 0 dichiarati, criterio e motivazione obbligatori, criterio 4 solo se confermato, firma degli input, file precedenti, SPT per strato intero, avviso FS < 1, CSV (audit B2.3, decisione D3) | 40 |
 | `verifica_firma.mjs` | firma del rapporto distinta dalla firma di calcolo: FS di riferimento, Verifica preliminare e versioni dei moduli (audit 13.a), CSV | 13 |
+| `verifica_grafici.mjs` | etichette dei grafici su contesto simulato: «falda» a destra, riferimenti FS ravvicinati su lati opposti, nomi delle classi granulometriche su fondo bianco (audit §4 punto 10) | 8 |
 | `verifica_versioni.mjs` | parametro `?v=` dei file in `index.html` uguale alla versione dell'app (Chart.js: la propria), per evitare copie vecchie in cache | 23 |
 | `verifica_sicurezza.mjs` | apertura di progetti alterati (tipi, valori enumerati, proprietà ereditate, ID, risultati), 1500 alterazioni casuali, FS di riferimento senza ripiego | 73 |
 | `verifica_zs9.mjs` | modulo ZS9 copiato da SismaSite, con gli stessi casi: località di controllo, casi limite, casi A–G della specifica del 15/11/2026 | 57 |

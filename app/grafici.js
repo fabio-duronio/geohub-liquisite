@@ -70,17 +70,24 @@
         orizzontale(o.falda, '#2f7dd6', [6, 4], 1.5);
         const py = y.getPixelForValue(o.falda);
         if (py >= a.top && py <= a.bottom) {
-          ctx.setLineDash([]); ctx.fillStyle = '#2f7dd6'; ctx.font = '11px ' + FONT;
-          ctx.fillText('falda', a.right - 30, py - 4);
+          // etichetta allineata al bordo destro (mai tagliata); sotto la linea se la linea è vicina al bordo superiore
+          ctx.setLineDash([]); ctx.fillStyle = '#2f7dd6'; ctx.font = '11px ' + FONT; ctx.textAlign = 'right';
+          ctx.fillText('falda', a.right - 4, py - 4 < a.top + 11 ? py + 12 : py - 4); ctx.textAlign = 'left';
         }
       }
-      for (const r of o.riferimentiX || []) {
+      let pxPrec = -Infinity;
+      for (const r of (o.riferimentiX || []).slice().sort((u, v) => u.x - v.x)) {
         const px = x.getPixelForValue(r.x);
         if (px < a.left || px > a.right) continue;
+        const vicino = px - pxPrec < 16; // etichette di riferimenti ravvicinati: la seconda sul lato sinistro della linea, non sovrapposta
+        pxPrec = px;
         ctx.strokeStyle = '#5f6b7a'; ctx.lineWidth = 1; ctx.setLineDash([4, 3]);
         ctx.beginPath(); ctx.moveTo(px, a.top); ctx.lineTo(px, a.bottom); ctx.stroke();
         ctx.setLineDash([]); ctx.fillStyle = '#4b5563'; ctx.font = '10.5px ' + FONT;
-        ctx.save(); ctx.translate(px + 3, a.top + 4); ctx.rotate(Math.PI / 2); ctx.fillText(r.etichetta, 0, 0); ctx.restore();
+        ctx.save();
+        if (vicino) { ctx.translate(px - 3, a.top + 4 + ctx.measureText(r.etichetta).width); ctx.rotate(-Math.PI / 2); }
+        else { ctx.translate(px + 3, a.top + 4); ctx.rotate(Math.PI / 2); }
+        ctx.fillText(r.etichetta, 0, 0); ctx.restore();
       }
       if (typeof o.selezionato === 'number') orizzontale(o.selezionato, '#111827', [2, 2], 1);
       ctx.restore();
@@ -275,13 +282,26 @@
     id: 'bandeGranulometriche',
     beforeDatasetsDraw(chart) {
       const { ctx, chartArea: a, scales: { x } } = chart;
-      ctx.save(); ctx.font = '600 10.5px ' + FONT; ctx.textAlign = 'center';
+      ctx.save();
       CLASSI_GRANULOMETRICHE.forEach((c, i) => {
         const l = Math.max(a.left, x.getPixelForValue(c.da)), r = Math.min(a.right, x.getPixelForValue(c.a));
         if (r <= l) return;
         ctx.fillStyle = i % 2 ? 'rgba(30,78,140,.035)' : 'rgba(255,255,255,0)'; ctx.fillRect(l, a.top, r - l, a.bottom - a.top);
         ctx.strokeStyle = '#c9d3de'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(r, a.top); ctx.lineTo(r, a.bottom); ctx.stroke();
-        ctx.fillStyle = '#5f6b7a'; ctx.fillText(c.nome.toUpperCase(), (l + r) / 2, a.top + 13);
+      });
+      ctx.restore();
+    },
+    // nomi delle classi dopo i fusi, su fondo bianco: non restano coperti dai bordi dei fusi (audit §4 punto 10)
+    afterDatasetsDraw(chart) {
+      const { ctx, chartArea: a, scales: { x } } = chart;
+      ctx.save(); ctx.font = '600 10.5px ' + FONT; ctx.textAlign = 'center';
+      CLASSI_GRANULOMETRICHE.forEach((c) => {
+        const l = Math.max(a.left, x.getPixelForValue(c.da)), r = Math.min(a.right, x.getPixelForValue(c.a));
+        if (r <= l) return;
+        const t = c.nome.toUpperCase(), w = ctx.measureText(t).width;
+        if (w + 6 > r - l) return; // banda troppo stretta: il nome non entra
+        ctx.fillStyle = 'rgba(255,255,255,.88)'; ctx.fillRect((l + r) / 2 - w / 2 - 3, a.top + 3, w + 6, 14);
+        ctx.fillStyle = '#4b5563'; ctx.fillText(t, (l + r) / 2, a.top + 13);
       });
       ctx.restore();
     }
@@ -332,5 +352,5 @@
     return url;
   }
 
-  root.LiquiGrafici = { profilo, selezione, png, immagineStampa, cartaSBT, fusoGranulometrico, immagineDa };
+  root.LiquiGrafici = { profilo, selezione, png, immagineStampa, cartaSBT, fusoGranulometrico, immagineDa, plugin: { linee, bandeGranulometriche } };
 })(typeof self !== 'undefined' ? self : this);
