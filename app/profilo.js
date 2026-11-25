@@ -174,6 +174,12 @@
     }
     for (const [i, s] of (scenario.strati || []).entries()) {
       if (s.FC !== null && s.FC !== undefined && !(isNum(s.FC) && s.FC >= 0 && s.FC <= 100)) err('strati[' + i + '].FC', 'FUORI_DOMINIO', 'FC tra 0 e 100 %');
+      // Congruenza dei pesi di volume (audit B5). Con γsat > γw in ogni strato σ'v cresce sotto la falda
+      // e resta positiva a ogni profondità, non solo a quella massima: non serve un controllo per interfaccia.
+      if (!(isNum(s.gamma) && isNum(s.gammaSat))) continue;
+      const tratto = 'strato ' + numeroIt(s.da) + '–' + numeroIt(s.a) + ' m';
+      if (s.gammaSat < s.gamma) err('strati[' + i + '].gammaSat', 'GSAT_MINORE_GAMMA', tratto + ': γsat (' + numeroIt(s.gammaSat) + ') minore di γ (' + numeroIt(s.gamma) + '): il peso di volume saturo non può essere minore di quello naturale');
+      if (s.gammaSat <= L.GAMMA_W) err('strati[' + i + '].gammaSat', 'GSAT_NON_SUPERA_GAMMA_W', tratto + ': γsat = ' + numeroIt(s.gammaSat) + ' kN/m³ non supera il peso di volume dell\'acqua (' + numeroIt(L.GAMMA_W) + ' kN/m³): tensione efficace non crescente sotto falda; controllare l\'unità (kN/m³)');
     }
     if ((scenario.metodo === 'cetin2018Spt' || scenario.metodo === 'kayen2013Vs') && !isNum(scenario.opzioni && scenario.opzioni.Vs12)) {
       err('opzioni.Vs12', 'MANCANTE', 'V*s,12 (Vs media nei primi 12 m) richiesta dal metodo');
@@ -182,6 +188,31 @@
     if (fsRif !== undefined && fsRif !== null && !(isNum(fsRif) && fsRif >= 1 && fsRif <= 3)) err('opzioni.FSrif', 'FUORI_DOMINIO', 'FS di riferimento non valido: inserire un valore tra 1 e 3, oppure lasciare il campo vuoto per adottare 1,25');
     if (prova.dati.length === 0) err('prova.dati', 'MANCANTE', 'la prova non contiene dati');
     return errori;
+  }
+
+  /**
+   * Soglie di plausibilità dei dati dello scenario (audit B5): scelte operative di LiquiSite per
+   * riconoscere errori di unità, non limiti normativi né delle fonti. Producono solo avvisi.
+   *  - γ e γsat fuori da 11–27 kN/m³: tipico di g/cm³ o t/m³ (circa 1,5–2,2) o di kg/m³ (circa 1500–2200);
+   *  - amax oltre 1 g: tipico di m/s² (circa 9,81 volte il valore in g) o di cm/s² (gal).
+   */
+  const PLAUSIBILITA_SCENARIO = Object.freeze({ gamma: Object.freeze([11, 27]), amaxMax: 1.0 });
+
+  const numeroIt = (v) => String(v).replace('.', ',');
+
+  /** Avvisi non bloccanti sui dati dello scenario: [{ campo, codice, messaggio }]. */
+  function avvisiScenario(scenario) {
+    const avvisi = [];
+    const [gMin, gMax] = PLAUSIBILITA_SCENARIO.gamma;
+    for (const [i, s] of ((scenario && scenario.strati) || []).entries()) {
+      for (const [k, nome] of [['gamma', 'γ'], ['gammaSat', 'γsat']]) {
+        if (isNum(s[k]) && (s[k] < gMin || s[k] > gMax)) avvisi.push({ campo: 'strati[' + i + '].' + k, codice: 'PESO_DI_VOLUME_INSOLITO',
+          messaggio: 'Strato ' + numeroIt(s.da) + '–' + numeroIt(s.a) + ' m: ' + nome + ' = ' + numeroIt(s[k]) + ' kN/m³, fuori da ' + gMin + '–' + gMax + ' kN/m³. Controllare l\'unità: i pesi di volume vanno in kN/m³ (1,85 g/cm³ ≈ 18,1 kN/m³).' });
+      }
+    }
+    if (scenario && isNum(scenario.amax) && scenario.amax > PLAUSIBILITA_SCENARIO.amaxMax) avvisi.push({ campo: 'amax', codice: 'AMAX_INSOLITA',
+      messaggio: 'amax = ' + numeroIt(scenario.amax) + ' g, oltre ' + numeroIt(PLAUSIBILITA_SCENARIO.amaxMax) + ' g. Controllare l\'unità: amax va in g (2,45 m/s² ≈ 0,25 g).' });
+    return avvisi;
   }
 
   // ---------------------------------------------------------------------------
@@ -197,6 +228,7 @@
       scenarioId: scenario.id, provaId: prova ? prova.id : null, metodo: scenario.metodo,
       versioneMotore: L.VERSIONE_MOTORE, firma: prova ? P.firmaInput(prova, scenario, L.VERSIONE_MOTORE) : null,
       calcolatoIl: opz.adesso || new Date().toISOString(),
+      avvisiScenario: avvisiScenario(scenario),
       configurazione: prova ? { prova: { id: prova.id, nome: prova.nome, tipo: prova.tipo, unita: P.copia(prova.unita), parametri: P.copia(prova.parametri) },
         scenario: P.copia(scenario) } : null
     };
@@ -500,5 +532,5 @@
     return r.valori ? r.valori[chiave] : null;
   }
 
-  return { G, METODI, ETICHETTE_STATI, MOTIVI_BREVI, ZONE_SBT, zonaSBT, statoFsRiferimento, fsRiferimento, criterioFS, campiRichiesti, controllaScenario, calcolaScenario, riepiloga, confrontaDominio, serie, stratoA, valoreRisultato, puntiPerIL };
+  return { G, METODI, ETICHETTE_STATI, MOTIVI_BREVI, ZONE_SBT, zonaSBT, statoFsRiferimento, fsRiferimento, criterioFS, campiRichiesti, controllaScenario, PLAUSIBILITA_SCENARIO, avvisiScenario, calcolaScenario, riepiloga, confrontaDominio, serie, stratoA, valoreRisultato, puntiPerIL };
 });

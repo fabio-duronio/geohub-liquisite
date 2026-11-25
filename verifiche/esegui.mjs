@@ -1,5 +1,5 @@
 // GeoHub-LiquiSite — esegue tutte le verifiche numeriche e riassume l'esito.
-// Uso: node verifiche/esegui.mjs        (aggiungere --browser per il controllo nel browser)
+// Uso: node verifiche/esegui.mjs        (aggiungere --browser per i controlli nel browser, --solo-browser per eseguire solo quelli)
 // Esce con codice diverso da zero se una verifica non è superata.
 import { spawnSync } from 'child_process';
 import { fileURLToPath } from 'url';
@@ -8,12 +8,13 @@ import fs from 'fs';
 
 const CARTELLA = path.dirname(fileURLToPath(import.meta.url));
 const RADICE = path.resolve(CARTELLA, '..');
-const conBrowser = process.argv.includes('--browser');
+const soloBrowser = process.argv.includes('--solo-browser');
+const conBrowser = soloBrowser || process.argv.includes('--browser');
 
-const comandi = fs.readdirSync(CARTELLA).filter(f => /^verifica_.*\.mjs$/.test(f)).sort().map(f => ['node', [path.join(CARTELLA, f)], f]);
+const comandi = soloBrowser ? [] : fs.readdirSync(CARTELLA).filter(f => /^verifica_.*\.mjs$/.test(f)).sort().map(f => ['node', [path.join(CARTELLA, f)], f]);
 const python = ['python3', 'python'].find(p => spawnSync(p, ['--version']).status === 0);
-for (const f of fs.readdirSync(CARTELLA).filter(f => /^verifica_.*\.py$/.test(f)).sort()) comandi.push([python, [path.join(CARTELLA, f)], f]);
-if (conBrowser) comandi.push(['node', [path.join(CARTELLA, 'browser', 'verifica_browser.mjs')], 'browser/verifica_browser.mjs']);
+if (!soloBrowser) for (const f of fs.readdirSync(CARTELLA).filter(f => /^verifica_.*\.py$/.test(f)).sort()) comandi.push([python, [path.join(CARTELLA, f)], f]);
+if (conBrowser) for (const f of fs.readdirSync(path.join(CARTELLA, 'browser')).filter(f => /^verifica_.*\.mjs$/.test(f)).sort()) comandi.push(['node', [path.join(CARTELLA, 'browser', f)], 'browser/' + f]);
 
 let falliti = 0, controlli = 0;
 for (const [cmd, args, nome] of comandi) {

@@ -87,7 +87,8 @@ console.log('3. Robustezza dell\'apertura');
   };
   const tutte = foglie(base());
   // Il payload può restare solo nei campi di testo libero (mostrati sempre con escape).
-  const TESTI = new Set(['nome', 'titolo', 'sito', 'autore', 'note', 'descrizione', 'provenienza', 'campione', 'motivazione4']);
+  // 'motivazione' (della Mw) è testo libero come 'motivazione4': mostrata sempre con escape (app/ui.js).
+  const TESTI = new Set(['nome', 'titolo', 'sito', 'autore', 'note', 'descrizione', 'provenienza', 'campione', 'motivazione4', 'motivazione']);
   const fuoriDaiTesti = (o, chiave) => {
     if (typeof o === 'string') return o.includes('onerror') && !TESTI.has(chiave);
     if (o && typeof o === 'object') return Object.keys(o).some(k => fuoriDaiTesti(o[k], Array.isArray(o) ? chiave : k));

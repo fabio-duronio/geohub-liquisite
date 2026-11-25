@@ -182,6 +182,9 @@ table.data-table tbody tr.hl:hover td{background:var(--accent-soft);}
 .alert{border-radius:8px; padding:11px 14px; font-size:13px; border:1px solid transparent;}
 .alert + .alert{margin-top:8px;}
 .alert-info{background:var(--accent-soft); border-color:#c9d8ec; color:var(--accent-dark);}
+.bozza-banner{margin:0 0 14px;}
+.bozza-banner .alert{display:flex; flex-wrap:wrap; gap:10px 16px; align-items:center; justify-content:space-between;}
+.field-warn{margin-top:4px; font-size:12px; color:var(--warn);}
 .alert-warn{background:var(--warn-bg); border-color:#eecba3; color:var(--warn);}
 .alert-danger{background:var(--danger-bg); border-color:#eabec3; color:var(--danger);}
 .alert-title{font-weight:600; margin-bottom:2px; display:block;}

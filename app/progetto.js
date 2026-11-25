@@ -16,7 +16,7 @@
  *          unita: { z, qc?, fs?, u2? }, colonne: [...], dati: [[numero|null, …]],
  *          parametri: { CE, CB, CS, sporgenza, senzaRivestimento, ar } (secondo il tipo) }
  * Scenario: { id, nome, colore, provaId, metodo, Mw, amax, zFalda,
- *             strati: [{ da, a, gamma, gammaSat, FC|null, descrizione }],
+ *             strati: [{ id, da, a, gamma, gammaSat, FC|null, descrizione }],   // id stabile, non entra nel calcolo
  *             opzioni: { Vs12, IcSoglia, CFC, FSrif }, note,
  *             magnitudo: { origine: 'zs9'|'manuale', motivazione } }   // vedi app/magnitudo.js
  */
@@ -129,6 +129,35 @@
     };
   }
 
+  /**
+   * Identificativo stabile degli strati e collegamento dei dati della verifica preliminare (audit B4.3).
+   * Le voci di scenario.esclusione.strati si collegano allo strato con stratoId: cambiare le quote
+   * di uno strato non separa più curva granulometrica, campione e giudizio del geologo.
+   * - strati senza id (file precedenti, esempio): id nuovo, messo per primo nell'oggetto;
+   * - voci senza stratoId (file precedenti): collegate una sola volta allo strato con le stesse quote
+   *   da–a, come avveniva prima; quelle senza strato corrispondente restano come sono.
+   * Modifica e restituisce lo scenario.
+   */
+  function allineaStrati(scenario) {
+    if (!scenario || !Array.isArray(scenario.strati)) return scenario;
+    const usati = new Set();
+    scenario.strati = scenario.strati.map(st => {
+      if (typeof st.id === 'string' && RE_ID.test(st.id) && !usati.has(st.id)) { usati.add(st.id); return st; }
+      const { id, ...resto } = st;
+      const nuovo = { id: nuovoId('strato'), ...resto };
+      usati.add(nuovo.id);
+      return nuovo;
+    });
+    const voci = scenario.esclusione && Array.isArray(scenario.esclusione.strati) ? scenario.esclusione.strati : [];
+    const collegati = new Set(voci.filter(v => v && v.stratoId).map(v => v.stratoId));
+    for (const v of voci) {
+      if (!v || v.stratoId) continue;
+      const st = scenario.strati.find(x => !collegati.has(x.id) && Math.abs(x.da - v.da) < 1e-6 && Math.abs(x.a - v.a) < 1e-6);
+      if (st) { v.stratoId = st.id; collegati.add(st.id); }
+    }
+    return scenario;
+  }
+
   /** Copia profonda di dati serializzabili. */
   const copia = (x) => JSON.parse(JSON.stringify(x));
 
@@ -164,10 +193,15 @@
     return resto;
   }
 
+  /** Strati senza l'identificativo, che non entra nel calcolo: la firma resta quella della versione 1.0.0. */
+  function stratiCalcolo(strati) {
+    return Array.isArray(strati) ? strati.map(st => { if (!st || typeof st !== 'object') return st; const { id, ...resto } = st; return resto; }) : strati;
+  }
+
   /** Firma degli input da cui dipende un risultato: cambia se cambia qualunque input del calcolo. */
   function firmaInput(prova, scenario, versioneMotore) {
     const s = JSON.stringify({ v: versioneMotore, p: { tipo: prova.tipo, unita: prova.unita, colonne: prova.colonne, dati: prova.dati, parametri: prova.parametri },
-      s: { metodo: scenario.metodo, Mw: scenario.Mw, amax: scenario.amax, zFalda: scenario.zFalda, strati: scenario.strati, opzioni: opzioniCalcolo(scenario.opzioni), provaId: scenario.provaId } });
+      s: { metodo: scenario.metodo, Mw: scenario.Mw, amax: scenario.amax, zFalda: scenario.zFalda, strati: stratiCalcolo(scenario.strati), opzioni: opzioniCalcolo(scenario.opzioni), provaId: scenario.provaId } });
     // FNV-1a a 32 bit: basta per riconoscere un cambiamento, non è una firma di sicurezza
     let h = 0x811c9dc5;
     for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
@@ -275,6 +309,14 @@
         if (!Array.isArray(r) || r.length !== colonne.length) { err(c + '.dati[' + k + ']', 'numero di valori diverso dalle colonne'); return; }
         dati.push(r.map((v, j) => { if (v !== null && !isNum(v)) { err(c + '.dati[' + k + '][' + j + ']', 'deve essere un numero o null'); return null; } return v; }));
       });
+      // Profondità obbligatoria e crescente, come nell'importazione (app/importa.js): nessun riordino in silenzio.
+      const iz = colonne.indexOf('z');
+      dati.forEach((r, k) => {
+        if (r.length !== colonne.length) return;
+        if (r[iz] === null) err(c + '.dati[' + k + '][' + iz + ']', 'profondità mancante');
+        else if (k > 0 && dati[k - 1].length === colonne.length && dati[k - 1][iz] !== null && !(r[iz] > dati[k - 1][iz]))
+          err(c + '.dati[' + k + '][' + iz + ']', 'profondità non crescente (' + r[iz] + ' dopo ' + dati[k - 1][iz] + ')');
+      });
       if (p.parametri !== undefined && !isOggetto(p.parametri)) { err(c + '.parametri', 'deve essere un oggetto'); return; }
       const parametri = parametriPredefiniti(tipo);
       for (const [k, t] of Object.entries(PARAMETRI_TIPO[tipo])) {
@@ -307,7 +349,9 @@
       else s.strati.forEach((st, k) => {
         const cs = c + '.strati[' + k + ']';
         if (!isOggetto(st)) { err(cs, 'non è un oggetto'); return; }
-        strati.push({ da: numero(st.da, cs + '.da'), a: numero(st.a, cs + '.a'), gamma: numero(st.gamma, cs + '.gamma'), gammaSat: numero(st.gammaSat, cs + '.gammaSat'),
+        const sid = st.id === undefined || st.id === null ? null : id(st.id, cs + '.id');
+        if (sid !== null && strati.some(x => x.id === sid)) err(cs + '.id', 'identificativo dello strato ripetuto: ' + sid);
+        strati.push({ ...(sid !== null ? { id: sid } : {}), da: numero(st.da, cs + '.da'), a: numero(st.a, cs + '.a'), gamma: numero(st.gamma, cs + '.gamma'), gammaSat: numero(st.gammaSat, cs + '.gammaSat'),
           FC: numONull(st.FC, cs + '.FC'), descrizione: testo(st.descrizione, cs + '.descrizione', false) });
       });
       if (s.opzioni !== undefined && !isOggetto(s.opzioni)) err(c + '.opzioni', 'deve essere un oggetto');
@@ -335,7 +379,9 @@
               if (!DECISIONI_4.includes(x.decisione4)) err(cx + '.decisione4', 'valore non ammesso: ' + descrivi(x.decisione4));
               else decisione4 = x.decisione4;
             }
-            esclusione.strati.push({ da: numero(x.da, cx + '.da'), a: numero(x.a, cx + '.a'), sabbiaPulita: boolONull(x.sabbiaPulita, cx + '.sabbiaPulita'),
+            const stratoId = x.stratoId === undefined || x.stratoId === null ? null : id(x.stratoId, cx + '.stratoId');
+            if (stratoId !== null && esclusione.strati.some(v => v.stratoId === stratoId)) err(cx + '.stratoId', 'più voci per lo stesso strato: ' + stratoId);
+            esclusione.strati.push({ ...(stratoId !== null ? { stratoId } : {}), da: numero(x.da, cx + '.da'), a: numero(x.a, cx + '.a'), sabbiaPulita: boolONull(x.sabbiaPulita, cx + '.sabbiaPulita'),
               curva, campione: testo(x.campione, cx + '.campione', false), decisione4, motivazione4: testo(x.motivazione4, cx + '.motivazione4', false) });
           });
         }
@@ -353,9 +399,9 @@
           magnitudo.motivazione = testo(m.motivazione, cm + '.motivazione', false);
         }
       }
-      out.scenari.push({ id: sid, nome, colore, provaId: s.provaId, metodo: s.metodo,
+      out.scenari.push(allineaStrati({ id: sid, nome, colore, provaId: s.provaId, metodo: s.metodo,
         Mw: numONull(s.Mw, c + '.Mw'), amax: numONull(s.amax, c + '.amax'), zFalda: numONull(s.zFalda, c + '.zFalda'),
-        strati, opzioni, note: testo(s.note, c + '.note', false), esclusione, magnitudo });
+        strati, opzioni, note: testo(s.note, c + '.note', false), esclusione, magnitudo }));
     });
 
     if (errori.length) return { ok: false, errori, avvisi };
@@ -391,7 +437,7 @@
 
   return {
     VERSIONE_APP, FORMATO, VERSIONE_FORMATO, FS_RIFERIMENTO, TIPI_PROVA, METODI_PER_TIPO, NOMI_METODI, UNITA, ETICHETTE_COLONNE, COLORI_SCENARI,
-    nuovoId, nuovaProva, nuovoScenario, esclusioneVuota, magnitudoVuota, ORIGINI_MW, nuovoProgetto, duplicaScenario, copia,
+    nuovoId, nuovaProva, nuovoScenario, allineaStrati, esclusioneVuota, magnitudoVuota, ORIGINI_MW, nuovoProgetto, duplicaScenario, copia,
     datiInterni, firmaInput, validaProgetto, apriProgetto, salvaProgetto, parametriPredefiniti, unitaPredefinite
   };
 });

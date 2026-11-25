@@ -5,7 +5,7 @@
   "license": "AGPL-3.0-only",
   "scripts": {
     "test": "node verifiche/esegui.mjs",
-    "test:browser": "node verifiche/browser/verifica_browser.mjs",
+    "test:browser": "node verifiche/esegui.mjs --solo-browser",
     "test:tutto": "node verifiche/esegui.mjs --browser"
   },
   "devDependencies": {

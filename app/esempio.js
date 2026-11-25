@@ -184,6 +184,8 @@
     s3.esclusione = esclusioneEsempio();
     // motivazione della Mw obbligatoria (decisione del 21/11/2026): valore illustrativo dell'esempio
     for (const s of [s1, s2, s3]) s.magnitudo = { origine: 'manuale', motivazione: 'Valore illustrativo dell\'esempio sintetico: sito inventato, nessuna fonte.' };
+    // id stabili degli strati e collegamento dei dati della verifica preliminare (per quote da–a)
+    for (const s of [s1, s2, s3]) P.allineaStrati(s);
     pr.scenari = [s1, s2, s3];
     pr.provaAttiva = a.id; pr.scenarioAttivo = s1.id;
     return pr;

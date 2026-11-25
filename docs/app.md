@@ -22,7 +22,7 @@ Percorso: **prova → scenario → calcolo → verifica preliminare, profili e t
    - a_max in superficie [g], fornita dal geologo con la sua fonte;
    - le opzioni del metodo;
    - il FS di riferimento: con il campo vuoto vale 1,25 (EN 1998-5, §4.1.4); si può scegliere un valore tra 1 e 3. Un valore fuori intervallo o non numerico non viene sostituito: resta segnalato come errore, e stampa ed esportazione sono bloccate finché non viene corretto.
-5. **Stratigrafia**: falda di verifica e strati, con γ, γ_sat, contenuto di fini FC (facoltativo) e descrizione.
+5. **Stratigrafia**: falda di verifica e strati, con γ, γ_sat, contenuto di fini FC (facoltativo) e descrizione. Controlli: γ_sat minore di γ, oppure non maggiore del peso di volume dell'acqua (9,81 kN/m³), è un errore che impedisce il calcolo; con γ_sat > 9,81 kN/m³ in ogni strato la tensione efficace è positiva a ogni profondità. Pesi di volume fuori da 11–27 kN/m³ e a_max oltre 1 g producono un avviso di unità (g/cm³, kg/m³, m/s², gal), non bloccante, riportato anche in «Avvisi e assunzioni», in stampa e nel CSV. Le soglie sono scelte operative dell'app (`PLAUSIBILITA_SCENARIO` in `app/profilo.js`), non limiti normativi.
 6. **Calcola scenario**. Se un input di calcolo cambia, i risultati diventano «non aggiornati» fino al ricalcolo: lo segnalano un'etichetta, un velo sui grafici e un avviso nelle tabelle. Esportazione CSV e stampa richiedono risultati aggiornati.
 
 I campi numerici accettano la virgola o il punto come separatore decimale, non i separatori delle migliaia.
@@ -107,6 +107,8 @@ Le profondità non indagate non generano righe: il riepilogo distingue profondit
   5. carta di comportamento (CPT);
   6. avvisi, assunzioni e limiti.
 
+  Le tavole dei profili sono sempre le stesse per metodo (Ic o resistenza misurata, resistenza normalizzata, CSR e CRR, FS, PL e indice IL se previsti; con CPT anche deformazione volumetrica e cedimento cumulato), qualunque pannello sia aperto a video. Il rapporto si prepara anche stampando dal menu del browser o con Ctrl+P / Cmd+P; se i risultati mancano, non sono aggiornati o ci sono dati da correggere (FS di riferimento, motivazione della M_w) si stampa solo un foglio «STAMPA NON VALIDA» con il motivo. Dopo ogni stampa e a ogni modifica degli input il rapporto preparato si cancella: nessuna stampa può contenere risultati di uno stato precedente.
+
   Con Chrome ed Edge ogni pagina ha un'intestazione (titolo, progetto e scenario) e un piè di pagina (versione dell'app e del motore, firma degli input, numero di pagina). Gli stessi dati, con data e ora del calcolo, chiudono il documento, anche nei browser che non supportano intestazioni e piè di pagina CSS. Non compaiono frasi del tipo «sito sicuro».
 - **CSV** (separatore `;`, decimale `,`, UTF-8 con BOM).
   - Intestazione: progetto, prova, scenario, metodo, parametri, origine della M_w, FS di riferimento, esito della verifica preliminare, IL e cedimento.
@@ -115,9 +117,16 @@ Le profondità non indagate non generano righe: il riepilogo distingue profondit
 - **PNG** di ogni pannello (titolo, assi, unità, legenda, sfondo bianco).
 - **JSON**: salvataggio e riapertura del progetto.
   - Il file contiene solo gli input: dopo l'apertura i risultati si ricalcolano con «Calcola».
-  - Un file con dati non validi non viene aperto: l'app elenca gli errori e lascia invariato il progetto corrente.
+  - Un file con dati non validi non viene aperto: l'app elenca gli errori e lascia invariato il progetto corrente. Come nell'importazione, le profondità di ogni prova devono essere presenti e crescenti.
   - Prima di sostituire un progetto con modifiche non salvate (Nuovo, Demo sintetica, Apri) l'app chiede conferma.
+  - Ogni strato ha un identificativo stabile: i dati della verifica preliminare (curva granulometrica, campione, giudizio del geologo) seguono lo strato anche se se ne cambiano le quote. I file salvati prima della versione con gli identificativi si aprono: i dati della verifica preliminare si collegano agli strati per quote, come prima, una sola volta all'apertura. L'identificativo non entra nel calcolo né nella firma degli input.
   - Le bozze di importazione restano in memoria solo durante la sessione.
+- **Bozza automatica del progetto** (memoria locale del browser, `localStorage`).
+  - Con modifiche non salvate in un file, gli input del progetto (mai i risultati) si copiano nella memoria locale del browser mezzo secondo dopo l'ultima modifica e alla chiusura della pagina. Nulla viene inviato in rete.
+  - Chiudendo o ricaricando la pagina con modifiche non salvate il browser chiede conferma.
+  - Alla riapertura, se c'è una bozza, un riquadro propone «Ripristina la bozza» o «Elimina la bozza» (con conferma). Finché non si sceglie, la bozza non viene sovrascritta. La bozza ripristinata passa dalla stessa validazione di un file aperto e i risultati si ricalcolano con «Calcola».
+  - La bozza si cancella quando il progetto coincide con l'ultimo file aperto o salvato («Salva progetto»). Non sostituisce il file: resta solo in quel browser, su quel dispositivo, e si perde se si cancellano i dati di navigazione.
+  - Una sola bozza per browser: con più schede aperte vale l'ultima scheda modificata.
 
 ## Limiti
 
@@ -135,4 +144,4 @@ Le profondità non indagate non generano righe: il riepilogo distingue profondit
   - oltre circa 10 m di profondità l'incertezza di r_d diventa grande e la banca dati di Boulanger & Idriss (2014) arriva a circa 10–12 m (pag. 9): i FS minimi in quel tratto vanno letti con questa cautela, eventualmente con un'analisi di risposta sismica locale;
   - la soglia di Ic (2,6 predefinita; 2,4–2,8 per l'analisi di sensibilità, B&I 2014, pag. 99) decide quali punti si verificano: l'IL può cambiare in modo sensibile con la soglia. Nella prova d'uso del 22/11/2026 (vedi [Validazione](validazione.md)) l'IL è variato di circa il 40–60 % tra 2,4 e 2,8;
   - con il metodo CPT il contenuto di fini è stimato da Ic se non è indicato per lo strato.
-- **Dati e rete.** I dati delle prove e i calcoli restano nel browser: nessun dato del progetto viene inviato a server. La libreria dei grafici (Chart.js) e i caratteri (IBM Plex) sono inclusi nell'app, che non contatta servizi esterni. Una politica di sicurezza dei contenuti (CSP) ammette solo risorse della pagina stessa.
+- **Dati e rete.** I dati delle prove e i calcoli restano nel browser: nessun dato del progetto viene inviato a server. La bozza automatica resta nella memoria locale del browser (vedi Stampa ed esportazioni). La libreria dei grafici (Chart.js) e i caratteri (IBM Plex) sono inclusi nell'app, che non contatta servizi esterni. Una politica di sicurezza dei contenuti (CSP) ammette solo risorse della pagina stessa.

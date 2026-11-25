@@ -24,6 +24,7 @@
     confronto: [],   // id degli scenari nel confronto
     grafici: [],
     esclSel: null,   // strato selezionato nella verifica preliminare
+    stampaPreparata: false, // rapporto appena preparato dal pulsante «Stampa / PDF»
     salvato: null    // input del progetto all'ultima apertura o salvataggio (per le modifiche non salvate)
   };
 
@@ -215,7 +216,7 @@
       '<label><input type="radio" name="scMwOrig" value="manuale"' + (dm.origine === 'manuale' ? ' checked' : '') + '> Inserimento manuale</label></div>' +
       '<div class="mw-proposta hint" id="scMwProp"></div>' +
       '<div class="field-row"><div class="field"><label for="scMw">M<sub>w</sub> adottata</label><input type="text" inputmode="decimal" step="0.01" id="scMw" value="' + esc(sc.Mw ?? '') + '"></div>' +
-      '<div class="field"><label for="scAmax">a<sub>max</sub> in superficie [g]</label><input type="text" inputmode="decimal" step="0.001" min="0" id="scAmax" value="' + esc(sc.amax ?? '') + '"></div></div>' +
+      '<div class="field"><label for="scAmax">a<sub>max</sub> in superficie [g]</label><input type="text" inputmode="decimal" step="0.001" min="0" id="scAmax" value="' + esc(sc.amax ?? '') + '" aria-describedby="scAmaxAvv"><div class="field-warn" id="scAmaxAvv" role="status" hidden></div></div></div>' +
       '<div class="field"><label for="scMwMot">Motivazione della M<sub>w</sub> (obbligatoria)</label><textarea id="scMwMot" placeholder="es. disaggregazione INGV, nodo …, probabilità di superamento …">' + esc(dm.motivazione) + '</textarea></div>' +
       '<div id="scMwMsg"></div></div>';
     h += '<div class="hint" style="margin:-4px 0 10px;">a<sub>max</sub> è l\'accelerazione massima attesa in superficie, in campo libero, nel sito: non è la a<sub>g</sub> della mappa di pericolosità, riferita a suolo rigido e pianeggiante. ' +
@@ -238,7 +239,8 @@
     $('scNote').addEventListener('input', (e) => { sc.note = e.target.value; });
     $('scMetodo').addEventListener('change', (e) => { sc.metodo = e.target.value; S.pannelli = null; renderScenario(); inputCambiato(); renderStrati(); });
     const num = (id, set) => { const el = $(id); if (el) el.addEventListener('input', () => { set(leggiNumero(el)); inputCambiato(); }); };
-    num('scMw', v => { sc.Mw = v; aggiornaMsgMw(); }); num('scAmax', v => { sc.amax = v; });
+    num('scMw', v => { sc.Mw = v; aggiornaMsgMw(); }); num('scAmax', v => { sc.amax = v; aggiornaAvvisoAmax(); });
+    aggiornaAvvisoAmax();
     box.querySelectorAll('input[name="scMwOrig"]').forEach(el => el.addEventListener('change', () => {
       sc.magnitudo = { ...MG.datiMagnitudo(sc), origine: el.value };
       if (el.value === 'zs9') MG.applicaProposta(sc, proposta());
@@ -308,7 +310,9 @@
   function mostraErroriStrati() {
     const sc = scenario(), pv = prova();
     const err = sc && pv ? F.controllaScenario(pv, sc, L).filter(e => /strati|zFalda/.test(e.campo)) : [];
-    $('erroriStrati').innerHTML = err.length ? '<div class="alert alert-danger" style="margin-top:10px;"><ul>' + err.map(e => '<li>' + esc(e.motivo) + '</li>').join('') + '</ul></div>' : '';
+    const avv = sc ? F.avvisiScenario(sc).filter(a => /^strati/.test(a.campo)) : [];
+    $('erroriStrati').innerHTML = (err.length ? '<div class="alert alert-danger" style="margin-top:10px;"><ul>' + err.map(e => '<li>' + esc(e.motivo) + '</li>').join('') + '</ul></div>' : '') +
+      (avv.length ? '<div class="alert alert-warn" role="status" style="margin-top:10px;"><ul>' + avv.map(a => '<li>' + esc(a.messaggio) + '</li>').join('') + '</ul></div>' : '');
   }
   $('scFalda').addEventListener('input', (e) => { const sc = scenario(); if (!sc) return; sc.zFalda = leggiNumero(e.target); inputCambiato(); mostraErroriStrati(); $('sumStrati').textContent = (isNum(sc.zFalda) ? 'falda ' + fmt(sc.zFalda, 1) + ' m · ' : '') + sc.strati.length + ' strati'; });
   $('tabStrati').addEventListener('input', (e) => {
@@ -324,7 +328,7 @@
   $('btnAggiungiStrato').addEventListener('click', () => {
     const sc = scenario(); if (!sc) return;
     const ult = sc.strati[sc.strati.length - 1];
-    sc.strati.push({ da: ult ? ult.a : 0, a: null, gamma: ult ? ult.gamma : 18, gammaSat: ult ? ult.gammaSat : 19, FC: null, descrizione: '' });
+    sc.strati.push({ id: P.nuovoId('strato'), da: ult ? ult.a : 0, a: null, gamma: ult ? ult.gamma : 18, gammaSat: ult ? ult.gammaSat : 19, FC: null, descrizione: '' });
     renderStrati(); inputCambiato();
   });
 
@@ -339,6 +343,7 @@
   $('btnCalcola').addEventListener('click', () => {
     const sc = scenario(); if (!sc) return;
     calcola(sc);
+    svuotaStampa();
     renderRisultati();
     renderStato();
   });
@@ -359,6 +364,7 @@
 
   /** Chiamata a ogni modifica di un input di calcolo. */
   function inputCambiato() {
+    svuotaStampa();
     renderStato();
     renderRiepilogo();
     aggiornaVeli();
@@ -552,6 +558,32 @@
     return p;
   }
 
+  /**
+   * Configurazione del grafico di un pannello e nota (valori fuori scala, significato).
+   * Usata a video e in stampa: la stampa non dipende dai pannelli aperti a video.
+   */
+  function cfgPannello(c, sc, r) {
+    const continuo = F.METODI[sc.metodo].continuo;
+    const zMax = Math.max(Math.ceil((r.riepilogo.profonditaIndagata ? r.riepilogo.profonditaIndagata.a : 10) + 0.5), ...sc.strati.map(s => isNum(s.a) ? s.a : 0));
+    const strati = [...new Set(sc.strati.flatMap(s => [s.da, s.a]).filter(z => isNum(z) && z > 0))];
+    const serie = c.serieDirette ? c.serieDirette.map(x => ({ ...x, soloPunti: false })) : c.serie.map(x => {
+      const sr = F.serie(r, x.chiave, x.sorgente);
+      return { nome: x.nome, colore: x.colore, tratteggio: x.tratteggio, stilePunto: x.tratteggio ? 'rect' : 'circle', soloPunti: !continuo && x.sorgente !== 'tensioni', segmenti: sr.segmenti, punti: sr.punti };
+    });
+    const cfg = {
+      titolo: c.titolo, etichettaX: c.etichettaX, yMax: zMax, falda: sc.zFalda, strati, riferimentiX: c.rif || [],
+      xMin: c.xMin, xMax: c.xMax, cifre: c.cifre, serie, tipoPannello: c.id, sogliaIc: sc.opzioni.IcSoglia ?? 2.6, fsRif: F.fsRiferimento(sc) ?? undefined
+    };
+    // note: valori fuori scala (non modificati) e significato
+    const note = [];
+    if (isNum(c.xMax)) {
+      const fuori = serie.reduce((n, s) => n + s.punti.filter(p => p.x > c.xMax).length, 0);
+      if (fuori) note.push(fuori + ' valori oltre ' + fmt(c.xMax, c.xMax < 2 ? 1 : 0) + ' non visibili (fuori scala, vedi tabella)');
+    }
+    if (c.nota) note.push(c.nota);
+    return { cfg, nota: note.join(' · ') };
+  }
+
   function renderProfili() {
     const box = $('pan-profili');
     const pv = prova(), sc = scenario(), r = sc && risultatoDi(sc);
@@ -583,30 +615,14 @@
       '<button class="btn-link" type="button" data-png="sbt">Scarica PNG</button></div></div>';
     box.innerHTML = h;
 
-    const zMax = Math.max(Math.ceil((r.riepilogo.profonditaIndagata ? r.riepilogo.profonditaIndagata.a : 10) + 0.5), ...sc.strati.map(s => isNum(s.a) ? s.a : 0));
-    const strati = [...new Set(sc.strati.flatMap(s => [s.da, s.a]).filter(z => isNum(z) && z > 0))];
     for (const c of cat.filter(c => S.pannelli.id.has(c.id))) {
-      const serie = c.serieDirette ? c.serieDirette.map(x => ({ ...x, soloPunti: false })) : c.serie.map(x => {
-        const sr = F.serie(r, x.chiave, x.sorgente);
-        return { nome: x.nome, colore: x.colore, tratteggio: x.tratteggio, stilePunto: x.tratteggio ? 'rect' : 'circle', soloPunti: !continuo && x.sorgente !== 'tensioni', segmenti: sr.segmenti, punti: sr.punti };
-      });
-      const cfg = {
-        titolo: c.titolo, etichettaX: c.etichettaX, yMax: zMax, falda: sc.zFalda, strati, riferimentiX: c.rif || [],
-        xMin: c.xMin, xMax: c.xMax, cifre: c.cifre, serie, tipoPannello: c.id, sogliaIc: sc.opzioni.IcSoglia ?? 2.6, fsRif: F.fsRiferimento(sc) ?? undefined
-      };
+      const { cfg, nota } = cfgPannello(c, sc, r);
       const chart = Gr.profilo($('cv-' + c.id), { ...cfg,
         selezionato: S.selezione !== null ? (r.righe[S.selezione] || {}).z : undefined,
         onClick: (indice) => seleziona(indice)
       });
       S.grafici.push({ id: c.id, titolo: c.titolo, chart, cfg });
-      // note: valori fuori scala (non modificati) e significato
-      const note = [];
-      if (isNum(c.xMax)) {
-        const fuori = serie.reduce((n, s) => n + s.punti.filter(p => p.x > c.xMax).length, 0);
-        if (fuori) note.push(fuori + ' valori oltre ' + fmt(c.xMax, c.xMax < 2 ? 1 : 0) + ' non visibili (fuori scala, vedi tabella)');
-      }
-      if (c.nota) note.push(c.nota);
-      $('nota-' + c.id).textContent = note.join(' · ');
+      $('nota-' + c.id).textContent = nota;
     }
     box.querySelectorAll('[data-preset]').forEach(el => el.onclick = () => { S.pannelli.preset = el.dataset.preset; S.pannelli.id = new Set(presets[el.dataset.preset].filter(id => cat.some(c => c.id === id))); renderRisultati(); });
     box.querySelectorAll('[data-pannello]').forEach(el => el.addEventListener('change', () => {
@@ -940,6 +956,12 @@
     const usa = MG.datiMagnitudo(sc).origine !== 'zs9' || !isNum(sc.Mw) || MG.diversaDallaProposta(sc, prop);
     return '<span><b>Proposta ZS9:</b> ' + esc(prop.titolo) + '.</span>' + (usa ? '<button class="btn btn-sm" type="button" id="scMwUsa">Usa la proposta (' + fmt(prop.mw) + ')</button>' : '');
   }
+  /** Avviso di plausibilità di amax (unità), senza ridisegnare i campi. */
+  function aggiornaAvvisoAmax() {
+    const sc = scenario(), box = $('scAmaxAvv'); if (!sc || !box) return;
+    const a = F.avvisiScenario(sc).find(x => x.campo === 'amax');
+    box.textContent = a ? a.messaggio : ''; box.hidden = !a;
+  }
   /** Aggiorna proposta, errori e avvisi della Mw senza ridisegnare i campi (il cursore resta dov'è). */
   function aggiornaMsgMw() {
     const sc = scenario(), box = $('scMwMsg'); if (!sc || !box) return;
@@ -1024,6 +1046,8 @@
     const mg = MG.statoMagnitudo(sc, proposta());
     if (mg.errori.length || mg.avvisi.length) h += '<div class="section-title">Magnitudo M<sub>w</sub></div><ul>' +
       mg.errori.map(e => '<li><b>Da correggere prima di stampa ed esportazione:</b> ' + esc(e.motivo) + '</li>').join('') + mg.avvisi.map(a => '<li>' + esc(a.testo) + '</li>').join('') + '</ul>';
+    const avvSc = r.avvisiScenario || [];
+    if (avvSc.length) h += '<div class="section-title">Dati dello scenario da controllare</div><ul>' + avvSc.map(a => '<li>' + esc(a.messaggio) + '</li>').join('') + '</ul>';
     const q = r.riepilogo;
     h += '<div class="section-title">Intervalli non calcolati</div>';
     h += q.intervalliNonCalcolati.length ? '<div class="table-scroll"><table class="data-table"><thead><tr><th scope="col">da<span class="u">[m]</span></th><th scope="col">a<span class="u">[m]</span></th><th scope="col">punti</th><th scope="col">stato</th><th scope="col" style="text-align:left;">motivo</th></tr></thead><tbody>' +
@@ -1185,6 +1209,7 @@
     S.pr = pr; S.confronto = []; S.selezione = null; S.pannelli = null; S.esclSel = null;
     S.salvato = P.salvaProgetto(pr);
     renderTutto();
+    pianificaBozza();
   }
   $('btnNuovo').addEventListener('click', () => { if (confermaSostituzione('Iniziare un nuovo progetto')) sostituisciProgetto(P.nuovoProgetto()); });
   $('btnEsempio').addEventListener('click', () => { if (confermaSostituzione('Aprire l\'esempio sintetico')) sostituisciProgetto(E.progettoEsempio()); });
@@ -1213,7 +1238,84 @@
     const testo = P.salvaProgetto(S.pr);
     scarica(URL.createObjectURL(new Blob([testo], { type: 'application/json' })), nomeFile('progetto', 'json'));
     S.salvato = testo;
+    pianificaBozza();
   });
+
+  // ---------------------------------------------------------------------------
+  // Bozza locale e avviso in uscita (audit B7)
+  // ---------------------------------------------------------------------------
+  // Con modifiche non salvate in un file, gli input del progetto (mai i risultati) si copiano nel
+  // localStorage di questo browser, 0,5 s dopo l'ultima modifica e alla chiusura della pagina.
+  // Nessun invio in rete. La bozza si cancella quando il progetto coincide con l'ultimo file
+  // aperto o salvato. Alla riapertura la bozza passa dalla stessa validazione di un file (apriProgetto).
+  const CHIAVE_BOZZA = 'geohub_liquisite_bozza_v1';
+  const BOZZA = { attiva: false, timer: null, spazioEsaurito: false, propria: false }; // propria: scritta o ripristinata da questa pagina
+  function leggiBozza() {
+    try {
+      const b = JSON.parse(localStorage.getItem(CHIAVE_BOZZA) || 'null');
+      return b && typeof b === 'object' && typeof b.progetto === 'string' ? b : null;
+    } catch (e) { return null; }
+  }
+  function cancellaBozza() { try { localStorage.removeItem(CHIAVE_BOZZA); } catch (e) { /* storage non disponibile */ } }
+  function salvaBozza() {
+    clearTimeout(BOZZA.timer);
+    if (!BOZZA.attiva) return; // bozza precedente in attesa di una scelta: non si sovrascrive
+    const testo = P.salvaProgetto(S.pr);
+    // si cancella solo la bozza scritta da questa pagina: un'altra scheda può avere la sua
+    if (testo === S.salvato) { if (BOZZA.propria) { cancellaBozza(); BOZZA.propria = false; } return; }
+    try {
+      localStorage.setItem(CHIAVE_BOZZA, JSON.stringify({ versione: 1, app: P.VERSIONE_APP, salvataIl: new Date().toISOString(), progetto: testo }));
+      BOZZA.propria = true;
+      BOZZA.spazioEsaurito = false;
+    } catch (e) {
+      if (!BOZZA.spazioEsaurito) {
+        BOZZA.spazioEsaurito = true;
+        mostraBanner('<b>Bozza automatica non salvata</b>: il browser non consente di conservarla (spazio esaurito o memoria locale disattivata). Usa «Salva progetto» per non perdere il lavoro.',
+          [['Chiudi', () => nascondiBanner()]]);
+      }
+    }
+  }
+  function pianificaBozza() { clearTimeout(BOZZA.timer); BOZZA.timer = setTimeout(salvaBozza, 500); }
+  for (const ev of ['input', 'change', 'click']) document.addEventListener(ev, pianificaBozza, true);
+  window.addEventListener('pagehide', salvaBozza);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') salvaBozza(); });
+  window.addEventListener('beforeunload', (e) => {
+    if (!modificato()) return;
+    salvaBozza();
+    e.preventDefault(); e.returnValue = ''; // avviso standard del browser
+  });
+
+  function mostraBanner(html, azioni) {
+    const b = $('bozzaBanner');
+    b.innerHTML = '<div class="alert alert-warn"><span>' + html + '</span><span class="btn-row">' +
+      azioni.map((a, i) => '<button class="btn btn-sm" type="button" data-azione="' + i + '">' + esc(a[0]) + '</button>').join('') + '</span></div>';
+    b.querySelectorAll('[data-azione]').forEach(el => el.addEventListener('click', () => azioni[Number(el.dataset.azione)][1]()));
+    b.hidden = false;
+  }
+  function nascondiBanner() { const b = $('bozzaBanner'); b.hidden = true; b.innerHTML = ''; }
+
+  /** All'avvio: se c'è una bozza, si chiede se ripristinarla; finché non si sceglie resta intatta. */
+  function avviaBozza() {
+    const b = leggiBozza();
+    if (!b) { BOZZA.attiva = true; return; }
+    const iso = typeof b.salvataIl === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/.test(b.salvataIl);
+    const data = iso && !isNaN(new Date(b.salvataIl)) ? new Date(b.salvataIl).toLocaleString('it-IT') : 'data non nota';
+    mostraBanner('<b>Bozza non salvata del ' + esc(data) + '</b>: il lavoro precedente non era stato salvato in un file. Ripristinarlo? La bozza resta solo in questo browser e non sostituisce «Salva progetto».', [
+      ['Ripristina la bozza', () => {
+        const esito = P.apriProgetto(b.progetto);
+        nascondiBanner();
+        if (!esito.ok) { alert('La bozza non è valida e non è stata aperta: viene eliminata.\n\n' + esito.errori.slice(0, 5).map(x => '• ' + x.campo + ': ' + x.motivo).join('\n')); cancellaBozza(); BOZZA.attiva = true; return; }
+        S.pr = esito.progetto; S.confronto = []; S.selezione = null; S.pannelli = null; S.esclSel = null;
+        S.salvato = null; // la bozza non è salvata in un file: resta «modificato» fino a «Salva progetto»
+        BOZZA.attiva = true; BOZZA.propria = true;
+        renderTutto();
+      }],
+      ['Elimina la bozza', () => {
+        if (!confirm('Eliminare la bozza? Il lavoro che contiene non si potrà recuperare.')) return;
+        cancellaBozza(); nascondiBanner(); BOZZA.attiva = true; pianificaBozza();
+      }]
+    ]);
+  }
   /** Motivo che impedisce stampa ed esportazione dello scenario attivo, oppure null. */
   function bloccoUscite(sc, azione) {
     if (!sc || statoRisultato(sc) !== 'aggiornato' || risultatoDi(sc).stato !== 'calcolato') return 'Calcola lo scenario attivo prima di ' + azione + ': i risultati devono essere aggiornati.';
@@ -1246,10 +1348,38 @@
   $('btnStampa').addEventListener('click', () => {
     const sc = scenario(), blocco = bloccoUscite(sc, 'stampare');
     if (blocco) { alert(blocco); return; }
-    if (S.tab !== 'profili') mostraTab('profili');
     preparaStampa();
+    S.stampaPreparata = true; // beforeprint non rifà il lavoro appena fatto
     setTimeout(() => window.print(), 50);
   });
+
+  /** Tavole di stampa, sempre le stesse per metodo, indipendenti dai pannelli aperti a video. */
+  const PANNELLI_STAMPA = ['Ic', 'qc1N', 'N', 'N160', 'Vs', 'csrcrr', 'FS', 'PL', 'IL', 'epsv', 'sced'];
+
+  /** Svuota il rapporto di stampa: nessun rapporto resta in pagina dopo una modifica o una stampa. */
+  function svuotaStampa() {
+    const st = $('stampa'); if (st) st.innerHTML = '';
+    const mg = document.getElementById('stileMargini'); if (mg) mg.textContent = '';
+    S.stampaPreparata = false;
+  }
+
+  /** Pagina mostrata quando si stampa dal browser (Ctrl+P) senza risultati validi e aggiornati. */
+  function stampaNonValida(motivo) {
+    svuotaStampa();
+    $('stampa').innerHTML = '<div class="st-testata"><div class="st-titolo">GeoHub-LiquiSite – STAMPA NON VALIDA</div>' +
+      '<div class="st-norma">Risultati assenti, non aggiornati o con dati da correggere</div></div>' +
+      '<p class="st-nota"><b>Questo foglio non è un rapporto di verifica.</b> ' + esc(motivo) + '</p>' +
+      '<p class="st-nota">Correggere o ricalcolare lo scenario e stampare di nuovo con «Stampa / PDF».</p>';
+  }
+
+  // Stampa dal menu del browser o con Ctrl+P / Cmd+P: il rapporto si prepara qui, ogni volta.
+  window.addEventListener('beforeprint', () => {
+    if (S.stampaPreparata) { S.stampaPreparata = false; return; }
+    const blocco = bloccoUscite(scenario(), 'stampare');
+    if (blocco) { stampaNonValida(blocco); return; }
+    try { preparaStampa(); } catch (e) { stampaNonValida('Errore nella preparazione del rapporto: ' + (e && e.message ? e.message : String(e)) + '.'); }
+  });
+  window.addEventListener('afterprint', svuotaStampa);
 
   const nFS = (r, soglia) => r.righe.filter(x => x.stato === 'calcolato' && isNum(x.valori?.FS) && x.valori.FS < soglia).length;
 
@@ -1320,14 +1450,16 @@
       riga('Indice IL (Iwasaki, 0–20 m, senza classi)', r.indiceIL ? esc(testoIL(r.indiceIL)) + (r.indiceIL.stato === 'calcolato' && !r.indiceIL.completo ? ' — copertura incompleta: ' + fmt(r.indiceIL.spessori.ignoto, 2) + ' m senza risultato, con contributo nullo nel valore inferiore e contributo massimo del modello nel superiore (limiti convenzionali del modello, non un intervallo di confidenza)' : '') : '–') +
       riga('Intervalli non calcolati', q.intervalliNonCalcolati.length ? q.intervalliNonCalcolati.map(i => fmt(i.da) + '–' + fmt(i.a) + ' m: ' + esc(i.codice && F.MOTIVI_BREVI[i.codice] ? F.MOTIVI_BREVI[i.codice] : F.ETICHETTE_STATI[i.stato])).join('; ') : 'nessuno') +
       '</tbody></table><p class="st-nota"><b>Criterio di verifica e scelta del coefficiente di sicurezza.</b> ' + esc(F.criterioFS(sc)) + '</p><p class="st-nota">Il FS minimo non descrive da solo la risposta del sito. ' + esc(q.notaFS) + ' ' + esc(q.notaPL) + '</p>';
-    const tavole = S.grafici.filter(g => g.cfg);
+    const cat = catalogoPannelli(pv, sc, r);
+    const tavole = PANNELLI_STAMPA.map(id => cat.find(c => c.id === id)).filter(Boolean)
+      .map(c => ({ id: c.id, titolo: c.titolo, ...cfgPannello(c, sc, r) }));
     for (let i = 0; i < tavole.length; i += 2) {
       h += '<div class="st-h st-pagina">4. Profili · Tavola ' + (i / 2 + 1) + ' · ' + esc(pv.nome) + (pv.esempio ? ' · ESEMPIO SINTETICO' : '') + '</div>' +
         '<p class="st-nota">' + esc(S.pr.progetto.titolo) + ' · ' + esc(sc.nome) + '<br>' + esc(P.NOMI_METODI[sc.metodo]) + ' · Mw ' + fmt(sc.Mw) + ' · amax ' + fmt(sc.amax,3) + ' g · falda ' + fmt(sc.zFalda) + ' m</p><div class="st-grafici">' +
-        tavole.slice(i,i+2).map(g => '<figure><img alt="' + esc(g.titolo) + '" src="' + Gr.immagineStampa(g.cfg, 400, 700) + '"><figcaption>' + esc(g.titolo) + ($('nota-' + g.id) && $('nota-' + g.id).textContent ? ' – ' + esc($('nota-' + g.id).textContent) : '') + '</figcaption></figure>').join('') + '</div>' +
+        tavole.slice(i,i+2).map(g => '<figure><img alt="' + esc(g.titolo) + '" src="' + Gr.immagineStampa(g.cfg, 400, 700) + '"><figcaption>' + esc(g.titolo) + (g.nota ? ' – ' + esc(g.nota) : '') + '</figcaption></figure>').join('') + '</div>' +
         '<p class="st-nota">' + legendaTavola(tavole.slice(i, i + 2).map(g => g.id)) + '</p>';
     }
-    const sbt = S.grafici.find(g => g.id === 'sbt');
+    const sbt = sc.metodo === 'bi2014Cpt';
     if (sbt) h += '<div class="st-h st-pagina">5. Carta di comportamento CPT</div><figure class="st-sbt"><img alt="Carta di comportamento CPT" src="' +
       Gr.immagineDa(Gr.cartaSBT, cfgSBT(r, sc), 640, 560) + '"></figure>' + tabellaZoneSBT(r) +
       '<p class="st-nota">Strumento di lettura della prova, non entra nel calcolo. Zone 2–7 delimitate da Ic (Robertson e Wride 1998, Tab. 1, da Robertson 1990); le zone 1, 8 e 9 non sono definite da Ic e non sono rappresentate.</p>';
@@ -1335,6 +1467,7 @@
       q.avvisi.map(a => '<li><b>' + esc(a.codice) + '</b> (' + esc(a.n) + ' punti, z ' + fmt(a.zDa) + '–' + fmt(a.zA) + ' m): ' + esc(a.messaggio) + '</li>').join('') +
       q.assunzioni.map(a => '<li>Assunzione: ' + esc(a.descrizione) + (a.n ? ' (' + esc(a.n) + ' punti)' : '') + '</li>').join('') +
       MG.statoMagnitudo(sc, proposta()).avvisi.map(a => '<li><b>Magnitudo.</b> ' + esc(a.testo) + '</li>').join('') +
+      (r.avvisiScenario || []).map(a => '<li><b>Dati dello scenario.</b> ' + esc(a.messaggio) + '</li>').join('') +
       '<li>Profondità oltre ' + fmt(q.profonditaIndagata ? q.profonditaIndagata.a : 0) + ' m non indagate; un intervallo non calcolato non è un intervallo sicuro.</li>' +
       (r.indiceIL && r.indiceIL.stato === 'calcolato' ? r.indiceIL.assunzioni.map(a => '<li><b>Indice IL.</b> ' + esc(a.descrizione) + '</li>').join('') + '<li><b>Indice IL.</b> ' + esc(r.indiceIL.fonte) + '</li>' : '') +
       (r.cedimenti && r.cedimenti.stato === 'calcolato' ? r.cedimenti.assunzioni.concat(r.cedimenti.avvisi.map(a => ({ descrizione: a.messaggio }))).map(a => '<li><b>Cedimento.</b> ' + esc(a.descrizione) + '</li>').join('') + '<li>Cedimento: ' + esc(r.cedimenti.fonte) + '</li>' : '<li>Cedimenti post-sismici: calcolati solo con prove CPT.</li>') +
@@ -1367,10 +1500,12 @@
   // ---------------------------------------------------------------------------
   function renderTutto() {
     $('topVersione').textContent = 'v' + P.VERSIONE_APP + ' · motore ' + L.VERSIONE_MOTORE;
+    svuotaStampa();
     renderProgetto(); renderProva(); renderScenario(); renderStrati(); renderStato(); renderRisultati();
   }
 
   window.LiquiUI = { stato: S, renderTutto, calcola, statoRisultato };
   S.salvato = P.salvaProgetto(S.pr);
   renderTutto();
+  avviaBozza();
 })();
