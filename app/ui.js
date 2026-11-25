@@ -1266,7 +1266,8 @@
       const esito = P.apriProgetto(String(rd.result));
       if (!esito.ok) {
         const altri = esito.errori.length > 10 ? '\n… e altri ' + (esito.errori.length - 10) + ' errori.' : '';
-        alert('Il file non è stato aperto: contiene dati non validi. Il progetto corrente non è stato modificato.\n\n' + esito.errori.slice(0, 10).map(x => '• ' + x.campo + ': ' + x.motivo).join('\n') + altri);
+        const piuRecente = esito.errori.some(x => x.campo === 'versioneFormato' && /più recente/.test(x.motivo));
+        alert((piuRecente ? 'Il file non è stato aperto. Il progetto corrente non è stato modificato.' : 'Il file non è stato aperto: contiene dati non validi. Il progetto corrente non è stato modificato.') + '\n\n' + esito.errori.slice(0, 10).map(x => '• ' + x.campo + ': ' + x.motivo).join('\n') + altri);
         return;
       }
       sostituisciProgetto(esito.progetto);

@@ -327,7 +327,10 @@
 
     if (!isOggetto(obj)) { err('file', 'non è un oggetto JSON'); return { ok: false, errori, avvisi }; }
     if (obj.formato !== FORMATO) err('formato', 'atteso "' + FORMATO + '"');
-    if (obj.versioneFormato !== VERSIONE_FORMATO) err('versioneFormato', 'versione ' + descrivi(obj.versioneFormato) + ' non supportata (attesa ' + VERSIONE_FORMATO + ')');
+    // Cancello di versione: un file scritto da una versione più recente non si apre, perché i campi che questa
+    // versione non conosce andrebbero persi in silenzio al salvataggio successivo. La versione la dichiara chi scrive.
+    if (Number.isInteger(obj.versioneFormato) && obj.versioneFormato > VERSIONE_FORMATO) err('versioneFormato', 'File creato con una versione più recente di LiquiSite: aggiorna l\'app (formato ' + obj.versioneFormato + ', questa versione legge fino al formato ' + VERSIONE_FORMATO + ')');
+    else if (obj.versioneFormato !== VERSIONE_FORMATO) err('versioneFormato', 'versione ' + descrivi(obj.versioneFormato) + ' non supportata (attesa ' + VERSIONE_FORMATO + ')');
     if (!isOggetto(obj.progetto)) err('progetto', 'mancante o non è un oggetto');
     if (!Array.isArray(obj.prove)) err('prove', 'deve essere un elenco');
     if (!Array.isArray(obj.scenari)) err('scenari', 'deve essere un elenco');
