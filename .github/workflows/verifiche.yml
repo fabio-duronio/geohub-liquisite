@@ -19,7 +19,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Librerie Python della verifica indipendente ZS9
-        run: pip install pyproj shapely numpy
+        run: pip install -r verifiche/requirements.txt
       - name: Verifiche numeriche (Node.js e Python)
         run: node verifiche/esegui.mjs
       - name: Installazione di Playwright e Chromium

@@ -311,6 +311,12 @@ console.log('8. Salvataggio e riapertura del progetto');
   check('formato sbagliato', P.apriProgetto(JSON.stringify({ ...prs, formato: 'altro' })).ok, false);
   check('versione non supportata', P.apriProgetto(JSON.stringify({ ...prs, versioneFormato: 99 })).ok, false);
   {
+    // Cache: ogni risorsa locale di index.html porta ?v= uguale alla versione dell'app (le librerie di terzi hanno la loro).
+    const html = require('fs').readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+    const locali = [...html.matchAll(/(?:src|href)="((?!vendor\/chart\.js)[^"]+)\?v=([^"]+)"/g)];
+    check('index.html: ' + locali.length + ' risorse locali con ?v= uguale alla versione dell\'app (' + P.VERSIONE_APP + ')', locali.length > 10 && locali.every(m => m[2] === P.VERSIONE_APP), true);
+  }
+  {
     const nuovo = P.apriProgetto(JSON.stringify({ ...prs, versioneFormato: P.VERSIONE_FORMATO + 1 }));
     check('file di formato più recente: rifiutato', nuovo.ok, false);
     check('file di formato più recente: messaggio «aggiorna l\'app»', nuovo.errori.some(e => /File creato con una versione più recente di LiquiSite: aggiorna l'app/.test(e.motivo)), true);

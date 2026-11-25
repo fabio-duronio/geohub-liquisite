@@ -62,7 +62,7 @@ Le verifiche numeriche non hanno dipendenze; il controllo nel browser richiede P
 | `verifica_motore.mjs` | valori pubblicati dagli autori | 123 |
 | `verifica_robustezza.mjs` | input non validi, soglie, stati di esito, convergenza | 262 |
 | `verifica_esclusione.mjs` | criteri 1–4 e fusi digitalizzati della Fig. 7.11.1 | 33 |
-| `verifica_profilo.mjs` | profilo, importazione, unità, CSV, progetto JSON, motivi degli intervalli, etichetta «sopra falda» con Ic oltre soglia, punto a z = 0, unità nelle intestazioni | 145 |
+| `verifica_profilo.mjs` | profilo, importazione, unità, CSV, progetto JSON, motivi degli intervalli, etichetta «sopra falda» con Ic oltre soglia, punto a z = 0, unità nelle intestazioni | 146 |
 | `verifica_il.mjs` | indice IL: profili analitici, seconda implementazione, falda come confine, limiti di strato per le SPT | 67 |
 | `verifica_preliminare.mjs` | verifica preliminare per strato e per sito, carta di comportamento, esempio completo | 57 |
 | `verifica_cedimenti.mjs` | equazioni di Zhang et al. (2002), cedimento, assenza dell'LSN, integrazione ferma a 20 m (audit §4 punto 4) | 51 |
@@ -110,7 +110,7 @@ Le verifiche numeriche non hanno dipendenze; il controllo nel browser richiede P
 | `verifica_magnitudo.mjs` | 96 | superato |
 | `verifica_motore.mjs` | 142 | superato |
 | `verifica_preliminare.mjs` | 57 | superato |
-| `verifica_profilo.mjs` | 145 | superato |
+| `verifica_profilo.mjs` | 146 | superato |
 | `verifica_restituzione.mjs` | 6 | superato |
 | `verifica_riferimento.mjs` | 26 | superato |
 | `verifica_robustezza.mjs` | 262 | superato |
@@ -121,7 +121,7 @@ Le verifiche numeriche non hanno dipendenze; il controllo nel browser richiede P
 | `verifica_validazione.mjs` | 31 | superato |
 | `verifica_versioni.mjs` | 23 | superato |
 | `verifica_zs9.mjs` | 57 | superato |
-| **Totale JavaScript** | **1332** | 24 file, tutti superati |
+| **Totale JavaScript** | **1333** | 24 file, tutti superati |
 
 **Python** (non si sommano ai controlli: sono confronti su casi)
 
@@ -145,7 +145,7 @@ Le verifiche numeriche non hanno dipendenze; il controllo nel browser richiede P
 | `browser/verifica_strati.mjs` | 4 | superato |
 | **Totale browser** | **133** | 6 file, tutti superati |
 
-Totale conteggiato dal programma (JavaScript + browser): **1465**. Nella 1.0.0 erano 1122 JavaScript e 54 nel browser; i controlli aggiunti sono nuovi file e nuove sezioni di file esistenti, non controlli rimossi.
+Totale conteggiato dal programma (JavaScript + browser): **1466**. Nella 1.0.0 erano 1122 JavaScript e 54 nel browser; i controlli aggiunti sono nuovi file e nuove sezioni di file esistenti, non controlli rimossi.
 
 I payload dei test di sicurezza sono innocui: al massimo impostano una variabile di prova.
 
