@@ -1,0 +1,7 @@
+# Dipendenze Python dei controlli in verifiche/ (solo verifica_zs9.py ne ha bisogno;
+# verifica_indipendente.py e verifica_cedimenti.py usano la sola libreria standard).
+# Versioni con cui i controlli sono stati eseguiti il 25/11/2026 (Python 3.13).
+# Installazione: pip install -r verifiche/requirements.txt
+numpy==2.5.3
+pyproj==3.8.0
+shapely==2.2.0

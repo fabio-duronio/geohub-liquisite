@@ -103,3 +103,71 @@
 1. **Onda 1 (classe A, nessuna formula):** B6, B7, B5, B4.3, più §4 punti 1 e 3. Una PR per famiglia, ciascuna con il controllo corrispondente di questo audit portato in `npm test`.
 2. **Onda 2 (motore):** B3.2 (dopo la rilettura dell'Eq. 14), B3.1 (dopo la lettura di pag. 14), B1 come classe C, B3.3, poi B2 e B4.1–B4.2 dopo le decisioni D1–D5.
 3. **Onda 3:** grafica, contrasto, testi (FC a 0,075 mm, nota sul confronto, testo della Mw), firma di stampa, NOTICE, provenienza di a_max.
+
+## 8. Stato finale dei rilievi al 25/11/2026 (verso la v1.0.1)
+
+La sezione 2 e le tabelle 3–5 restano come furono scritte il 24/11 (verifica sul codice di `c6784f1`, nessuna correzione). Questa tabella riporta, per ogni punto, lo stato oggi, il controllo che lo prova e, se rinviato, la versione prevista. Stati: **chiuso**, **chiuso in parte**, **rinviato**, **non riprodotto — chiuso senza intervento**. «Controllo» è un file di `verifiche/`; per i punti chiusi senza intervento indica che cosa si è provato.
+
+Le versioni dei rinvii sono **proposte**, da confermare: v1.0.2 è riservata ai metadati di a_max (decisione del 25/11); v1.0.3 è la proposta per le rifiniture di interfaccia.
+
+### Rilievi bloccanti B1–B7
+
+| ID | Stato | Controllo | Versione / nota |
+|---|---|---|---|
+| B1.a | chiuso | `verifica_addensamento.mjs` (qc1Ncs > 211 e (N1)60cs > 37: «oltre il campo», nessun FS inventato) | 1.0.1 (D1) |
+| B1.b | chiuso | `verifica_addensamento.mjs` (punto oltre il campo non arriva all'overflow; IL_max e S_max uguali a quelli con qc 28 MPa, spessore «ignoto» invariato) | 1.0.1 |
+| B1.c | chiuso | `verifica_addensamento.mjs` sez. 4 (Vs1 > 277 m/s, confronto stretto), `verifica_indipendente.py` | 1.0.1. Il massimo di Vs1 dei 422 casi di Tab. S1 non è stato ricavato (serve la tabella): il CHANGELOG dice «almeno 328,62 m/s» |
+| B1.d | chiuso | stesso controllo di B1.a (è la stessa riproduzione) | 1.0.1 |
+| B1.e | chiuso | `browser/verifica_flusso.mjs` sez. 4 (asse x del pannello 03 fisso 0–1; la nota «fuori scala» c'era già) | 1.0.1 (dal commit fbe0641) |
+| B2.1 | chiuso | `verifica_il.mjs` sez. 11 | 1.0.1 (D2) |
+| B2.2 | chiuso | `verifica_il.mjs` sez. 11 | 1.0.1 (D2) |
+| B2.3 | chiuso | `verifica_esclusione_strati.mjs` (IL = somma a mano senza lo strato; demo SPT non più 1,24–26,51) | 1.0.1 (D3) |
+| B2.4 | chiuso | `verifica_esclusione_strati.mjs` sez. 7b (prova Vs, argilla molle esclusa) | 1.0.1 (D3) |
+| B3.1 | chiuso | `verifica_motore.mjs`, `verifica_indipendente.py` (MSF ≤ MSFmax) | 1.0.1 |
+| B3.2 | chiuso | `verifica_motore.mjs`, `verifica_indipendente.py` (Kσ in 0,8–1,6) | 1.0.1 |
+| B3.3 | chiuso | `verifica_motore.mjs`, `verifica_indipendente.py` (CR ≤ 0 non definito) | 1.0.1 (D4) |
+| B3.4 | non riprodotto — chiuso senza intervento | Provato: Eq. 2.14a senza limite nella fonte (B&I 2014, pag. 8); rd 1,0054 a 0,2 m (+0,54 %) misurato con `riproduci_audit_1.0.0.mjs`; oltre 20 m il motore non calcola | — |
+| B4.1 | chiuso | `verifica_copertura.mjs` (limiti esatti 1,5 m SPT e 0,25 m CPT) | 1.0.1 (D5) |
+| B4.2 | chiuso | `verifica_copertura.mjs` («sabbia pulita» contraddetta da FC > 5 % o Ic > 1,775) | 1.0.1 (D5) |
+| B4.3 | chiuso | `verifica_strati.mjs`, `browser/verifica_strati.mjs` | 1.0.1 |
+| B5.1 | chiuso | `verifica_validazione.mjs`, `browser/verifica_dati.mjs` | 1.0.1 |
+| B5.2 | chiuso in parte | `verifica_validazione.mjs` sez. 3 (avviso di unità per γ fuori 11–27 kN/m³). Il «Kσ negativo con kg/m³» non è stato riprodotto | 1.0.1 |
+| B5.3 | chiuso | `verifica_validazione.mjs` sez. 2 (γsat > γw garantisce σ'v > 0 a ogni profondità) | 1.0.1 |
+| B5.4 | chiuso | `verifica_validazione.mjs` sez. 3 (avviso per amax > 1 g) | 1.0.1 |
+| B6.1 | chiuso | `browser/verifica_stampa.mjs` | 1.0.1 |
+| B6.2 | chiuso | `browser/verifica_stampa.mjs` | 1.0.1 |
+| B6.3 | chiuso | `browser/verifica_stampa.mjs` (tavole indipendenti dalla vista) | 1.0.1 |
+| B7 | chiuso | `browser/verifica_bozza.mjs` | 1.0.1 |
+
+### Punti normativi del §3.1
+
+| Punto | Stato | Controllo | Versione / nota |
+|---|---|---|---|
+| 1. Doppio fuso nella Fig. 7.11.1 | respinto | G.U. S.O. n. 8 alla G.U. n. 42 del 20/02/2018, pag. 280: un solo fuso per figura; nessuna modifica | — |
+| 1b. Normalizzazione a 100 kPa nel criterio 3 | non riprodotto — chiuso senza intervento | è la decisione del 10/11/2026 (registrata nel documento STATO) | — |
+| 2. FC al passante 0,075 mm | chiuso | `browser/verifica_flusso.mjs` sez. 5 (tabella e suggerimenti degli strati). Guida e stampa: la nota sulla differenza da 0,063 mm **non è stata aggiunta** | 1.0.1 per l'interfaccia; nota in guida e stampa rinviata a 1.0.3 (proposta) |
+| 3. Provenienza di a_max | rinviato | — | 1.0.2 (metadati di a_max, con `schema_version` del CSV) |
+| 4. FS non omogenei tra metodi | chiuso | `browser/verifica_flusso.mjs` sez. 5 | 1.0.1 (solo testo; il CRR di Cetin a PL 15 % resta una funzione nuova, non prevista) |
+| 5. Funzioni nuove | esclusi dal mandato | — | versioni future, ciascuna con la fonte letta |
+
+### Punti 1–13 del §4
+
+| ID | Stato | Controllo | Versione / nota |
+|---|---|---|---|
+| 1 | chiuso | `verifica_validazione.mjs` sez. 5 | 1.0.1 |
+| 2 | rinviato | — (fs = 0 kPa: la decisione D6 non è stata discussa) | da decidere con D6; non nella 1.0.1 salvo decisione |
+| 3 | chiuso | `verifica_copertura.mjs` sez. 2b (letto dell'ultimo strato) | 1.0.1 |
+| 4 | non riprodotto — chiuso senza intervento | Provato: CPTU fino a 35 m, integrazione fino a 20,00 m, S uguale a quello a 20 m. Aggiunta una prova di non regressione: `verifica_cedimenti.mjs` sez. 3b | — |
+| 5 | rinviato | — (copia di stratigrafia, falda ed esclusione tra scenari: funzione nuova, **non aggiunta**) | 1.0.2, insieme ai metadati di a_max (proposta) |
+| 6 | chiuso | `browser/verifica_flusso.mjs` sez. 1–2 | 1.0.1 |
+| 7 | rinviato | — (dialogo a sezioni singole, scenari filtrati per prova; il Tab nel dialogo non è confermato: `<dialog>` modale gestisce il focus) | 1.0.3 (proposta) |
+| 8 | non riprodotto — chiuso senza intervento | Provato: `riproduci_audit_browser.mjs` punto 8; l'evento è `input`, la tabella non si ridisegna, il focus passa a «γ» | — |
+| 9 | chiuso in parte | `browser/verifica_flusso.mjs` sez. 3 (il dialogo si chiude dopo «Salva la prova» e offre «Vai allo scenario»). Non fatti: «Applica Mw» (funzione nuova), confronto oltre 3 scenari, filtro in «Tabelle». Non confermati: intestazione fissa in «Tabelle» (c'è, `css/liquisite.css:149`), etichetta «ev» | 1.0.1 per il dialogo; il resto 1.0.3 (proposta) |
+| 10 | chiuso in parte | `verifica_grafici.mjs` (contesto simulato) e schermate nella PR. «falda» tagliata a 1440×900: non riprodotta | 1.0.1 |
+| 11 | chiuso in parte | Contrasto `.track-no` portato a 5,0:1 (calcolo nel CHANGELOG). A 375×812 la barra delle schede scorre in orizzontale (681 px su 349) senza segnale di scorrimento e «Confronto» appare tagliato («Conf»): confermato, **rinviato**. Nessuno sforamento orizzontale della pagina | contrasto 1.0.1; barra delle schede 1.0.3 (proposta) |
+| 12 | rinviato | non verificabile da qui (intestazioni HTTP di GitHub Pages); da controllare online dopo la pubblicazione | dopo il rilascio |
+| 13 | chiuso | `verifica_firma.mjs` (firma del rapporto e versioni dei moduli, CSV); NOTICE e nota interna della Mw: testo (CHANGELOG) | 1.0.1 |
+
+### Controlli: esito del 25/11/2026
+
+Tabella per file nel documento `docs/validazione.md` (sezione «Conteggi per file»).
