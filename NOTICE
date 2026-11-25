@@ -76,14 +76,19 @@ state lette sulle pubblicazioni originali e sono citate nel codice:
   induced ground settlements from CPT for level ground. Canadian Geotechnical
   Journal 39, 1168-1180. (cedimento post-sismico, Appendice A)
 - Tonkin & Taylor (2015). Appendix A: Assessment of Liquefaction
-  Vulnerability in Christchurch, §A4.3.5. (indice LSN)
-- MBIE, NZGS. Earthquake geotechnical engineering practice, Module 3:
-  liquefaction hazards, version 1, nota 7. (εv come decimale in LSN)
-- Iwasaki T. et al. (1978), indice del potenziale di liquefazione IL, come
-  riportato in: Linee guida per la gestione del territorio in aree interessate
-  da liquefazioni (LQ), v1.0 (2018), Commissione tecnica per la
-  microzonazione sismica, pag. 9; CNR, CentroMS (2024). Pratiche
-  correnti per le analisi di suscettibilità alla liquefazione negli studi di
+  Vulnerability in Christchurch, §A4.3.5. (uso delle curve di Zhang et al.
+  con (qc1N)cs e FS di Boulanger e Idriss 2014)
+- Iwasaki T., Tokida K., Tatsuoka F. (1981). Soil liquefaction potential
+  evaluation with use of the simplified procedure. Proc. 1st Int. Conf. on
+  Recent Advances in Geotechnical Earthquake Engineering and Soil Dynamics,
+  St. Louis, Eq. 5, pag. 210 (indice del potenziale di liquefazione IL,
+  proposto dagli stessi autori nel 1978).
+- Tatsuoka et al. (1980). Soils and Foundations 20(4), Eq. 29a, pag. 107
+  (stessa formula dell'indice IL).
+- Formula dell'indice IL riportata anche in: Linee guida per la gestione del territorio in aree
+  interessate da liquefazioni (LQ), v1.0 (2018), Commissione tecnica per la
+  microzonazione sismica, pag. 9; CNR, CentroMS (2024). Pratiche correnti per
+  le analisi di suscettibilità alla liquefazione negli studi di
   microzonazione sismica di livello 3, Eq. 3.73-3.74.
 
 Caso di riferimento usato nelle verifiche (verifiche/dati/): National
