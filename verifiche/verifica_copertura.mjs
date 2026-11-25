@@ -72,6 +72,27 @@ console.log('2. SPT: tolleranza 1,5 m');
   check('falda a 10 m: prima prova a 11,6 m → tratto 10–11,6 scoperto', caso('SPT', [11.6, 13, 14.4, 15.8, 17.2, 18.6], { zFalda: 10 }).c3.trattiScoperti[0], { da: 10, a: 11.6 });
 }
 
+console.log('2b. Letto dell\'ultimo strato (audit §4 punto 3): una prova a z = a appartiene all\'ultimo strato');
+{
+  const costruisci = (strati, zs) => {
+    const scenario = { metodo: 'bi2014Spt', zFalda: 0, amax: 0.25, strati,
+      esclusione: { strati: strati.map(t => ({ stratoId: t.id, da: t.da, a: t.a, sabbiaPulita: true })) } };
+    const righe = zs.map((z, i) => ({ indice: i, z, stato: 'calcolato', valori: { N160: 250 }, FC: null, avvisi: [] }));
+    return X.valutaEsclusione(L, { tipo: 'SPT' }, scenario, { stato: 'calcolato', righe });
+  };
+  const st = (id, da, a) => ({ id, da, a, gamma: 18, gammaSat: 19, FC: null });
+  // ultimo strato 19–20 m con la sola prova a 20,00 m: prima «nessun punto», ora valutato e coperto (1 m dal tetto, 0 dal letto)
+  const v = costruisci([st('a', 0, 19), st('b', 19, 20)], [1, 2.5, 4, 5.5, 7, 8.5, 10, 11.5, 13, 14.5, 16, 17.5, 20]);
+  const cb = v.strati.find(x => x.da === 19).c3;
+  check('ultimo strato con prova a z = 20,00: valutato e soddisfatto', [cb.stato, cb.soddisfatto], ['valutato', true]);
+  // strato intermedio: la prova a z = a appartiene allo strato sotto, non a quello sopra
+  const v2 = costruisci([st('a', 0, 10), st('b', 10, 20)], [1.5, 3, 4.5, 6, 7.5, 9, 10, 11.5, 13, 14.5, 16, 17.5, 19]);
+  const ca = v2.strati.find(x => x.da === 0).c3;
+  check('strato intermedio: z = a non entra nello strato sopra (tratto 9–10 m coperto dalla tolleranza)', [ca.stato, ca.soddisfatto], ['valutato', true]);
+  const v3 = costruisci([st('a', 0, 10), st('b', 10, 20)], [1.5, 3, 4.5, 6, 7.5, 10, 11.5, 13, 14.5, 16, 17.5, 19]);
+  check('strato intermedio: senza prove tra 7,5 e 10 m il tratto resta scoperto (la prova a 10 m è dello strato sotto)', v3.strati.find(x => x.da === 0).c3.soddisfatto, false);
+}
+
 console.log('3. CPT: tolleranza 0,25 m');
 {
   const fitto = (p) => passo(p, 0, 19.95);

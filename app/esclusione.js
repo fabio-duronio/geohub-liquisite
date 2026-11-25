@@ -92,7 +92,9 @@
     if (!chiave) return { stato: 'non_applicabile', soddisfatto: null, motivo: 'criterio definito per SPT e CPT: non si applica a questa prova' };
     if (!risultato || risultato.stato !== 'calcolato') return { stato: 'dati_insufficienti', soddisfatto: null, motivo: 'calcolo non eseguito' };
     const zDa = Math.max(s.da, scenario.zFalda), zA = Math.min(s.a, Z_LIMITE);
-    const righe = risultato.righe.filter(r => isNum(r.z) && r.z >= s.da - EPS && r.z < s.a - EPS && r.z > scenario.zFalda + EPS && r.z <= Z_LIMITE + EPS);
+    // come stratoA (profilo.js): il letto dell'ultimo strato appartiene all'ultimo strato; per gli altri strati z = a è dello strato sotto (audit §4 punto 3)
+    const ultimo = !(scenario.strati || []).some(x => x !== s && isNum(x.da) && x.da >= s.a - EPS);
+    const righe = risultato.righe.filter(r => isNum(r.z) && r.z >= s.da - EPS && (ultimo ? r.z <= s.a + EPS : r.z < s.a - EPS) && r.z > scenario.zFalda + EPS && r.z <= Z_LIMITE + EPS);
     if (zA <= zDa) return { stato: 'non_pertinente', soddisfatto: null, motivo: 'strato sopra la falda di verifica o oltre 20 m' };
     if (!righe.length) return { stato: 'dati_insufficienti', soddisfatto: null, motivo: 'nessun punto della prova nello strato saturo' };
     // copertura (D5): tolleranza fissa per tipo di prova; basta un intervallo oltre tolleranza
