@@ -112,7 +112,7 @@ console.log('4. Kayen 2013 (Vs): Vs1 > 277 m/s oltre il campo (audit B1.c, scelt
   const o = kay(800);
   check('Vs1 = 800: oltre il campo, nessun CRR, FS, PL', [o.stato, o.CRR15, o.FS, o.PL], ['non_applicabile', undefined, undefined, undefined]);
   check('oltre il campo: Vs1, CSR, rd e DWF conservati', ['Vs1', 'CVs', 'rd', 'CSR', 'DWF'].every(k => Number.isFinite(o[k])), true);
-  check('messaggio: soglia, CRR7,5 = 2,02, scelta di LiquiSite, dati della Tab. S1', /Vs1 = 800,00 m\/s > 277 m\/s/.test(o.motivo) && /CRR7,5 = 2,02/.test(o.motivo) && /scelta da LiquiSite, non un limite pubblicato/.test(o.motivo) && /328,62/.test(o.motivo) && /non è un'esclusione/i.test(o.motivo), true);
+  check('messaggio: soglia, CRR7,5 = 2,02, scelta di LiquiSite, nessun dato di Tab. S1', /Vs1 = 800,00 m\/s > 277 m\/s/.test(o.motivo) && /CRR7,5 = 2,02/.test(o.motivo) && /scelta da LiquiSite, non un limite pubblicato/.test(o.motivo) && !/328,62|Tab\. S1/.test(o.motivo) && /non è un'esclusione/i.test(o.motivo), true);
   check('sopra falda prevale NON_SATURO', kay(800, 10).codice, 'NON_SATURO');
   check('CRR a PL 15 % alla soglia ≈ 2,02 (Mw 7,5, σ\'v0 100 kPa, FC 0)', Math.abs(Math.exp((Math.pow(0.0073 * 277, 2.8011) - 2.6168 * Math.log(7.5) - 0.0099 * Math.log(100) + 0.4809 * L.PhiInv(0.15)) / 1.946) - 2.02) < 0.005, true);
   // profilo Vs completo

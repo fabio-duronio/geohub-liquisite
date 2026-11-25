@@ -178,9 +178,9 @@
    * Kayen et al. (2013), Vs: soglia di addensamento (audit v1.0.0, B1.c; scelta di LiquiSite approvata
    * il 25/11/2026, non indicata dagli autori). Oltre Vs1 = 277 m/s (dopo CVs ≤ 1,5) l'Eq. 14 dà CRR
    * a PL = 15 % maggiore di 2,0 (CRR7,5 ≈ 2,02 con PL 15 %, Mw 7,5, σ'v0 100 kPa, FC 0) e cresce
-   * senza limite (Vs1 800 m/s: CRR ≈ 10²⁹). Il valore è interno ai dati: la Tab. S1 contiene casi
-   * non liquefatti con Vs1 almeno pari a 328,62 m/s (SA2 Mackay Dam, Borah Peak 1983). Come per B&I
-   * 2014: punto non liquefacibile per addensamento, nessun CRR, FS o PL, F = 0 dichiarato.
+   * senza limite (Vs1 800 m/s: CRR ≈ 10²⁹). Il confronto con il campo dei casi della banca dati
+   * (Tab. S1 degli autori) non è documentato nel repository: la soglia non si giustifica con quei dati.
+   * Come per B&I 2014: punto non liquefacibile per addensamento, nessun CRR, FS o PL, F = 0 dichiarato.
    */
   const SOGLIA_ADDENSAMENTO_KAYEN = Object.freeze({ Vs1: 277 });
   /** CRR a PL = 15 % (Eq. 14) con Mw 7,5, σ'v0 100 kPa, FC 0 (solo per il messaggio). */
@@ -194,7 +194,7 @@
     return nonApplicabile(metodo, z, 'OLTRE_CAMPO_ADDENSAMENTO',
       'Vs1 = ' + Vs1.toFixed(2).replace('.', ',') + ' m/s > ' + soglia + ' m/s: terreno molto addensato, oltre la soglia adottata per la correlazione di Kayen et al. (2013). ' +
       'Punto non liquefacibile per addensamento: CRR, FS e PL non calcolati (alla soglia CRR7,5 = ' + CRR_KAYEN_ALLA_SOGLIA.toFixed(2).replace('.', ',') + ' con PL 15 %, Mw 7,5, σ\'v0 100 kPa, FC 0). ' +
-      'Soglia scelta da LiquiSite, non un limite pubblicato dagli autori: la Tab. S1 contiene casi con Vs1 almeno pari a 328,62 m/s, la soglia è quindi interna al campo dei dati. ' +
+      'Soglia scelta da LiquiSite, non un limite pubblicato dagli autori. ' +
       'Non è un\'esclusione ai sensi del §7.11.3.4.2 delle NTC 2018.',
       { soglia, ...extra });
   }
