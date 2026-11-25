@@ -59,6 +59,7 @@
     riga(['# Criterio di verifica', F.criterioFS(scenario)]);
     for (const a of risultato.avvisiScenario || []) riga(['# Avviso sui dati dello scenario', a.messaggio]);
     riga(['# Motore', risultato.versioneMotore, 'calcolato il', risultato.calcolatoIl, 'firma input', risultato.firma]);
+    if (opz.versioni) riga(['# Moduli', 'indici ' + opz.versioni.indici, 'cedimenti ' + opz.versioni.cedimenti, 'ZS9 ' + opz.versioni.zs9, 'firma del rapporto', P.firmaRapporto(prova, scenario, opz.versioni)]);
     const ind = risultato.indiceIL;
     if (ind && ind.stato === 'calcolato') {
       riga(['# IL Iwasaki 0-20 m (senza classi)', 'IL_min', ind.ILmin, 'IL_max', ind.ILmax, 'completo', ind.completo ? 'si' : 'no', 'spessore ignoto (m)', ind.spessori.ignoto]);

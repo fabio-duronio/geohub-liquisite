@@ -202,10 +202,27 @@
   function firmaInput(prova, scenario, versioneMotore) {
     const s = JSON.stringify({ v: versioneMotore, p: { tipo: prova.tipo, unita: prova.unita, colonne: prova.colonne, dati: prova.dati, parametri: prova.parametri },
       s: { metodo: scenario.metodo, Mw: scenario.Mw, amax: scenario.amax, zFalda: scenario.zFalda, strati: stratiCalcolo(scenario.strati), opzioni: opzioniCalcolo(scenario.opzioni), provaId: scenario.provaId } });
-    // FNV-1a a 32 bit: basta per riconoscere un cambiamento, non è una firma di sicurezza
+    return fnv1a(s);
+  }
+
+  // FNV-1a a 32 bit: basta per riconoscere un cambiamento, non è una firma di sicurezza
+  function fnv1a(s) {
     let h = 0x811c9dc5;
     for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
     return h.toString(16).padStart(8, '0');
+  }
+
+  /**
+   * Firma del rapporto (audit 13.a): distinta dalla firma di calcolo, che non cambia con FS di
+   * riferimento e Verifica preliminare perché non cambiano i risultati. Comprende la firma di calcolo,
+   * il FS di riferimento, i dati della Verifica preliminare e le versioni dei moduli (motore, indici,
+   * cedimenti, ZS9): se uno di questi cambia, cambia il contenuto stampato.
+   * versioni: { motore, indici, cedimenti, zs9 } (stringhe).
+   */
+  function firmaRapporto(prova, scenario, versioni) {
+    const v = versioni || {};
+    return fnv1a(JSON.stringify({ c: firmaInput(prova, scenario, v.motore), fsRif: scenario.opzioni ? scenario.opzioni.FSrif : null,
+      esclusione: scenario.esclusione || null, v: { motore: v.motore || null, indici: v.indici || null, cedimenti: v.cedimenti || null, zs9: v.zs9 || null } }));
   }
 
   // ---------------------------------------------------------------------------
@@ -458,6 +475,6 @@
   return {
     VERSIONE_APP, FORMATO, VERSIONE_FORMATO, FS_RIFERIMENTO, TIPI_PROVA, METODI_PER_TIPO, NOMI_METODI, UNITA, ETICHETTE_COLONNE, COLORI_SCENARI,
     nuovoId, nuovaProva, nuovoScenario, allineaStrati, esclusioneVuota, magnitudoVuota, ORIGINI_MW, nuovoProgetto, duplicaScenario, copia,
-    datiInterni, firmaInput, validaProgetto, apriProgetto, salvaProgetto, parametriPredefiniti, unitaPredefinite
+    datiInterni, firmaInput, firmaRapporto, validaProgetto, apriProgetto, salvaProgetto, parametriPredefiniti, unitaPredefinite
   };
 });

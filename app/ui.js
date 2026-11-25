@@ -12,6 +12,8 @@
     X = window.LiquiEsporta, E = window.LiquiEsempio, Gr = window.LiquiGrafici, EX = window.LiquiEsclusione,
     MG = window.LiquiMagnitudo, Z9 = window.ZS9, Z9D = window.LiquiZS9Dati;
   const $ = (id) => document.getElementById(id);
+  /** Versioni dei moduli che entrano nella firma del rapporto, in stampa e CSV (audit 13.a). */
+  const versioniModuli = () => ({ motore: L.VERSIONE_MOTORE, indici: window.LiquiIndici.VERSIONE_INDICI, cedimenti: window.LiquiCedimenti.VERSIONE_CEDIMENTI, zs9: Z9.VERSIONE });
   const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const fmt = (v, cifre = 2) => isNum(v) ? v.toLocaleString('it-IT', { minimumFractionDigits: cifre, maximumFractionDigits: cifre }) : '–';
@@ -1347,7 +1349,7 @@
     const sc = scenario(), blocco = bloccoUscite(sc, 'esportare');
     if (blocco) { alert(blocco); return; }
     const pre = EX.valutaEsclusione(L, prova(), sc, risultatoDi(sc));
-    const csv = X.csvRisultati(S.pr, prova(), sc, risultatoDi(sc), { preliminare: pre.esito.titolo + '. ' + pre.esito.testo + (EX.testoTrattiScoperti(pre) ? ' ' + EX.testoTrattiScoperti(pre) : ''), magnitudo: MG.testoOrigine(sc, proposta()) });
+    const csv = X.csvRisultati(S.pr, prova(), sc, risultatoDi(sc), { versioni: versioniModuli(), preliminare: pre.esito.titolo + '. ' + pre.esito.testo + (EX.testoTrattiScoperti(pre) ? ' ' + EX.testoTrattiScoperti(pre) : ''), magnitudo: MG.testoOrigine(sc, proposta()) });
     scarica(URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' })), nomeFile('risultati-' + sc.nome, 'csv'));
   });
 
@@ -1492,7 +1494,7 @@
       (r.indiceIL && r.indiceIL.stato === 'calcolato' ? r.indiceIL.assunzioni.map(a => '<li><b>Indice IL.</b> ' + esc(a.descrizione) + '</li>').join('') + '<li><b>Indice IL.</b> ' + esc(r.indiceIL.fonte) + '</li>' : '') +
       (r.cedimenti && r.cedimenti.stato === 'calcolato' ? r.cedimenti.assunzioni.concat(r.cedimenti.avvisi.map(a => ({ descrizione: a.messaggio }))).map(a => '<li><b>Cedimento.</b> ' + esc(a.descrizione) + '</li>').join('') + '<li>Cedimento: ' + esc(r.cedimenti.fonte) + '</li>' : '<li>Cedimenti post-sismici: calcolati solo con prove CPT.</li>') +
       '<li>Spostamenti laterali: non calcolati.</li></ul>';
-    h += '<div class="st-piede"><span>GeoHub-LiquiSite ' + esc(P.VERSIONE_APP) + ' · motore ' + esc(r.versioneMotore) + ' · calcolato il ' + esc(new Date(r.calcolatoIl).toLocaleString('it-IT')) + ' · firma input ' + esc(r.firma) + '</span><span>Basato su LiquiSite di Fabio Duronio, geologo</span></div>';
+    h += '<div class="st-piede"><span>GeoHub-LiquiSite ' + esc(P.VERSIONE_APP) + ' · motore ' + esc(r.versioneMotore) + ' · calcolato il ' + esc(new Date(r.calcolatoIl).toLocaleString('it-IT')) + ' · indici ' + esc(versioniModuli().indici) + ' · cedimenti ' + esc(versioniModuli().cedimenti) + ' · ZS9 ' + esc(versioniModuli().zs9) + ' · firma input ' + esc(r.firma) + ' · firma rapporto ' + esc(P.firmaRapporto(pv, sc, versioniModuli())) + '</span><span>Basato su LiquiSite di Fabio Duronio, geologo</span></div>';
     $('stampa').innerHTML = h;
     margineDiPagina(sc, r);
   }
@@ -1508,7 +1510,7 @@
     const testo = '@page{' +
       '@top-left{content:' + str('GeoHub-LiquiSite – Verifica a liquefazione') + '; ' + font + '}' +
       '@top-right{content:' + str((S.pr.progetto.titolo ? S.pr.progetto.titolo + ' · ' : '') + sc.nome, 90) + '; ' + font + '}' +
-      '@bottom-left{content:' + str('GeoHub-LiquiSite ' + P.VERSIONE_APP + ' · motore ' + r.versioneMotore + ' · firma input ' + r.firma) + '; ' + font + '}' +
+      '@bottom-left{content:' + str('GeoHub-LiquiSite ' + P.VERSIONE_APP + ' · motore ' + r.versioneMotore + ' · firma input ' + r.firma + ' · firma rapporto ' + P.firmaRapporto(provaDi(sc), sc, versioniModuli())) + '; ' + font + '}' +
       '@bottom-right{content:"pagina " counter(page) " di " counter(pages); ' + font + '}}';
     let st = document.getElementById('stileMargini');
     if (!st) { st = document.createElement('style'); st.id = 'stileMargini'; document.head.appendChild(st); }
