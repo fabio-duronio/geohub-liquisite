@@ -28,6 +28,11 @@
  *  - se il punto porta i limiti dello strato che lo contiene (prove SPT, decisione del 21/11/2026),
  *    l'intervallo non esce dallo strato: nessuna estensione automatica ad altri strati; le parti
  *    di altri strati non coperte da un punto restano 'ignoto';
+ *  - partizione dello strato (prove SPT, audit B2.1–B2.2, decisione D2 del 25/11/2026): le prove
+ *    dello stesso strato si dividono lo strato a metà distanza tra prove consecutive (o alla falda
+ *    di verifica, se cade tra due prove); la prima arriva al tetto, l'ultima al letto; con una sola
+ *    prova l'intervallo è lo strato intero. Passo mediano e vuotoMax non si applicano a questi
+ *    punti e le prove di altri strati non contano;
  *  - F è costante nell'intervallo del punto; l'integrale di w è calcolato esattamente:
  *    ∫ w dz = 10·(b − a) − 0,25·(b² − a²).
  *
@@ -88,16 +93,32 @@
    * strato che contiene il punto: l'intervallo non ne esce.
    */
   function intervalliDeiPunti(punti, vuotoMax, mediano, zFalda) {
-    const n = punti.length;
     const meta = (mediano || 0) / 2;
     // Confine tra due punti consecutivi: metà distanza; se la falda di verifica cade tra i due
     // (punto superiore non sotto la falda, inferiore sotto), il confine è la falda stessa.
     const confine = (z1, z2) => (z1 <= zFalda && zFalda < z2) ? zFalda : (z1 + z2) / 2;
-    return punti.map((p, i) => {
-      const prec = i > 0 ? punti[i - 1].z : null, succ = i < n - 1 ? punti[i + 1].z : null;
+    // Punti senza limiti (CPT, Vs, SPT fuori stratigrafia): metà distanza tra i punti senza limiti,
+    // metà del passo mediano verso i vuoti e agli estremi.
+    const liberi = punti.filter(p => !p.limiti);
+    // Punti con i limiti dello strato (SPT, decisione D2 del 25/11/2026): partizione dello strato tra
+    // le sole prove dello stesso strato, dal tetto al letto.
+    const perStrato = new Map();
+    for (const p of punti) if (p.limiti) {
+      const k = p.limiti.da + '|' + p.limiti.a;
+      if (!perStrato.has(k)) perStrato.set(k, []);
+      perStrato.get(k).push(p);
+    }
+    return punti.map(p => {
+      if (p.limiti) {
+        const g = perStrato.get(p.limiti.da + '|' + p.limiti.a), i = g.indexOf(p);
+        const da = i > 0 ? confine(g[i - 1].z, p.z) : p.limiti.da;
+        const a = i < g.length - 1 ? confine(p.z, g[i + 1].z) : p.limiti.a;
+        return { da, a, z: p.z, categoria: p.categoria, FS: p.FS ?? null, strato: true };
+      }
+      const i = liberi.indexOf(p), n = liberi.length;
+      const prec = i > 0 ? liberi[i - 1].z : null, succ = i < n - 1 ? liberi[i + 1].z : null;
       const da = prec === null || p.z - prec > vuotoMax ? p.z - meta : confine(prec, p.z);
       const a = succ === null || succ - p.z > vuotoMax ? p.z + meta : confine(p.z, succ);
-      if (p.limiti) return { da: Math.max(da, p.limiti.da), a: Math.min(a, p.limiti.a), z: p.z, categoria: p.categoria, FS: p.FS ?? null };
       return { da, a, z: p.z, categoria: p.categoria, FS: p.FS ?? null };
     });
   }
@@ -127,7 +148,8 @@
     for (let i = 1; i < ord.length; i++) {
       if (ord[i].z === ord[i - 1].z) return { stato: 'input_non_valido', errori: [{ campo: 'punti', codice: 'PROFONDITA_RIPETUTA', motivo: 'profondità ripetuta: ' + ord[i].z + ' m' }] };
     }
-    const mediano = passoMediano(ord.map(p => p.z));
+    // Passo mediano solo tra i punti senza limiti di strato (D2: le prove SPT negli strati non ne dipendono).
+    const mediano = passoMediano(ord.filter(p => !p.limiti).map(p => p.z));
     const vuotoMax = opz.vuotoMax ?? (mediano ? 3 * mediano : Infinity);
     const base = ord.length ? intervalliDeiPunti(ord, vuotoMax, mediano, zFalda) : [];
 
@@ -144,7 +166,8 @@
       let cat = 'ignoto', FS = null, zPunto = null;
       if (m <= zFalda) cat = 'sopraFalda';
       else {
-        const t = base.find(t => t.da <= m && m < t.a);
+        // Gli intervalli delle prove negli strati prevalgono su quelli dei punti senza strato.
+        const t = base.find(t => t.strato && t.da <= m && m < t.a) || base.find(t => t.da <= m && m < t.a);
         if (t) {
           zPunto = t.z;
           if (t.categoria === 'FS') { cat = 'FS'; FS = t.FS; }
@@ -171,11 +194,12 @@
       curva.push({ z: t.a, ILmin, ILmax });
     }
     const completo = spessori.ignoto < 1e-9;
+    const soloStrati = ord.length > 0 && ord.every(p => p.limiti);
     const assunzioni = [
-      { codice: 'IL_INTERVALLI', descrizione: 'Ogni punto rappresenta l\'intervallo fino a metà distanza dai punti adiacenti, oppure fino alla falda di verifica se questa cade tra due punti (metà del passo mediano verso i vuoti oltre ' + (isFinite(vuotoMax) ? decimale(vuotoMax, 2) : '∞') + ' m e agli estremi); F costante nell\'intervallo, integrale di w esatto.' },
+      soloStrati ? { codice: 'IL_INTERVALLI', descrizione: 'Ogni prova rappresenta la propria parte di strato (vedi sotto); F costante nell\'intervallo, integrale di w esatto.' } : { codice: 'IL_INTERVALLI', descrizione: 'Ogni punto rappresenta l\'intervallo fino a metà distanza dai punti adiacenti, oppure fino alla falda di verifica se questa cade tra due punti (metà del passo mediano verso i vuoti oltre ' + (isFinite(vuotoMax) ? decimale(vuotoMax, 2) : '∞') + ' m e agli estremi); F costante nell\'intervallo, integrale di w esatto.' },
       { codice: 'IL_SOPRA_FALDA', descrizione: 'Tra il piano campagna e la falda di verifica contributo nullo all\'indice: terreno non saturo.' }
     ];
-    if (ord.some(p => p.limiti)) assunzioni.push({ codice: 'IL_LIMITE_STRATO', descrizione: 'Prova SPT: ogni prova rappresenta al più lo strato che la contiene, senza estensione automatica ad altri strati (decisione di GeoHub del 21/11/2026). Le parti di strati senza prova restano senza risultato.' });
+    if (ord.some(p => p.limiti)) assunzioni.push({ codice: 'IL_LIMITE_STRATO', descrizione: 'Prova SPT: ogni prova rappresenta solo lo strato che la contiene, senza estensione automatica ad altri strati (decisione di GeoHub del 21/11/2026). Le prove dello stesso strato si dividono lo strato a metà distanza tra prove consecutive (o alla falda di verifica, se cade tra due prove), dal tetto al letto; con una sola prova l\'intervallo è lo strato intero (decisione del 25/11/2026). Le prove di altri strati non contano. Le parti di strati senza prova restano senza risultato.' });
     if (spessori.argilloso > 0) assunzioni.push({ codice: 'IL_ARGILLOSO', descrizione: 'Tratti esclusi per Ic oltre la soglia adottata (CNR-CentroMS 2024, §3.2.1.2, pag. 32: dati CPT con Ic ≤ 2,6, soglia adattabile tra 2,4 e 2,8): FS non applicabile (N.A.), non calcolato. Per convenzione operativa di calcolo il contributo F(z) di questi tratti all\'indice è assunto pari a zero (' + decimale(spessori.argilloso, 2) + ' m): non equivale a un fattore di sicurezza nullo e non coincide con la condizione FS > 1 della definizione di F(z). L\'esclusione non dimostra l\'assenza di perdita di resistenza ciclica: nei terreni fini sensibili o di transizione serve una verifica specifica (granulometria, limiti di Atterberg, criteri di suscettibilità).' });
     if (spessori.addensato > 0) assunzioni.push({ codice: 'IL_ADDENSATO', descrizione: 'Tratti oltre il campo della correlazione per addensamento (' + decimale(spessori.addensato, 2) + ' m): terreno molto addensato, non liquefacibile; FS non calcolato e contributo F(z) = 0. Soglie scelte da LiquiSite, non indicate dagli autori del metodo (Boulanger & Idriss 2014: qc1Ncs > 211, (N1)60cs > 37, valori a cui gli autori limitano Cσ, Eq. 2.16).' });
     if (!completo) assunzioni.push({ codice: 'IL_INCOMPLETO', descrizione: 'Tratti senza risultato in 0–20 m (' + decimale(spessori.ignoto, 2) + ' m: dati mancanti, non calcolati o profondità non indagate): IL compreso tra IL_min (contributo nullo in quei tratti) e IL_max (contributo massimo del modello in quei tratti). I due valori sono limiti convenzionali del modello, non un intervallo di confidenza né un massimo fisico garantito.' });

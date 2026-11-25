@@ -110,7 +110,7 @@ for (let k = 0; k < CASI; k++) {
     // rendere ignota una lettura calcolata non può restringere l'intervallo
     const punti = F.puntiPerIL(res.righe, pv.tipo === 'SPT' ? sc.strati : null), i = punti.findIndex(p => p.categoria === 'FS');
     if (i >= 0) {
-      const p2 = punti.map(p => ({ ...p })); p2[i] = { z: p2[i].z, categoria: 'ignoto' };
+      const p2 = punti.map(p => ({ ...p })); p2[i] = { z: p2[i].z, categoria: 'ignoto', limiti: p2[i].limiti }; // stessi limiti di strato: cambia solo F
       const il2 = IND.indiceIL(p2, sc.zFalda);
       if (!(il2.ILmin <= il.ILmin + 1e-9 && il2.ILmax >= il.ILmax - 1e-9)) contenimento++;
     }

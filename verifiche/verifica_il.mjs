@@ -176,9 +176,36 @@ console.log('10. Limiti di strato (prove SPT, decisione del 21/11/2026)');
   check('con limiti: il resto di 0–20 m è senza risultato', con.spessori.ignoto, 16, 1e-9);
   check('con limiti: indice incompleto', con.completo, false);
   const largo = I.indiceIL([{ z: 4, categoria: 'FS', FS: 0.5, limiti: { da: 0, a: 20 } }, { z: 8, categoria: 'FS', FS: 0.5, limiti: { da: 0, a: 20 } }], 0, { vuotoMax: 10 });
-  check('limiti più larghi dell\'intervallo: nessun effetto', largo.spessori.FS, senza.spessori.FS, 1e-12);
+  // D2 (25/11/2026): due prove nello stesso strato 0–20 m se lo dividono a metà distanza, dal tetto al letto
+  check('D2: due prove nello stesso strato coprono tutto lo strato', largo.spessori.FS, 20, 1e-12);
+  check('D2: confine tra le due prove a metà distanza (6 m)', largo.tratti.find(t => t.zPunto === 4).a, 6, 1e-12);
+  check('D2: la prima prova arriva al tetto dello strato', largo.tratti.find(t => t.zPunto === 4).da, 0, 1e-12);
   check('limiti che non contengono il punto: input non valido', I.indiceIL([{ z: 4, categoria: 'FS', FS: 0.5, limiti: { da: 5, a: 6 } }], 0).stato, 'input_non_valido');
   check('limiti con da ≥ a: input non valido', I.indiceIL([{ z: 4, categoria: 'FS', FS: 0.5, limiti: { da: 4, a: 4 } }], 0).stato, 'input_non_valido');
+}
+
+console.log('11. Partizione dello strato tra le sue prove (audit B2.1–B2.2, decisione D2 del 25/11/2026)');
+{
+  const L46 = { da: 4, a: 6 };
+  const una = I.indiceIL([{ z: 5, categoria: 'FS', FS: 0.36, limiti: L46 }], 0);
+  check('B2.1: una sola prova rappresenta lo strato intero (2 m)', una.spessori.FS, 2, 1e-12);
+  check('B2.1: IL_min = (1 − FS)·∫ w 4–6', una.ILmin, 0.64 * I.integralePeso(4, 6), 1e-9);
+  check('B2.1: IL_min > 0', una.ILmin > 0, true);
+  const st = (z, da, a) => ({ z, categoria: 'FS', FS: 0.5, limiti: { da, a } });
+  const due = I.indiceIL([st(4, 3, 5), st(16, 14, 18)], 0);
+  const quattro = I.indiceIL([st(4, 3, 5), st(15, 14, 18), st(16, 14, 18), st(17, 14, 18)], 0);
+  const t = (r) => { const x = r.tratti.find(t => t.zPunto === 4); return x.da + '–' + x.a; };
+  check('B2.2: l\'intervallo della prova a 4 m non dipende da prove in altri strati', t(quattro), t(due));
+  check('B2.2: prova a 4 m = strato 3–5 m', t(due), '3–5');
+  const tre = I.indiceIL([st(1, 0, 10), st(3, 0, 10), st(9, 0, 10)], 0);
+  check('tre prove in 0–10 m: confini a 2 e 6 m', tre.tratti.filter(x => x.categoria === 'FS').map(x => x.da + '–' + x.a).join(' '), '0–2 2–6 6–10');
+  check('passo mediano non calcolato con sole prove negli strati', tre.passoMediano, null);
+  const falda = I.indiceIL([st(2, 0, 10), { z: 6, categoria: 'FS', FS: 0.5, limiti: { da: 0, a: 10 } }], 3);
+  check('falda tra due prove dello stesso strato: confine alla falda (3 m)', falda.tratti.find(x => x.zPunto === 6).da, 3, 1e-12);
+  const misto = I.indiceIL([st(5, 4, 6), { z: 5.5, categoria: 'ignoto' }, { z: 12, categoria: 'FS', FS: 0.5 }, { z: 13, categoria: 'FS', FS: 0.5 }], 0);
+  check('la prova nello strato prevale sul punto senza strato nello stesso tratto', misto.tratti.filter(x => x.da < 6 && x.a > 4).every(x => x.zPunto === 5), true);
+  check('assunzione IL_LIMITE_STRATO cita la decisione del 25/11/2026', una.assunzioni.find(a => a.codice === 'IL_LIMITE_STRATO').descrizione.includes('25/11/2026'), true);
+  check('con sole prove negli strati, IL_INTERVALLI non cita il passo mediano', /mediano/.test(una.assunzioni.find(a => a.codice === 'IL_INTERVALLI').descrizione), false);
 }
 
 console.log('\nRisultato: ' + ok + ' controlli superati, ' + ko + ' non superati.');
