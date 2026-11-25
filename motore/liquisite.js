@@ -174,6 +174,31 @@
       { soglia, ...extra });
   }
 
+  /**
+   * Kayen et al. (2013), Vs: soglia di addensamento (audit v1.0.0, B1.c; scelta di LiquiSite approvata
+   * il 25/11/2026, non indicata dagli autori). Oltre Vs1 = 277 m/s (dopo CVs ≤ 1,5) l'Eq. 14 dà CRR
+   * a PL = 15 % maggiore di 2,0 (CRR7,5 ≈ 2,02 con PL 15 %, Mw 7,5, σ'v0 100 kPa, FC 0) e cresce
+   * senza limite (Vs1 800 m/s: CRR ≈ 10²⁹). Il valore è interno ai dati: la Tab. S1 contiene casi
+   * non liquefatti con Vs1 almeno pari a 328,62 m/s (SA2 Mackay Dam, Borah Peak 1983). Come per B&I
+   * 2014: punto non liquefacibile per addensamento, nessun CRR, FS o PL, F = 0 dichiarato.
+   */
+  const SOGLIA_ADDENSAMENTO_KAYEN = Object.freeze({ Vs1: 277 });
+  /** CRR a PL = 15 % (Eq. 14) con Mw 7,5, σ'v0 100 kPa, FC 0 (solo per il messaggio). */
+  const CRR_KAYEN_ALLA_SOGLIA = (() => {
+    const A = Math.pow(0.0073 * SOGLIA_ADDENSAMENTO_KAYEN.Vs1, 2.8011) - 2.6168 * Math.log(7.5) - 0.0099 * Math.log(100);
+    return Math.exp((A + 0.4809 * PhiInv(0.15)) / 1.946);
+  })();
+  function oltreCampoAddensamentoVs(metodo, z, punto, Vs1, extra) {
+    if (punto.sv - punto.sve < 1e-9) return nonApplicabile(metodo, z, 'NON_SATURO', MOTIVO_NON_SATURO, { diagnostica: { metodo, z, ...extra } });
+    const soglia = SOGLIA_ADDENSAMENTO_KAYEN.Vs1;
+    return nonApplicabile(metodo, z, 'OLTRE_CAMPO_ADDENSAMENTO',
+      'Vs1 = ' + Vs1.toFixed(2).replace('.', ',') + ' m/s > ' + soglia + ' m/s: terreno molto addensato, oltre la soglia adottata per la correlazione di Kayen et al. (2013). ' +
+      'Punto non liquefacibile per addensamento: CRR, FS e PL non calcolati (alla soglia CRR7,5 = ' + CRR_KAYEN_ALLA_SOGLIA.toFixed(2).replace('.', ',') + ' con PL 15 %, Mw 7,5, σ\'v0 100 kPa, FC 0). ' +
+      'Soglia scelta da LiquiSite, non un limite pubblicato dagli autori: la Tab. S1 contiene casi con Vs1 almeno pari a 328,62 m/s, la soglia è quindi interna al campo dei dati. ' +
+      'Non è un\'esclusione ai sensi del §7.11.3.4.2 delle NTC 2018.',
+      { soglia, ...extra });
+  }
+
   /** Controlla che tutte le grandezze indicate siano numeri finiti. */
   function controllaFiniti(ris, chiavi) {
     const nonFiniti = chiavi.filter(k => ris[k] !== null && !isNum(ris[k]));
@@ -822,6 +847,10 @@
     const rd = rdCetin(z, Mw, amax, Vs12);
     const CSR = 0.65 * amax * (sv / sve) * rd; // [Eq. 3]
 
+    // oltre la soglia di addensamento (scelta di LiquiSite, vedi sopra): nessun CRR, FS, PL
+    if (Vs1 > SOGLIA_ADDENSAMENTO_KAYEN.Vs1) return oltreCampoAddensamentoVs(metodo, z, punto, Vs1, {
+      CVs, Vs1, Vs12, FCusato: FC, rd, CSR, DWF: 15 * Math.pow(Mw, -1.342), avvisi });
+
     const A = Math.pow(0.0073 * Vs1, 2.8011) - 2.6168 * Math.log(Mw) - 0.0099 * Math.log(sve) + 0.0028 * FC;
     // PL [Kayen 2013, Eq. 13]
     const PL = Phi(-(A - 1.946 * Math.log(CSR)) / 0.4809);
@@ -1080,7 +1109,7 @@
   }
 
   return {
-    VERSIONE_MOTORE, GAMMA_W, STATI, Z_MAX_APP, TIPI_CPT, SOGLIE_ADDENSAMENTO_BI,
+    VERSIONE_MOTORE, GAMMA_W, STATI, Z_MAX_APP, TIPI_CPT, SOGLIE_ADDENSAMENTO_BI, SOGLIA_ADDENSAMENTO_KAYEN,
     Phi, PhiInv, tensioni,
     bi2014Spt, bi2014Cpt, cetin2018Spt, kayen2013Vs,
     rdCetin, crCetin, crIdrissBoulanger2010, icRobertsonWride, avvisiProfondita, avvisiProfonditaBI,

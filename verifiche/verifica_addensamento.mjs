@@ -102,5 +102,32 @@ console.log('3. Criterio 3 della verifica preliminare: i punti addensati contano
   check('indice IL nullo e completo', [r.indiceIL.ILmin, r.indiceIL.ILmax], [0, 0]);
 }
 
+console.log('4. Kayen 2013 (Vs): Vs1 > 277 m/s oltre il campo (audit B1.c, scelta di LiquiSite approvata il 25/11/2026)');
+{
+  const t = L.tensioni(STRATO, 1, 10), cvs = Math.min(Math.pow(100 / t.sve, 0.25), 1.5);
+  const kay = (vs1, zw = 1) => { const tt = L.tensioni(STRATO, zw, 10); return L.kayen2013Vs({ z: 10, Vs: vs1 / cvs, FC: 0, sv: tt.sv, sve: tt.sve }, SISMA, { Vs12: 200 }); };
+  check('soglia esportata', L.SOGLIA_ADDENSAMENTO_KAYEN, { Vs1: 277 });
+  check('Vs1 = 277,00: calcolato (soglia stretta)', [kay(277).stato, Math.abs(kay(277).Vs1 - 277) < 1e-9], ['calcolato', true]);
+  check('Vs1 = 277,01: oltre il campo', [kay(277.01).stato, kay(277.01).codice], ['non_applicabile', 'OLTRE_CAMPO_ADDENSAMENTO']);
+  const o = kay(800);
+  check('Vs1 = 800: oltre il campo, nessun CRR, FS, PL', [o.stato, o.CRR15, o.FS, o.PL], ['non_applicabile', undefined, undefined, undefined]);
+  check('oltre il campo: Vs1, CSR, rd e DWF conservati', ['Vs1', 'CVs', 'rd', 'CSR', 'DWF'].every(k => Number.isFinite(o[k])), true);
+  check('messaggio: soglia, CRR7,5 = 2,02, scelta di LiquiSite, dati della Tab. S1', /Vs1 = 800,00 m\/s > 277 m\/s/.test(o.motivo) && /CRR7,5 = 2,02/.test(o.motivo) && /scelta da LiquiSite, non un limite pubblicato/.test(o.motivo) && /328,62/.test(o.motivo) && /non è un'esclusione/i.test(o.motivo), true);
+  check('sopra falda prevale NON_SATURO', kay(800, 10).codice, 'NON_SATURO');
+  check('CRR a PL 15 % alla soglia ≈ 2,02 (Mw 7,5, σ\'v0 100 kPa, FC 0)', Math.abs(Math.exp((Math.pow(0.0073 * 277, 2.8011) - 2.6168 * Math.log(7.5) - 0.0099 * Math.log(100) + 0.4809 * L.PhiInv(0.15)) / 1.946) - 2.02) < 0.005, true);
+  // profilo Vs completo
+  const b = P.nuovaProva('VS', 'kay'); b.colonne = ['z', 'Vs'];
+  b.dati = [[2, 150], [4, 180], [6, 400], [8, 220], [10, 800]];
+  const s = P.nuovoScenario(b, 'kay', 0);
+  Object.assign(s, { metodo: 'kayen2013Vs', Mw: 6.5, amax: 0.25, zFalda: 1, strati: [{ id: 'strato-1', da: 0, a: 12, gamma: 18, gammaSat: 19, FC: 5 }] }); s.opzioni.Vs12 = 200;
+  const r = F.calcolaScenario(b, s, L);
+  const righe = r.righe.map(x => x.codice || x.stato);
+  check('profilo Vs: punti a 6 e 10 m oltre il campo', [righe[2], righe[4]], ['OLTRE_CAMPO_ADDENSAMENTO', 'OLTRE_CAMPO_ADDENSAMENTO']);
+  check('profilo Vs: FS non esposto, Vs1 e CSR sì', [F.valoreRisultato(r.righe[2], 'FS'), Number.isFinite(F.valoreRisultato(r.righe[2], 'Vs1')), Number.isFinite(F.valoreRisultato(r.righe[2], 'CSR'))], [null, true, true]);
+  check('IL: spessore «addensato» > 0, nessuna estensione ad «ignoto»', [r.indiceIL.spessori.addensato > 0, r.indiceIL.spessori.addensato + r.indiceIL.spessori.ignoto <= 20 + 1e-9], [true, true]);
+  const senza = F.calcolaScenario(Object.assign(P.copia(b), { dati: [[2, 150], [4, 180], [6, 270], [8, 220], [10, 270]] }), s, L);
+  check('IL: il tratto addensato ha F = 0 (IL non maggiore di quello con Vs prossime alla soglia)', r.indiceIL.ILmax <= senza.indiceIL.ILmax + 1e-9, true);
+}
+
 console.log('\nRisultato: ' + ok + ' controlli superati, ' + ko + ' non superati.');
 process.exit(ko ? 1 : 0);

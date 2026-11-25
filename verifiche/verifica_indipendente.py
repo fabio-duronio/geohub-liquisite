@@ -154,6 +154,8 @@ def cetin(p):
 
 def kayen(p):
     vs1 = p['Vs'] * min((100 / p['sve']) ** 0.25, 1.5)
+    if vs1 > 277:  # oltre il campo per addensamento (scelta di LiquiSite, audit B1.c)
+        return {'stato': 'non_applicabile'}
     csr = 0.65 * p['amax'] * p['sv'] / p['sve'] * rd_cetin(p['z'], p['Mw'], p['amax'], p['Vs12'])
     A = (0.0073 * vs1) ** 2.8011 - 2.6168 * math.log(p['Mw']) - 0.0099 * math.log(p['sve']) + 0.0028 * p['FC']
     pl = PHI(-(A - 1.946 * math.log(csr)) / 0.4809)
