@@ -14,9 +14,9 @@
  *  - SPT: punti discreti, nessun profilo continuo (assunzione dichiarata).
  */
 (function (root, factory) {
-  if (typeof module === 'object' && module.exports) module.exports = factory(require('./progetto.js'), require('../motore/indici.js'), require('../motore/cedimenti.js'));
-  else root.LiquiProfilo = factory(root.LiquiProgetto, root.LiquiIndici, root.LiquiCedimenti);
-})(typeof self !== 'undefined' ? self : this, function (P, IND, CED) {
+  if (typeof module === 'object' && module.exports) module.exports = factory(require('./progetto.js'), require('../motore/indici.js'), require('../motore/cedimenti.js'), require('./esclusione.js'));
+  else root.LiquiProfilo = factory(root.LiquiProgetto, root.LiquiIndici, root.LiquiCedimenti, root.LiquiEsclusione);
+})(typeof self !== 'undefined' ? self : this, function (P, IND, CED, EX) {
   'use strict';
 
   /** Codice del motore per i punti oltre il campo della correlazione per addensamento (audit B1). */
@@ -243,18 +243,28 @@
     const par = prova.parametri || {};
     const sisma = { amax: scenario.amax, Mw: scenario.Mw };
     const righe = dati.map((d) => calcolaRiga(d, prova, scenario, L, richiesti, par, sisma));
-    const indiceIL = IND ? IND.indiceIL(puntiPerIL(righe, prova.tipo === 'SPT' ? scenario.strati : null), scenario.zFalda) : null;
+    // D3: strati esclusi motivatamente (convenzione applicativa di GeoHub): F = 0 dichiarato, εv = 0, spessore a parte
+    const escl = EX ? EX.stratiEsclusi(L, scenario) : { esclusi: [], nonAttive: [] };
+    const oplEsc = escl.esclusi.length ? { esclusi: escl.esclusi } : {};
+    const indiceIL = IND ? IND.indiceIL(puntiPerIL(righe, prova.tipo === 'SPT' ? scenario.strati : null), scenario.zFalda, oplEsc) : null;
     // cedimento post-sismico: metodo da CPT (Zhang et al. 2002), solo con il metodo CPT
     let cedimenti = null;
     if (CED && scenario.metodo === 'bi2014Cpt') {
-      cedimenti = CED.cedimento(puntiPerCedimenti(righe), scenario.zFalda);
+      cedimenti = CED.cedimento(puntiPerCedimenti(righe), scenario.zFalda, oplEsc);
       if (cedimenti.stato === 'calcolato') {
         const perZ = new Map();
         for (const t of cedimenti.tratti) if (t.categoria === 'FS') perZ.set(t.zPunto, t.epsMin);
         for (const r of righe) if (perZ.has(r.z) && r.stato === 'calcolato' && r.valori) r.valori.epsV = perZ.get(r.z);
       }
     }
-    return { ...base, stato: 'calcolato', righe, riepilogo: riepiloga(righe, prova, scenario), indiceIL, cedimenti };
+    // avvisi non bloccanti: richiesta incompleta (strato incluso) e FS < 1 in strato escluso
+    const avvEsc = escl.nonAttive.map(n => ({ codice: 'ESCLUSIONE_STRATO_NON_APPLICATA', messaggio: 'Strato ' + numeroIt(n.da) + '–' + numeroIt(n.a) + ' m: esclusione motivata non applicata (' + n.motivo + '); lo strato resta incluso nel calcolo.' }));
+    for (const e of escl.esclusi) {
+      const n = righe.filter(r => r.stato === 'calcolato' && r.valori && isNum(r.valori.FS) && r.valori.FS < 1 && r.z >= e.da && r.z < e.a).length;
+      if (n) avvEsc.push({ codice: 'ESCLUSO_CON_FS_MINORE_DI_1', messaggio: 'Strato ' + numeroIt(e.da) + '–' + numeroIt(e.a) + ' m escluso motivatamente, ma ' + n + ' punti hanno FS < 1: i metodi sono tarati su terreni granulari; il FS è mostrato come «non considerato» e non entra in IL né nel cedimento.' });
+    }
+    return { ...base, stato: 'calcolato', righe, riepilogo: riepiloga(righe, prova, scenario), indiceIL, cedimenti,
+      esclusioneStrati: escl, avvisiEsclusione: avvEsc };
   }
 
   /**

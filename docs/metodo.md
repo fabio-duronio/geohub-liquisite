@@ -148,3 +148,5 @@ Profondità: il limite di 20 m è di LiquiSite. L'avviso sull'incertezza di r_d 
 Precondizione di saturazione: il punto deve essere sotto la falda di verifica. La posizione rispetto alla falda la stabilisce il profilo (`app/profilo.js`) con le tensioni del motore; il motore controlla inoltre che u = σ_v − σ'_v sia positiva.
 
 Iterazioni (B&I SPT e CPT, Cetin con campionatore senza rivestimento): arresto quando la variazione assoluta tra due passi è < 10⁻⁹; massimo 100, 200 e 50 passi (modificabile con `opz.maxIterazioni`). Il risultato riporta `convergenza: {convergente, numeroIterazioni, residuoFinale, tolleranza, maxIterazioni}`.
+
+- **Strati esclusi motivatamente (IL e cedimento)**: F = 0 dichiarato nello strato (anche dove ci sono prove) e εv = 0; IL_min e IL_max non cambiano per quei tratti; spessore escluso distinto dai tratti senza risultato. Convenzione applicativa di GeoHub, non un'esclusione ai sensi del §7.11.3.4.2. Con SPT lo strato è escluso per intero.

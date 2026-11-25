@@ -145,3 +145,7 @@ Le profondità non indagate non generano righe: il riepilogo distingue profondit
   - la soglia di Ic (2,6 predefinita; 2,4–2,8 per l'analisi di sensibilità, B&I 2014, pag. 99) decide quali punti si verificano: l'IL può cambiare in modo sensibile con la soglia. Nella prova d'uso del 22/11/2026 (vedi [Validazione](validazione.md)) l'IL è variato di circa il 40–60 % tra 2,4 e 2,8;
   - con il metodo CPT il contenuto di fini è stimato da Ic se non è indicato per lo strato.
 - **Dati e rete.** I dati delle prove e i calcoli restano nel browser: nessun dato del progetto viene inviato a server. La bozza automatica resta nella memoria locale del browser (vedi Stampa ed esportazioni). La libreria dei grafici (Chart.js) e i caratteri (IBM Plex) sono inclusi nell'app, che non contatta servizi esterni. Una politica di sicurezza dei contenuti (CSP) ammette solo risorse della pagina stessa.
+
+### Esclusione motivata di uno strato da IL e cedimento
+
+Nella tabella degli strati si può escludere uno strato dal calcolo di IL e cedimento, indicando un criterio (criterio 4 confermato in Verifica preliminare per quello strato, substrato lapideo, terreno coesivo, altro) e una motivazione. È una convenzione applicativa di GeoHub, non un'esclusione ai sensi del §7.11.3.4.2. Nello strato F = 0 e εv = 0 sono dichiarati; lo spessore escluso è riportato a parte; il FS resta calcolato ma «non considerato». Senza criterio, senza motivazione o con criterio 4 non confermato lo strato resta incluso, con avviso.

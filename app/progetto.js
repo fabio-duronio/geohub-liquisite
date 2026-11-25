@@ -246,6 +246,25 @@
       return v;
     };
     const numero = (v, campo) => { if (!isNum(v)) { err(campo, 'deve essere un numero, trovato ' + descrivi(v)); return NaN; } return v; };
+    // D3: esclusione motivata dello strato. Le chiavi si scrivono solo se presenti: i file precedenti restano identici
+    // (strato non escluso, stessa firma degli input).
+    const CRITERI_STRATO = ['criterio4', 'substrato_lapideo', 'coesivo', 'altro'];
+    const esclusioneMotivataStrato = (st, cs) => {
+      const o = {};
+      if (st.escluso_motivatamente !== undefined) {
+        if (typeof st.escluso_motivatamente === 'boolean') o.escluso_motivatamente = st.escluso_motivatamente;
+        else err(cs + '.escluso_motivatamente', 'deve essere vero o falso');
+      }
+      if (st.criterio !== undefined && st.criterio !== null) {
+        if (typeof st.criterio === 'string' && CRITERI_STRATO.includes(st.criterio)) o.criterio = st.criterio;
+        else err(cs + '.criterio', 'criterio non ammesso (' + CRITERI_STRATO.join(', ') + ')');
+      }
+      if (st.motivazione !== undefined && st.motivazione !== null) {
+        if (typeof st.motivazione === 'string') o.motivazione = st.motivazione;
+        else err(cs + '.motivazione', 'deve essere un testo');
+      }
+      return o;
+    };
     const boolONull = (v, campo) => {
       if (v === undefined || v === null) return null;
       if (typeof v !== 'boolean') { err(campo, 'deve essere sì/no (true/false), trovato ' + descrivi(v)); return null; }
@@ -352,7 +371,8 @@
         const sid = st.id === undefined || st.id === null ? null : id(st.id, cs + '.id');
         if (sid !== null && strati.some(x => x.id === sid)) err(cs + '.id', 'identificativo dello strato ripetuto: ' + sid);
         strati.push({ ...(sid !== null ? { id: sid } : {}), da: numero(st.da, cs + '.da'), a: numero(st.a, cs + '.a'), gamma: numero(st.gamma, cs + '.gamma'), gammaSat: numero(st.gammaSat, cs + '.gammaSat'),
-          FC: numONull(st.FC, cs + '.FC'), descrizione: testo(st.descrizione, cs + '.descrizione', false) });
+          FC: numONull(st.FC, cs + '.FC'), descrizione: testo(st.descrizione, cs + '.descrizione', false),
+          ...esclusioneMotivataStrato(st, cs) });
       });
       if (s.opzioni !== undefined && !isOggetto(s.opzioni)) err(c + '.opzioni', 'deve essere un oggetto');
       const opzioni = { Vs12: null, IcSoglia: 2.6, CFC: 0, FSrif: FS_RIFERIMENTO };

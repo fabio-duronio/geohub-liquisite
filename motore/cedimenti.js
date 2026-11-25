@@ -133,6 +133,7 @@
       { codice: 'ZHANG_AMBITO', descrizione: 'Piano campagna sub-orizzontale, lontano da scarpate libere: deformazione volumetrica = deformazione verticale. Gli autori indicano il metodo per progetti a rischio basso o medio e come stima preliminare per gli altri; nessuno spostamento laterale è calcolato.' },
       { codice: 'ZHANG_INTEGRAZIONE', descrizione: 'Cedimento S = Σ εv · Δz (Zhang et al. 2002, Eq. 1) su 0–20 m, con la partizione della verticale dell\'indice IL.' }
     ];
+    if (il.spessori.escluso > 0) assunzioni.push({ codice: 'ZHANG_STRATI_ESCLUSI', descrizione: 'Strati esclusi motivatamente (' + il.spessori.escluso.toFixed(2).replace('.', ',') + ' m entro 20 m, convenzione applicativa di GeoHub): εv = 0, anche dove ci sono prove; spessore distinto dai tratti senza risultato.' });
     if (!completo) assunzioni.push({ codice: 'CEDIMENTI_INCOMPLETO', descrizione: 'Tratti senza risultato in 0–20 m (' + il.spessori.ignoto.toFixed(2).replace('.', ',') + ' m): cedimento compreso tra il minimo (contributo nullo) e il massimo (deformazione della curva limite di Zhang et al. 2002, ' + EPS_LIMITE.toFixed(2).replace('.', ',') + ' %). I due valori sono limiti convenzionali del modello, non un intervallo di confidenza né un massimo fisico garantito: con (qc1N)cs < 33 la deformazione può essere maggiore.' });
     return {
       stato: 'calcolato', versione: VERSIONE_CEDIMENTI, completo,

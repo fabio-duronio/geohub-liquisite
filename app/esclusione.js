@@ -165,6 +165,50 @@
   }
 
   /**
+   * Esclusione motivata di uno strato dal calcolo dell'IL e del cedimento (decisione D3 del
+   * 25/11/2026). Convenzione applicativa di GeoHub: non è un'esclusione «ai sensi del §7.11.3.4.2».
+   * Attributi dello strato in scenario.strati (entrano nella firma degli input): escluso_motivatamente
+   * (booleano), criterio (uno dei CRITERI_ESCLUSIONE) e motivazione (testo non vuoto).
+   *  - criterio4: criterio 4 (Fig. 7.11.1) confermato dal geologo nella Verifica preliminare per quello strato;
+   *  - substrato_lapideo; coesivo (giudizio del geologo: i parametri di plasticità vanno in motivazione);
+   *  - altro (la motivazione è il testo del criterio).
+   * Controllo di completezza = solo presenza. Senza criterio ammesso, senza motivazione, o con criterio 4 non
+   * confermato, lo strato resta incluso nel calcolo, con un avviso.
+   */
+  const CRITERI_ESCLUSIONE = Object.freeze({
+    criterio4: 'criterio 4 (Fig. 7.11.1) confermato in Verifica preliminare',
+    substrato_lapideo: 'substrato lapideo',
+    coesivo: 'terreno coesivo (giudizio del geologo)',
+    altro: 'altro (testo)'
+  });
+
+  function esclusioneMotivata(L, scenario, s) {
+    if (!s || s.escluso_motivatamente !== true) return { richiesta: false, attiva: false };
+    const criterio = typeof s.criterio === 'string' ? s.criterio : null;
+    const motivazione = typeof s.motivazione === 'string' ? s.motivazione.trim() : '';
+    const base = { richiesta: true, attiva: false, criterio, motivazione, da: s.da, a: s.a, id: s.id || null };
+    if (!criterio || !Object.prototype.hasOwnProperty.call(CRITERI_ESCLUSIONE, criterio)) return { ...base, motivo: 'criterio non indicato' };
+    if (!motivazione) return { ...base, motivo: 'motivazione mancante' };
+    if (criterio === 'criterio4') {
+      const c4 = criterio4Strato(L, datiStrato(datiEsclusione(scenario), s));
+      if (!(c4.stato === 'valutato' && c4.soddisfatto === true)) return { ...base, motivo: 'criterio 4 non confermato in Verifica preliminare per questo strato' };
+    }
+    return { ...base, attiva: true };
+  }
+
+  /** Esclusioni motivate dello scenario: { esclusi: [attive], nonAttive: [richieste ma incomplete] }. */
+  function stratiEsclusi(L, scenario) {
+    const esclusi = [], nonAttive = [];
+    for (const s of (scenario && scenario.strati) || []) {
+      if (!isNum(s.da) || !isNum(s.a)) continue;
+      const e = esclusioneMotivata(L, scenario, s);
+      if (e.attiva) esclusi.push({ id: e.id, da: s.da, a: s.a, criterio: e.criterio, motivazione: e.motivazione, etichetta: CRITERI_ESCLUSIONE[e.criterio] });
+      else if (e.richiesta) nonAttive.push({ id: e.id, da: s.da, a: s.a, criterio: e.criterio, motivo: e.motivo });
+    }
+    return { esclusi, nonAttive };
+  }
+
+  /**
    * Valutazione completa per uno scenario.
    * Restituisce { criteri: {c1, c2}, strati: [...], esito: { codice, titolo, testo }, conteggi, note }.
    */
@@ -251,5 +295,5 @@
       ? 'Tratti saturi non coperti da prove, non considerati sicuri: ' + v.trattiScoperti.map(t => 'strato ' + fmtIt(Number(t.strato.split('–')[0]), 2) + '–' + fmtIt(Number(t.strato.split('–')[1]), 2) + ' m, tratto ' + fmtIt(t.da, 2) + '–' + fmtIt(t.a, 2) + ' m').join('; ') + '.' : '';
   }
 
-  return { datiEsclusione, datiStrato, aggiornaStrato, valutaEsclusione, leggiCurva, testoCurva, testoTrattiScoperti, FUSI, Z_LIMITE, TOLLERANZA_COPERTURA, SABBIA_PULITA_MAX };
+  return { datiEsclusione, datiStrato, aggiornaStrato, valutaEsclusione, leggiCurva, testoCurva, testoTrattiScoperti, esclusioneMotivata, stratiEsclusi, CRITERI_ESCLUSIONE, FUSI, Z_LIMITE, TOLLERANZA_COPERTURA, SABBIA_PULITA_MAX };
 });
