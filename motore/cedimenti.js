@@ -37,7 +37,7 @@
 })(typeof self !== 'undefined' ? self : this, function (IND) {
   'use strict';
 
-  const VERSIONE_CEDIMENTI = '0.2.0';
+  const VERSIONE_CEDIMENTI = '0.3.0';
   const Z_MAX = 20;
   const Q_MIN = 33, Q_MAX = 200;
   const isNum = (v) => typeof v === 'number' && Number.isFinite(v);

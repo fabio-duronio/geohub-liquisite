@@ -60,7 +60,7 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  const VERSIONE_INDICI = '0.2.1';
+  const VERSIONE_INDICI = '0.3.0';
   const Z_IL = 20;
   const CATEGORIE = ['FS', 'sopraFalda', 'argilloso', 'addensato', 'ignoto'];
   /** Categorie dei tratti: ai punti si aggiunge 'escluso' (strato escluso motivatamente, decisione D3). */

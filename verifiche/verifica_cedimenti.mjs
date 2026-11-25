@@ -97,7 +97,7 @@ console.log('4. Collegamento al profilo e all\'esempio');
   const c = r.cedimenti;
   check('cedimenti calcolati per la CPTU', c.stato, 'calcolato');
   check('prova fino a 20 m: cedimento completo', [c.completo, c.Smin === c.Smax], [true, true]);
-  check('LSN non calcolato dalla 1.0 (decisione del 22/11/2026)', [Object.keys(c).some(k => /LSN/.test(k)), C.VERSIONE_CEDIMENTI], [false, '0.2.0']);
+  check('LSN non calcolato dalla 1.0 (decisione del 22/11/2026)', [Object.keys(c).some(k => /LSN/.test(k)), C.VERSIONE_CEDIMENTI], [false, '0.3.0']);
   const corta = JSON.parse(JSON.stringify(pr.prove[0])); corta.dati = corta.dati.filter(d => d[0] <= 18.4 + 1e-9);
   const cc = F.calcolaScenario(corta, s1, L, { adesso: '2026-11-13T00:00:00Z' }).cedimenti;
   check('prova interrotta a 18,4 m: intervallo', [cc.completo, cc.Smin < cc.Smax], [false, true]);
