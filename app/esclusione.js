@@ -23,6 +23,18 @@
   const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
   const Z_LIMITE = 20;
   const EPS = 1e-6;
+  /**
+   * Criteri di screening applicativi di LiquiSite (decisione D5 del 25/11/2026), non tolleranze né
+   * prescrizioni delle NTC 2018. Distanza massima tra due prove consecutive, tra il tetto saturo dello
+   * strato e la prima prova, tra l'ultima prova e il letto (m). Fissa: non dipende dal passo.
+   */
+  const TOLLERANZA_COPERTURA = Object.freeze({ SPT: 1.5, CPTE: 0.25, CPTU: 0.25 });
+  /**
+   * «Sabbia pulita»: FC massimo ammesso (%) e Ic massimo ammesso quando FC non è misurato. FC = 5 %
+   * corrisponde a Ic = 1,775 con B&I 2014, Eq. 2.30 (FC = 80·(Ic + C_FC) − 137, C_FC = 0: valore
+   * centrale della stima, l'incertezza di ±0,29 su Ic non è considerata). Scelte applicative.
+   */
+  const SABBIA_PULITA_MAX = Object.freeze({ FC: 5, Ic: 1.775 });
 
   /** Dati della verifica preliminare di uno scenario, con i valori predefiniti. */
   function datiEsclusione(scenario) {
@@ -73,6 +85,8 @@
   /** Grandezza del criterio 3 per metodo: la normalizzazione del metodo scelto. */
   const GRANDEZZA_C3 = { bi2014Cpt: 'qc1N', bi2014Spt: 'N160', cetin2018Spt: 'N160' };
 
+  const fmtIt = (v, c = 1) => v.toFixed(c).replace('.', ',');
+
   function criterio3Strato(L, prova, scenario, risultato, s, ds) {
     const chiave = GRANDEZZA_C3[scenario.metodo];
     if (!chiave) return { stato: 'non_applicabile', soddisfatto: null, motivo: 'criterio definito per SPT e CPT: non si applica a questa prova' };
@@ -81,14 +95,17 @@
     const righe = risultato.righe.filter(r => isNum(r.z) && r.z >= s.da - EPS && r.z < s.a - EPS && r.z > scenario.zFalda + EPS && r.z <= Z_LIMITE + EPS);
     if (zA <= zDa) return { stato: 'non_pertinente', soddisfatto: null, motivo: 'strato sopra la falda di verifica o oltre 20 m' };
     if (!righe.length) return { stato: 'dati_insufficienti', soddisfatto: null, motivo: 'nessun punto della prova nello strato saturo' };
-    // la prova deve attraversare tutto il tratto saturo dello strato (tratti non indagati: mai esclusi)
-    const zs = risultato.righe.filter(r => isNum(r.z)).map(r => r.z).sort((x, y) => x - y);
-    const passi = zs.slice(1).map((z, i) => z - zs[i]).filter(d => d > EPS).sort((x, y) => x - y);
-    const passo = passi.length ? passi[Math.floor(passi.length / 2)] : 0;
-    const tol = Math.max(0.5, 1.5 * passo);
-    const zsS = righe.map(r => r.z);
-    let lacuna = zsS[0] - zDa > tol || zA - zsS[zsS.length - 1] > tol;
-    for (let i = 1; i < zsS.length && !lacuna; i++) if (zsS[i] - zsS[i - 1] > tol) lacuna = true;
+    // copertura (D5): tolleranza fissa per tipo di prova; basta un intervallo oltre tolleranza
+    // (strettamente maggiore) perché il criterio 3 non sia soddisfatto per lo strato. Gli estremi sono
+    // il tratto saturo dello strato (da max(tetto, falda) a min(letto, 20 m)).
+    const tol = TOLLERANZA_COPERTURA[prova.tipo] !== undefined ? TOLLERANZA_COPERTURA[prova.tipo] : TOLLERANZA_COPERTURA.SPT;
+    const zsS = righe.map(r => r.z).sort((x, y) => x - y);
+    const trattiScoperti = [];
+    const intervallo = (da, a) => { if (a - da > tol + EPS) trattiScoperti.push({ da, a }); };
+    intervallo(zDa, zsS[0]);
+    for (let i = 1; i < zsS.length; i++) intervallo(zsS[i - 1], zsS[i]);
+    intervallo(zsS[zsS.length - 1], zA);
+    const lacuna = trattiScoperti.length > 0;
     // anche i punti oltre il campo per addensamento hanno la resistenza normalizzata (audit B1)
     const valori = righe.map(r => ((r.stato === 'calcolato' || r.codice === 'OLTRE_CAMPO_ADDENSAMENTO') && r.valori && isNum(r.valori[chiave])) ? r.valori[chiave] : null);
     const mancanti = valori.filter(v => v === null).length;
@@ -103,7 +120,25 @@
     const base = { grandezza, soglia, punti: righe.length, mancanti, conIcOltre, sopraSoglia: sopra, minimo, sabbiaPulita: ds.sabbiaPulita };
     if (ds.sabbiaPulita === null) return { ...base, stato: 'dati_insufficienti', soddisfatto: null, motivo: 'indicare se lo strato è costituito da sabbie pulite' };
     if (ds.sabbiaPulita === false) return { ...base, stato: 'valutato', soddisfatto: false, motivo: 'lo strato non è dichiarato sabbia pulita' };
-    if (lacuna) return { ...base, stato: 'dati_insufficienti', soddisfatto: null, motivo: 'la prova non descrive tutto il tratto saturo dello strato (' + zDa.toFixed(2).replace('.', ',') + '–' + zA.toFixed(2).replace('.', ',') + ' m)' };
+    // «sabbia pulita» contraddetta dai dati (D5): nessuna deroga, vale per ogni punto saturo dello strato.
+    // FC noto (dato della prova o della stratigrafia): FC > 5 %. FC non noto, solo CPT: Ic > 1,775.
+    const fcNoti = righe.map(r => isNum(r.FC) ? r.FC : null);
+    const icPunti = righe.map(r => (r.valori && isNum(r.valori.Ic)) ? r.valori.Ic : (r.sbt && isNum(r.sbt.Ic) ? r.sbt.Ic : null));
+    const viola = righe.map((r, i) => fcNoti[i] !== null ? fcNoti[i] > SABBIA_PULITA_MAX.FC : (prova.tipo !== 'SPT' && icPunti[i] !== null && icPunti[i] > SABBIA_PULITA_MAX.Ic));
+    const nViola = viola.filter(Boolean).length;
+    const fcMax = Math.max(...fcNoti.filter(v => v !== null), -Infinity), icMax = Math.max(...icPunti.filter((v, i) => v !== null && fcNoti[i] === null), -Infinity);
+    const contraddizione = nViola ? {
+      punti: nViola, fcMax: fcMax === -Infinity ? null : fcMax, icMax: icMax === -Infinity ? null : icMax,
+      messaggio: 'La dichiarazione «sabbia pulita» è contraddetta dai dati (' + [
+        fcMax > SABBIA_PULITA_MAX.FC ? 'FC fino a ' + fmtIt(fcMax) + ' % > ' + SABBIA_PULITA_MAX.FC + ' %' : '',
+        icMax > SABBIA_PULITA_MAX.Ic ? 'Ic fino a ' + fmtIt(icMax, 3) + ' > ' + fmtIt(SABBIA_PULITA_MAX.Ic, 3) + ', FC ≈ 5 % da B&I 2014, Eq. 2.30' : ''
+      ].filter(Boolean).join('; ') + ', in ' + nViola + (nViola === 1 ? ' punto' : ' punti') + ' saturi): criterio 3 non soddisfatto, senza deroga. Se la parte pulita è distinta, dividere lo strato. Criterio di screening di LiquiSite, non una prescrizione delle NTC.'
+    } : null;
+    if (lacuna || contraddizione) return { ...base, stato: 'valutato', soddisfatto: false, tolleranza: tol, trattiScoperti, contraddizione,
+      motivo: [
+        lacuna ? 'prove non sufficienti a descrivere il tratto saturo dello strato (' + zDa.toFixed(2).replace('.', ',') + '–' + zA.toFixed(2).replace('.', ',') + ' m): ' + trattiScoperti.length + (trattiScoperti.length === 1 ? ' tratto' : ' tratti') + ' con distanza tra prove oltre ' + fmtIt(tol, 2) + ' m (' + trattiScoperti.map(t => fmtIt(t.da, 2) + '–' + fmtIt(t.a, 2) + ' m').join(', ') + '), non considerati sicuri; tolleranza fissa di LiquiSite, non una prescrizione delle NTC' : '',
+        contraddizione ? contraddizione.messaggio : ''
+      ].filter(Boolean).join(' · ') };
     if (mancanti) return { ...base, stato: 'dati_insufficienti', soddisfatto: null, motivo: [
       conIcOltre ? conIcOltre + (conIcOltre === 1 ? ' punto' : ' punti') + ' con Ic oltre la soglia (comportamento non da sabbia pulita)' : '',
       mancanti - conIcOltre ? (mancanti - conIcOltre) + (mancanti - conIcOltre === 1 ? ' punto' : ' punti') + ' senza ' + grandezza + ' calcolato' : ''
@@ -182,11 +217,14 @@
       testo: conteggi.stratiEsclusi + ' strati su ' + pert.length + ' soddisfano il criterio 3 o 4; per gli altri la verifica resta necessaria.' };
     else esito = { codice: 'non_dimostrata', titolo: 'Esclusione non dimostrata', testo: 'Nessun criterio consente di omettere la verifica.' };
 
+    const trattiScoperti = strati.filter(x => x.pertinente && x.c3.trattiScoperti && x.c3.trattiScoperti.length)
+      .flatMap(x => x.c3.trattiScoperti.map(t => ({ ...t, strato: x.da + '–' + x.a })));
     const note = [];
+    if (trattiScoperti.length) note.push('Tratti saturi non coperti da prove (distanza oltre la tolleranza di ' + fmtIt(TOLLERANZA_COPERTURA[prova.tipo] !== undefined ? TOLLERANZA_COPERTURA[prova.tipo] : TOLLERANZA_COPERTURA.SPT, 2) + ' m, criterio di LiquiSite): ' + trattiScoperti.map(t => fmtIt(t.da, 2) + '–' + fmtIt(t.a, 2) + ' m').join(', ') + '. Non sono considerati sicuri.');
     if (c1.soddisfatto === false) note.push('amax ≥ 0,1 g: le indagini devono consentire di valutare gli altri tre criteri (Circolare 7/2019, C7.11.3.4).');
     if (!coperto && pert.length) note.push('La stratigrafia non descrive tutto il tratto saturo fino a 20 m: i criteri 3–4 non possono escludere l\'intero sito.');
     note.push('L\'esito della verifica preliminare non modifica i fattori di sicurezza calcolati.');
-    return { criteri: { c1, c2 }, strati, esito, conteggi, coperto, note, falda: zF, zLimite: Z_LIMITE };
+    return { criteri: { c1, c2 }, strati, esito, conteggi, coperto, trattiScoperti, note, falda: zF, zLimite: Z_LIMITE };
   }
 
   /** Testo «d [mm]; p [%]» per riga → curva [[d, p], …]; decimali con virgola o punto. */
@@ -207,5 +245,11 @@
     return (curva || []).map(([d, p]) => String(d).replace('.', ',') + '; ' + String(p).replace('.', ',')).join('\n');
   }
 
-  return { datiEsclusione, datiStrato, aggiornaStrato, valutaEsclusione, leggiCurva, testoCurva, FUSI, Z_LIMITE };
+  /** Testo dei tratti non coperti, per CSV e stampa; vuoto se non ce ne sono. */
+  function testoTrattiScoperti(v) {
+    return v && v.trattiScoperti && v.trattiScoperti.length
+      ? 'Tratti saturi non coperti da prove, non considerati sicuri: ' + v.trattiScoperti.map(t => 'strato ' + fmtIt(Number(t.strato.split('–')[0]), 2) + '–' + fmtIt(Number(t.strato.split('–')[1]), 2) + ' m, tratto ' + fmtIt(t.da, 2) + '–' + fmtIt(t.a, 2) + ' m').join('; ') + '.' : '';
+  }
+
+  return { datiEsclusione, datiStrato, aggiornaStrato, valutaEsclusione, leggiCurva, testoCurva, testoTrattiScoperti, FUSI, Z_LIMITE, TOLLERANZA_COPERTURA, SABBIA_PULITA_MAX };
 });

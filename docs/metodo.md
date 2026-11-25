@@ -107,7 +107,7 @@ Basta un criterio soddisfatto. L'app scrive «verifica omessa ai sensi del §7.1
 |---|---|---|
 | 1 | a_max in campo libero < 0,1 g | confronto diretto; se non soddisfatto, la Circolare (C7.11.3.4) chiede di approfondire le indagini per gli altri tre criteri |
 | 2 | falda media stagionale > 15 m, p.c. sub-orizzontale, fondazioni superficiali | le tre condizioni insieme |
-| 3 | sabbie pulite con (N₁)₆₀ > 30 o q_c1N > 180 | normalizzazione del **metodo principale** scelto, dichiarata in stampa (le NTC indicano solo la normalizzazione a 100 kPa); avviso se il valore supera la soglia di meno del 10 % (scelta di LiquiSite) |
+| 3 | sabbie pulite con (N₁)₆₀ > 30 o q_c1N > 180 | normalizzazione del **metodo principale** scelto, dichiarata in stampa (le NTC indicano solo la normalizzazione a 100 kPa); avviso se il valore supera la soglia di meno del 10 % (scelta di LiquiSite). Copertura e «sabbia pulita» (decisione D5 del 25/11/2026, scelte applicative di LiquiSite, non prescrizioni delle NTC): tolleranza fissa tra prove di 1,5 m (SPT) o 0,25 m (CPT), tra tetto saturo e prima prova, tra prove consecutive e tra ultima prova e letto; un intervallo oltre tolleranza rende il criterio non soddisfatto e i tratti scoperti non sono considerati sicuri. «Sabbia pulita» contraddetta dai dati (FC > 5 %; CPT senza FC misurato: Ic > 1,775, FC ≈ 5 % da B&I 2014 Eq. 2.30 con C_FC = 0, valore centrale, incertezza di ±0,29 su Ic non considerata) → non soddisfatto, senza deroga |
 | 4 | curva granulometrica esterna ai fusi della Fig. 7.11.1 ((a) U_c < 3,5; (b) U_c > 3,5) | vedi sotto |
 
 ### Fusi della Fig. 7.11.1

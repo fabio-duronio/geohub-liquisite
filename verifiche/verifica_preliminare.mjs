@@ -42,7 +42,8 @@ console.log('1. Esempio: esito e strati');
   check('criterio 2 non soddisfatto (falda 2,4 m)', v.criteri.c2.soddisfatto, false);
   const lim = X.valutaEsclusione(L, cptu, Object.assign(P.copia(sCpt), { esclusione: Object.assign(P.copia(sCpt.esclusione), { strati: [{ da: 12.4, a: 13.2, sabbiaPulita: true }] }) }), calc(cptu, sCpt));
   const c3lim = strato(lim, 12.4).c3;
-  check('criterio 3: punti con Ic oltre soglia contati a parte, non come dati mancanti', [c3lim.conIcOltre > 30, c3lim.conIcOltre === c3lim.mancanti, /Ic oltre la soglia/.test(c3lim.motivo)], [true, true, true]);
+  // D5 (25/11/2026): «sabbia pulita» contraddetta da Ic > 1,775 → criterio 3 non soddisfatto (prima: dati insufficienti per Ic oltre soglia)
+  check('criterio 3: punti con Ic oltre soglia contati a parte, non come dati mancanti; sabbia pulita contraddetta (D5)', [c3lim.conIcOltre > 30, c3lim.conIcOltre === c3lim.mancanti, c3lim.soddisfatto, c3lim.contraddizione && c3lim.contraddizione.icMax > 1.775], [true, true, false, true]);
   check('esito: limi argillosi esclusi con il criterio 4, verifica necessaria per il sito', [v.esito.codice, v.conteggi.stratiEsclusi, strato(v, 1.2).criteriEscludenti, strato(v, 12.4).criteriEscludenti], ['parziale', 2, [4], [4]]);
   check('esempio completo: nessuno strato saturo «da completare»', v.conteggi.stratiNonDimostrati, 0);
   check('alternanze: scelta del geologo diversa dalla proposta, con motivazione', [strato(v, 7.2).c4.proposta, strato(v, 7.2).c4.stato, strato(v, 7.2).esito], ['nessuna proposta', 'valutato', 'non_escluso']);
@@ -91,7 +92,8 @@ console.log('3. Criterio 3 per strato');
   // tratto non indagato dentro lo strato → non dimostrato
   const lac = P.copia(forte); lac.dati = lac.dati.filter(d => !(d[0] > 10 && d[0] < 11.5));
   const vl = X.valutaEsclusione(L, lac, sCpt, calc(lac, sCpt));
-  check('tratto non indagato di 1,5 m nello strato → non dimostrato', strato(vl, 8.6).c3.stato, 'dati_insufficienti');
+  // D5: oltre la tolleranza di copertura (CPT 0,25 m) il criterio 3 non è soddisfatto; il tratto è identificato
+  check('tratto non indagato di 1,5 m nello strato → criterio 3 non soddisfatto, tratto scoperto identificato (D5)', [strato(vl, 8.6).c3.stato, strato(vl, 8.6).c3.soddisfatto, strato(vl, 8.6).c3.trattiScoperti.length], ['valutato', false, 1]);
   // sabbia pulita non indicata
   const s = P.copia(sCpt); s.esclusione.strati = s.esclusione.strati.filter(x => x.da !== 8.6);
   check('sabbia pulita non indicata → da completare', X.valutaEsclusione(L, forte, s, r).strati.find(x => x.da === 8.6).c3.stato, 'dati_insufficienti');

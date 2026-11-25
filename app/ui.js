@@ -895,7 +895,9 @@
       dett += '<div class="escl-blocco"><div class="escl-tit">' + icona(iconaCriterio(c3)) + ' <b>Criterio 3</b> · sabbie pulite con ' + (c3.grandezza ? esc(c3.grandezza) + ' > ' + c3.soglia : '(N1)60 > 30 o qc1N > 180') + '</div>' +
         '<div class="field"><label for="exSabbia">Strato costituito da sabbie pulite</label>' + sceltaSiNo('exSabbia', sel.dati.sabbiaPulita) + '<div class="hint">giudizio del geologo, da granulometria e descrizione</div></div>' +
         (isNum(c3.punti) ? '<p class="hint">Punti saturi nello strato: ' + c3.punti + (c3.mancanti ? ' (senza ' + esc(c3.grandezza) + ': ' + [c3.conIcOltre ? c3.conIcOltre + ' con Ic oltre la soglia' : '', c3.mancanti - c3.conIcOltre ? (c3.mancanti - c3.conIcOltre) + ' per dati mancanti o non calcolati' : ''].filter(Boolean).join(', ') + ')' : '') + ' · minimo ' + esc(c3.grandezza) + ' = ' + fmt(c3.minimo, 1) + ' · oltre soglia: ' + c3.sopraSoglia + '. Normalizzazione: ' + esc(P.NOMI_METODI[sc.metodo]) + '.</p>' : '') +
-        '<p class="escl-motivo">' + esc(c3.motivo || '') + '</p></div>';
+        '<p class="escl-motivo">' + esc(c3.motivo || '') + '</p>' +
+        (c3.trattiScoperti && c3.trattiScoperti.length ? '<p class="hint">Tratti saturi non coperti da prove (distanza oltre ' + fmt(c3.tolleranza, 2) + ' m, criterio di screening di LiquiSite): ' + c3.trattiScoperti.map(t => fmt(t.da, 2) + '–' + fmt(t.a, 2) + ' m').join(', ') + '. Non sono considerati sicuri.</p>' : '') +
+        '</div>';
       dett += '<div class="escl-blocco"><div class="escl-tit">' + icona(iconaCriterio(c4)) + ' <b>Criterio 4</b> · granulometria esterna ai fusi della Fig. 7.11.1</div>' +
         '<div class="field"><label for="exCampione">Campione</label><input type="text" id="exCampione" value="' + esc(sel.dati.campione) + '" placeholder="es. S1-C3, 6,0–6,5 m"></div>' +
         '<div class="field"><label for="exCurva">Curva granulometrica: una riga per setaccio, «diametro [mm]; passante [%]»</label><textarea id="exCurva" rows="7" spellcheck="false">' + esc(EX.testoCurva(sel.dati.curva)) + '</textarea><div class="hint" id="exCurvaErr"></div></div>';
@@ -1329,7 +1331,7 @@
     const sc = scenario(), blocco = bloccoUscite(sc, 'esportare');
     if (blocco) { alert(blocco); return; }
     const pre = EX.valutaEsclusione(L, prova(), sc, risultatoDi(sc));
-    const csv = X.csvRisultati(S.pr, prova(), sc, risultatoDi(sc), { preliminare: pre.esito.titolo + '. ' + pre.esito.testo, magnitudo: MG.testoOrigine(sc, proposta()) });
+    const csv = X.csvRisultati(S.pr, prova(), sc, risultatoDi(sc), { preliminare: pre.esito.titolo + '. ' + pre.esito.testo + (EX.testoTrattiScoperti(pre) ? ' ' + EX.testoTrattiScoperti(pre) : ''), magnitudo: MG.testoOrigine(sc, proposta()) });
     scarica(URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' })), nomeFile('risultati-' + sc.nome, 'csv'));
   });
 
@@ -1404,7 +1406,7 @@
       ' (falda ' + (isNum(d.faldaMediaStagionale) ? fmt(d.faldaMediaStagionale) + ' m' : 'non indicata') + '; p.c. sub-orizzontale: ' + (siNo(d.pcSubOrizzontale) || 'non indicato') + '; fondazioni superficiali: ' + (siNo(d.fondazioniSuperficiali) || 'non indicato') + ')</td></tr>' +
       '</tbody></table><table class="st-tab num"><thead><tr><th>da [m]</th><th>a [m]</th><th>descrizione</th><th>criterio 3</th><th>criterio 4</th><th>esito</th></tr></thead><tbody>' +
       v.strati.map(x => '<tr><td>' + fmt(x.da) + '</td><td>' + fmt(x.a) + '</td><td style="text-align:left;">' + esc(x.descrizione) + '</td>' +
-        '<td style="text-align:left;">' + es(x.c3) + (isNum(x.c3.minimo) ? ' · min ' + esc(x.c3.grandezza) + ' ' + fmt(x.c3.minimo, 1) : '') + (x.dati.sabbiaPulita === null ? '' : ' · sabbia pulita: ' + siNo(x.dati.sabbiaPulita)) + '</td>' +
+        '<td style="text-align:left;">' + es(x.c3) + (isNum(x.c3.minimo) ? ' · min ' + esc(x.c3.grandezza) + ' ' + fmt(x.c3.minimo, 1) : '') + (x.c3.trattiScoperti && x.c3.trattiScoperti.length ? ' · tratti non coperti da prove: ' + x.c3.trattiScoperti.map(t => fmt(t.da, 2) + '–' + fmt(t.a, 2) + ' m').join(', ') : '') + (x.c3.contraddizione ? ' · sabbia pulita contraddetta dai dati' + (isNum(x.c3.contraddizione.fcMax) ? ' (FC fino a ' + fmt(x.c3.contraddizione.fcMax, 1) + ' %)' : '') + (isNum(x.c3.contraddizione.icMax) ? ' (Ic fino a ' + fmt(x.c3.contraddizione.icMax, 3) + ')' : '') : '') + (x.dati.sabbiaPulita === null ? '' : ' · sabbia pulita: ' + siNo(x.dati.sabbiaPulita)) + '</td>' +
         '<td style="text-align:left;">' + es(x.c4) + (x.c4.motore && isNum(x.c4.motore.Uc) ? ' · Uc ' + fmt(x.c4.motore.Uc, 1) : '') + (x.dati.campione ? ' · ' + esc(x.dati.campione) : '') +
         (x.c4.motore ? ' · proposta: ' + esc(x.c4.proposta) + (x.dati.decisione4 ? '; geologo: ' + esc(x.dati.decisione4) + (x.dati.motivazione4 ? ' (' + esc(x.dati.motivazione4) + ')' : '') : '; da confermare') : '') + '</td>' +
         '<td style="text-align:left;">' + ESITI[x.esito] + '</td></tr>').join('') + '</tbody></table>';
