@@ -13,6 +13,8 @@
 })(typeof self !== 'undefined' ? self : this, function (P, F) {
   'use strict';
 
+  /** Struttura del CSV (v1.0.2): 2. I CSV della 1.0.x non hanno la riga `# schema_version` e valgono «versione 1». Regola in docs/sviluppo.md. */
+  const SCHEMA_CSV = 2;
 
   function testoSicuro(s) {
     s = String(s);
@@ -47,6 +49,7 @@
     const righe = [];
     const riga = (arr) => righe.push(arr.map(v => cella(v, opz)).join(opz.separatore));
     riga(['# GeoHub-LiquiSite – risultati', 'versione', P.VERSIONE_APP]);
+    riga(['# schema_version', SCHEMA_CSV]);
     riga(['# Progetto', progetto.progetto.titolo || '']);
     riga(['# Sito', progetto.progetto.sito || '']);
     riga(['# Prova', prova.nome + ' (' + prova.tipo + ')' + (prova.esempio ? ' – ESEMPIO SINTETICO' : '')]);
@@ -98,5 +101,5 @@
     return righe.join('\r\n') + '\r\n';
   }
 
-  return { csvRisultati, testoSicuro, cella };
+  return { SCHEMA_CSV, csvRisultati, testoSicuro, cella };
 });
