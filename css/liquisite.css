@@ -412,3 +412,8 @@ dialog.dlg#dlgImporta[open]{display:grid;grid-template-rows:auto auto minmax(0,1
 .sbt-chart{position:relative; height:440px;}
 table.data-table.compact td,table.data-table.compact th{padding:4px 8px; font-size:12px;}
 @media (max-width:900px){ .sbt-card{grid-template-columns:minmax(0,1fr);} .sbt-chart{height:360px;} }
+
+/* ===== Pagina ferma sotto le viste a tutto schermo (v1.0.2) =====
+   Con un dialogo aperto la pagina sotto non scorre: la sua barra laterale non deve muoversi a vuoto.
+   La classe .vista-aperta è il ripiego per i browser senza :has (app/ui.js). */
+html:has(dialog[open]), html.vista-aperta{overflow:hidden;}
