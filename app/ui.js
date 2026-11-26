@@ -1554,5 +1554,12 @@
   window.LiquiUI = { stato: S, renderTutto, calcola, statoRisultato };
   S.salvato = P.salvaProgetto(S.pr);
   renderTutto();
+  /** Ripiego per i browser senza :has: la classe sull'elemento radice segue lo stato aperto dei dialoghi. */
+  (function seguiViste() {
+    const radice = document.documentElement;
+    const aggiorna = () => radice.classList.toggle('vista-aperta', !!document.querySelector('dialog[open]'));
+    document.querySelectorAll('dialog').forEach(d => new MutationObserver(aggiorna).observe(d, { attributes: true, attributeFilter: ['open'] }));
+    aggiorna();
+  })();
   avviaBozza();
 })();
