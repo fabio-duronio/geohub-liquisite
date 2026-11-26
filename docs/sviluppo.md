@@ -79,10 +79,10 @@ La CSP è una difesa aggiuntiva: la protezione principale resta la validazione d
 
 **Versioni**: la versione dell'app (`VERSIONE_APP` in `app/progetto.js`) e quella del motore (`VERSIONE_MOTORE` in `motore/liquisite.js`) sono distinte. La versione del motore entra nella firma degli input: se cambia, i risultati salvati diventano «non aggiornati».
 
-## Formato del progetto (JSON, `versioneFormato` 1)
+## Formato del progetto (JSON, `versioneFormato` 2)
 
 ```
-{ formato: 'geohub-liquisite-progetto', versioneFormato: 1,
+{ formato: 'geohub-liquisite-progetto', versioneFormato: 2,
   progetto: { titolo, sito, lat, lon, noteZS9, autore, note },   // lat, lon: gradi decimali o null
   prove: [{ id, nome, tipo: 'CPTE'|'CPTU'|'SPT'|'VS', provenienza, esempio,
             unita: { z: 'm'|'cm', qc: 'MPa'|'kPa', fs: 'kPa'|'MPa', u2: 'kPa'|'MPa', … },
@@ -98,6 +98,8 @@ La CSP è una difesa aggiuntiva: la protezione principale resta la validazione d
   provaAttiva, scenarioAttivo }
 ```
 
+- **Versione del formato.** Dalla 1.0.2 il file dichiara `versioneFormato` 2 e chi scrive scrive sempre 2. I file di formato 1 (1.0.0–1.0.1) si aprono come sono, senza campi nuovi, e al salvataggio successivo diventano formato 2. Un formato più recente di quello che l'app legge si rifiuta con «aggiorna l'app»: il progetto corrente non viene toccato.
+- **Schema del CSV (`schema_version`).** La seconda riga del CSV è `# schema_version;2`; i CSV della 1.0.x non hanno la riga e valgono «versione 1». Regola: si aggiungono righe e colonne solo in coda; ogni cambio di significato o di ordine incrementa la versione. Chi legge il CSV legge prima la versione, poi interpreta le righe.
 - **Dati della prova.** Sono conservati come inseriti, nelle unità dichiarate; la conversione nelle unità del motore avviene solo al calcolo.
 - **Il file è un dato non attendibile.** All'apertura ogni campo è controllato per tipo:
   - numeri (o vuoto) per misure, parametri e opzioni;

@@ -272,8 +272,10 @@ console.log('7. Esportazione CSV');
   check('righe di dati = righe del risultato', righe.length - inizio - 1, rCpt.righe.length);
   const nCol = righe[inizio].split(';').length;
   check('stesso numero di colonne in ogni riga', righe.slice(inizio).every(r => r.split(';').length === nCol), true);
-  check('titolo protetto dalla formula', righe[1].includes("'=HYPERLINK"), true);
-  check('testo con virgolette racchiuso', righe[1].includes('"\'=HYPERLINK(""http://x"")"'), true);
+  // dalla 1.0.2 la riga 2 è `# schema_version`: la riga del progetto si cerca per intestazione, non per posizione
+  const rigaProgetto = righe.find(r => r.startsWith('# Progetto;'));
+  check('titolo protetto dalla formula', rigaProgetto.includes("'=HYPERLINK"), true);
+  check('testo con virgolette racchiuso', rigaProgetto.includes('"\'=HYPERLINK(""http://x"")"'), true);
   const intest = righe[inizio].split(';');
   const iFS = intest.indexOf('FS'), iStato = intest.indexOf('stato');
   const rigaNS = righe[inizio + 1].split(';');

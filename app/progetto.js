@@ -7,7 +7,7 @@
  *
  * Progetto (serializzabile):
  * {
- *   formato: 'geohub-liquisite-progetto', versioneFormato: 1,
+ *   formato: 'geohub-liquisite-progetto', versioneFormato: 2,
  *   progetto: { titolo, sito, lat, lon, noteZS9, autore, note },   // lat, lon: gradi decimali WGS84 o null
  *   prove: [Prova], scenari: [Scenario], provaAttiva, scenarioAttivo,
  *   risultati: { [scenarioId]: Risultato }        // solo in memoria: non salvato né ricaricato
@@ -27,7 +27,9 @@
   'use strict';
 
   const FORMATO = 'geohub-liquisite-progetto';
-  const VERSIONE_FORMATO = 1;
+  // Formato 2 (v1.0.2): il writer scrive sempre 2. I file di formato 1 (1.0.0–1.0.1) si leggono come sono, senza campi nuovi.
+  const VERSIONE_FORMATO = 2;
+  const VERSIONI_FORMATO_LETTE = Object.freeze([1, 2]);
 
   const TIPI_PROVA = Object.freeze({
     CPTE: { etichetta: 'CPT a punta elettrica (senza u)', colonne: ['z', 'qc', 'fs'], facoltative: ['FC'] },
@@ -330,7 +332,7 @@
     // Cancello di versione: un file scritto da una versione più recente non si apre, perché i campi che questa
     // versione non conosce andrebbero persi in silenzio al salvataggio successivo. La versione la dichiara chi scrive.
     if (Number.isInteger(obj.versioneFormato) && obj.versioneFormato > VERSIONE_FORMATO) err('versioneFormato', 'File creato con una versione più recente di LiquiSite: aggiorna l\'app (formato ' + obj.versioneFormato + ', questa versione legge fino al formato ' + VERSIONE_FORMATO + ')');
-    else if (obj.versioneFormato !== VERSIONE_FORMATO) err('versioneFormato', 'versione ' + descrivi(obj.versioneFormato) + ' non supportata (attesa ' + VERSIONE_FORMATO + ')');
+    else if (!VERSIONI_FORMATO_LETTE.includes(obj.versioneFormato)) err('versioneFormato', 'versione ' + descrivi(obj.versioneFormato) + ' non supportata (attese ' + VERSIONI_FORMATO_LETTE.join(' e ') + ')');
     if (!isOggetto(obj.progetto)) err('progetto', 'mancante o non è un oggetto');
     if (!Array.isArray(obj.prove)) err('prove', 'deve essere un elenco');
     if (!Array.isArray(obj.scenari)) err('scenari', 'deve essere un elenco');
